@@ -60,3 +60,5 @@ generated/
 **/generated/**
 
 .aider*
+
+/generated/prisma

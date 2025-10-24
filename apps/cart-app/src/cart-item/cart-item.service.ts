@@ -1,16 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
-import { ProductAppClient } from '@cart-app/product-app/product-app.client';
+import { EVENTS } from '@shared/events';
 import {
   ValidationRpcException,
   EntityNotFoundRpcException,
+  ServiceUnavailableRpcException,
 } from '@shared/exceptions/rpc-exceptions';
 
 @Injectable()
 export class CartItemService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly productClient: ProductAppClient,
+    @Inject('PRODUCT_SERVICE') private readonly productClient: ClientProxy,
   ) {}
 
   async addItem(cartId: string, productId: string, quantity: number) {
@@ -20,10 +23,7 @@ export class CartItemService {
     }
 
     // Validate product exists
-    const product = await this.productClient.getProductById(productId);
-    if (!product) {
-      throw new EntityNotFoundRpcException('Product', productId);
-    }
+    await this.validateProductExists(productId);
 
     // Upsert CartItem (add or update)
     const cartItem = await this.prisma.cartItem.upsert({
@@ -94,5 +94,23 @@ export class CartItemService {
         cartId_productId: { cartId, productId },
       },
     });
+  }
+
+  /**
+   * Validate product exists by calling product-service
+   * @private
+   */
+  private async validateProductExists(productId: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.productClient.send(EVENTS.PRODUCT.GET_BY_ID, { id: productId }).pipe(timeout(5000)),
+      );
+    } catch (error) {
+      if (error instanceof Error && error.name === 'TimeoutError') {
+        throw new ServiceUnavailableRpcException('Product service không phản hồi');
+      }
+      // If product not found, product-service will throw EntityNotFoundRpcException
+      throw error;
+    }
   }
 }

@@ -3,7 +3,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { CartService } from '@cart-app/cart/cart.service';
 import { CartController } from '@cart-app/cart/cart.controller';
 import { CartItemService } from '@cart-app/cart-item/cart-item.service';
-import { ProductAppClient } from '@cart-app/product-app/product-app.client';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
 
 @Module({
@@ -19,7 +18,7 @@ import { PrismaService } from '@cart-app/prisma/prisma.service';
     ]),
   ],
   controllers: [CartController],
-  providers: [CartService, CartItemService, ProductAppClient, PrismaService],
+  providers: [CartService, CartItemService, PrismaService],
   exports: [CartService],
 })
 export class CartModule {}

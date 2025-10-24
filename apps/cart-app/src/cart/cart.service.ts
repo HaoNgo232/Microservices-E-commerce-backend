@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
 import { CartItemService } from '@cart-app/cart-item/cart-item.service';
-import { ProductAppClient } from '@cart-app/product-app/product-app.client';
+import { EVENTS } from '@shared/events';
+import { ServiceUnavailableRpcException } from '@shared/exceptions/rpc-exceptions';
 import {
   CartGetDto,
   CartAddItemDto,
@@ -10,16 +13,17 @@ import {
   CartClearDto,
   CartMergeDto,
 } from '@shared/dto/cart.dto';
+import { Cart, CartItem } from '@cart-app/prisma/generated/client';
 
 @Injectable()
 export class CartService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cartItemService: CartItemService,
-    private readonly productClient: ProductAppClient,
+    @Inject('PRODUCT_SERVICE') private readonly productClient: ClientProxy,
   ) {}
 
-  async getOrCreateCart(userId: string) {
+  async getOrCreateCart(userId: string): Promise<Cart> {
     // For user carts, we use userId as sessionId
     const sessionId = `user-${userId}`;
 
@@ -41,7 +45,9 @@ export class CartService {
     return cart;
   }
 
-  async getCartWithProducts(userId: string) {
+  async getCartWithProducts(
+    userId: string,
+  ): Promise<{ cart: Cart; totalInt: number; items: Array<CartItem> }> {
     const cart = await this.getOrCreateCart(userId);
 
     if (cart.items.length === 0) {
@@ -54,7 +60,7 @@ export class CartService {
 
     // Batch fetch products
     const productIds = cart.items.map(item => item.productId);
-    const products = await this.productClient.getProductsByIds(productIds);
+    const products = await this.fetchProductsByIds(productIds);
 
     // Create product map for quick lookup
     const productMap = new Map(products.map(p => [p.id, p]));
@@ -76,7 +82,7 @@ export class CartService {
         item.product !== null &&
         'priceInt' in item.product
       ) {
-        return sum + (item.product as any).priceInt * item.quantity;
+        return sum + (item.product as { priceInt: number }).priceInt * item.quantity;
       }
       return sum;
     }, 0);
@@ -178,5 +184,27 @@ export class CartService {
 
   async merge(dto: CartMergeDto) {
     return this.mergeGuestItems(dto.userId, dto.guestItems);
+  }
+
+  /**
+   * Fetch multiple products from product-service
+   * @private
+   */
+  private async fetchProductsByIds(
+    productIds: string[],
+  ): Promise<Array<{ id: string; priceInt: number }>> {
+    if (productIds.length === 0) return [];
+
+    try {
+      const products = await firstValueFrom(
+        this.productClient.send(EVENTS.PRODUCT.GET_BY_IDS, { ids: productIds }).pipe(timeout(5000)),
+      );
+      return products as Array<{ id: string; priceInt: number }>;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'TimeoutError') {
+        throw new ServiceUnavailableRpcException('Product service không phản hồi');
+      }
+      throw error;
+    }
   }
 }
