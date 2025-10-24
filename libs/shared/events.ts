@@ -22,6 +22,7 @@ export const EVENTS = {
   },
   PRODUCT: {
     GET_BY_ID: 'product.getById',
+    GET_BY_IDS: 'product.getByIds',
     GET_BY_SLUG: 'product.getBySlug',
     LIST: 'product.list',
     CREATE: 'product.create',
@@ -41,9 +42,10 @@ export const EVENTS = {
   CART: {
     GET: 'cart.get',
     ADD_ITEM: 'cart.addItem',
+    UPDATE_ITEM: 'cart.updateItem',
     REMOVE_ITEM: 'cart.removeItem',
     CLEAR: 'cart.clear',
-    TRANSFER_TO_USER: 'cart.transferToUser',
+    MERGE: 'cart.merge',
   },
   ORDER: {
     CREATE: 'order.create',

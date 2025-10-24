@@ -1,51 +1,86 @@
-import { IsNotEmpty, IsString, IsOptional, IsNumber, IsPositive, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  IsPositive,
+  Min,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CartGetDto {
   @IsNotEmpty()
   @IsString()
-  sessionId: string;
+  userId: string;
 }
 
 export class CartAddItemDto {
   @IsNotEmpty()
   @IsString()
-  sessionId: string;
+  userId: string;
 
   @IsNotEmpty()
   @IsString()
   productId: string;
 
-  @IsOptional()
   @IsNumber()
   @Type(() => Number)
   @Min(1)
   @IsPositive()
-  quantity?: number;
+  quantity: number;
+}
+
+export class CartUpdateItemDto {
+  @IsNotEmpty()
+  @IsString()
+  userId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  productId: string;
+
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
+  quantity: number;
 }
 
 export class CartRemoveItemDto {
   @IsNotEmpty()
   @IsString()
-  sessionId: string;
+  userId: string;
 
   @IsNotEmpty()
   @IsString()
-  itemId: string;
+  productId: string;
 }
 
 export class CartClearDto {
   @IsNotEmpty()
   @IsString()
-  sessionId: string;
+  userId: string;
 }
 
-export class CartTransferToUserDto {
+export class GuestItemDto {
   @IsNotEmpty()
   @IsString()
-  sessionId: string;
+  productId: string;
 
+  @IsNumber()
+  @Type(() => Number)
+  @Min(1)
+  @IsPositive()
+  quantity: number;
+}
+
+export class CartMergeDto {
   @IsNotEmpty()
   @IsString()
   userId: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuestItemDto)
+  guestItems: GuestItemDto[];
 }

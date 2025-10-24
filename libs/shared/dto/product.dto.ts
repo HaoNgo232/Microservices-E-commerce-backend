@@ -140,6 +140,13 @@ export class ProductIdDto {
   id: string;
 }
 
+export class ProductIdsDto {
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  ids: string[];
+}
+
 export class ProductSlugDto {
   @IsNotEmpty()
   @IsString()

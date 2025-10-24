@@ -7,6 +7,7 @@ import {
   ProductUpdateDto,
   ProductListQueryDto,
   ProductIdDto,
+  ProductIdsDto,
   ProductSlugDto,
   StockChangeDto,
 } from '@shared/dto/product.dto';
@@ -14,6 +15,7 @@ import { PaginatedProductsResponse, ProductResponse, StockChangeResult } from '@
 
 export interface IProductsController {
   getById(dto: ProductIdDto): Promise<ProductResponse>;
+  getByIds(dto: ProductIdsDto): Promise<ProductResponse[]>;
   getBySlug(dto: ProductSlugDto): Promise<ProductResponse>;
   list(query: ProductListQueryDto): Promise<PaginatedProductsResponse>;
   create(dto: ProductCreateDto): Promise<ProductResponse>;
@@ -30,6 +32,11 @@ export class ProductsController implements IProductsController {
   @MessagePattern(EVENTS.PRODUCT.GET_BY_ID)
   getById(@Payload() dto: ProductIdDto): Promise<ProductResponse> {
     return this.productsService.getById(dto);
+  }
+
+  @MessagePattern(EVENTS.PRODUCT.GET_BY_IDS)
+  getByIds(@Payload() dto: ProductIdsDto): Promise<ProductResponse[]> {
+    return this.productsService.getByIds(dto);
   }
 
   @MessagePattern(EVENTS.PRODUCT.GET_BY_SLUG)

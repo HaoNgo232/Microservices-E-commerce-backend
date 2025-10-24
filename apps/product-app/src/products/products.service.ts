@@ -5,6 +5,7 @@ import {
   ProductUpdateDto,
   ProductListQueryDto,
   ProductIdDto,
+  ProductIdsDto,
   ProductSlugDto,
   StockChangeDto,
 } from '@shared/dto/product.dto';
@@ -20,6 +21,7 @@ import { ProductQueryBuilder } from './builders/product-query.builder';
 
 export interface IProductsService {
   getById(dto: ProductIdDto): Promise<ProductResponse>;
+  getByIds(dto: ProductIdsDto): Promise<ProductResponse[]>;
   getBySlug(dto: ProductSlugDto): Promise<ProductResponse>;
   list(query: ProductListQueryDto): Promise<PaginatedProductsResponse>;
   create(dto: ProductCreateDto): Promise<ProductResponse>;
@@ -64,6 +66,37 @@ export class ProductsService implements IProductsService {
       throw new RpcException({
         statusCode: 400,
         message: 'Failed to retrieve product',
+      });
+    }
+  }
+
+  /**
+   * Get multiple products by IDs
+   * Returns only found products (doesn't throw if some IDs not found)
+   */
+  async getByIds(dto: ProductIdsDto): Promise<ProductResponse[]> {
+    try {
+      if (dto.ids.length === 0) {
+        return [];
+      }
+
+      const products = await this.prisma.product.findMany({
+        where: {
+          id: {
+            in: dto.ids,
+          },
+        },
+        include: {
+          category: true,
+        },
+      });
+
+      return products.map(product => this.mapper.mapToProductResponse(product));
+    } catch (error) {
+      console.error('[ProductsService] getByIds error:', error);
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Failed to retrieve products',
       });
     }
   }
