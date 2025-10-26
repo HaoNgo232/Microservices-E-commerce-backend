@@ -76,6 +76,15 @@ export type CartMergeResponse = {
 };
 
 /**
+ * Kết quả transfer cart từ session sang user
+ */
+export type TransferCartResponse = {
+  success: boolean;
+  cartId: string;
+  itemsTransferred: number;
+};
+
+/**
  * Product data từ Product Service (internal type)
  *
  * Note: Stock validation is now supported

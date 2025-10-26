@@ -18,3 +18,25 @@ model Payment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// Lưu data giao dịch từ SEPAY
+model Transaction {
+  id                 String   @id @default(cuid())
+  sePayId            Int      @unique
+  gateway            String
+  transactionDate    DateTime
+  accountNumber      String
+  subAccount         String?
+  amountIn           Int      @default(0)
+  amountOut          Int      @default(0)
+  accumulated        Int      @default(0)
+  code               String?
+  transactionContent String
+  referenceCode      String
+  description        String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([sePayId])
+  @@index([transactionDate])
+}
