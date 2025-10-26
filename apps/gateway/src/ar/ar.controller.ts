@@ -25,11 +25,8 @@ export class ArController extends BaseGatewayController {
    */
   @Post('snapshots')
   @UseGuards(AuthGuard)
-  async createSnapshot(@Body() dto: ARSnapshotCreateDto): Promise<ARSnapshotCreateResponse> {
-    return await this.send<ARSnapshotCreateDto, ARSnapshotCreateResponse>(
-      EVENTS.AR.SNAPSHOT_CREATE,
-      dto,
-    );
+  createSnapshot(@Body() dto: ARSnapshotCreateDto): Promise<ARSnapshotCreateResponse> {
+    return this.send<ARSnapshotCreateDto, ARSnapshotCreateResponse>(EVENTS.AR.SNAPSHOT_CREATE, dto);
   }
 
   /**
@@ -38,8 +35,8 @@ export class ArController extends BaseGatewayController {
    * Public endpoint để xem snapshots của users khác (social feature)
    */
   @Get('snapshots')
-  async listSnapshots(@Query() query: ARSnapshotListDto): Promise<PaginatedARSnapshotsResponse> {
-    return await this.send<ARSnapshotListDto, PaginatedARSnapshotsResponse>(
+  listSnapshots(@Query() query: ARSnapshotListDto): Promise<PaginatedARSnapshotsResponse> {
+    return this.send<ARSnapshotListDto, PaginatedARSnapshotsResponse>(
       EVENTS.AR.SNAPSHOT_LIST,
       query,
     );

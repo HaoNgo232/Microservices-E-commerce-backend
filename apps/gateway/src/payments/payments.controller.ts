@@ -28,8 +28,8 @@ export class PaymentsController extends BaseGatewayController {
    * Trả về payment URL hoặc QR code tùy payment method
    */
   @Post('process')
-  async process(@Body() dto: PaymentProcessDto): Promise<PaymentProcessResponse> {
-    return await this.send<PaymentProcessDto, PaymentProcessResponse>(EVENTS.PAYMENT.PROCESS, dto);
+  process(@Body() dto: PaymentProcessDto): Promise<PaymentProcessResponse> {
+    return this.send<PaymentProcessDto, PaymentProcessResponse>(EVENTS.PAYMENT.PROCESS, dto);
   }
 
   /**
@@ -37,8 +37,8 @@ export class PaymentsController extends BaseGatewayController {
    * Verify payment từ payment gateway callback
    */
   @Post('verify')
-  async verify(@Body() dto: PaymentVerifyDto): Promise<PaymentVerifyResponse> {
-    return await this.send<PaymentVerifyDto, PaymentVerifyResponse>(EVENTS.PAYMENT.VERIFY, dto);
+  verify(@Body() dto: PaymentVerifyDto): Promise<PaymentVerifyResponse> {
+    return this.send<PaymentVerifyDto, PaymentVerifyResponse>(EVENTS.PAYMENT.VERIFY, dto);
   }
 
   /**
@@ -46,8 +46,8 @@ export class PaymentsController extends BaseGatewayController {
    * Lấy chi tiết payment theo ID
    */
   @Get(':id')
-  async findById(@Param('id') id: string): Promise<PaymentResponse> {
-    return await this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ID, id);
+  findById(@Param('id') id: string): Promise<PaymentResponse> {
+    return this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ID, id);
   }
 
   /**
@@ -55,7 +55,7 @@ export class PaymentsController extends BaseGatewayController {
    * Lấy payment theo order ID
    */
   @Get('order/:orderId')
-  async findByOrder(@Param('orderId') orderId: string): Promise<PaymentResponse> {
-    return await this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ORDER, orderId);
+  findByOrder(@Param('orderId') orderId: string): Promise<PaymentResponse> {
+    return this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ORDER, orderId);
   }
 }

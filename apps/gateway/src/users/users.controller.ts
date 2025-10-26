@@ -22,8 +22,8 @@ export class UsersController extends BaseGatewayController {
    */
   @Get()
   @UseGuards(AuthGuard)
-  async list(@Query() query: ListUsersDto): Promise<ListUsersResponse> {
-    return await this.send<ListUsersDto, ListUsersResponse>(EVENTS.USER.LIST, query);
+  list(@Query() query: ListUsersDto): Promise<ListUsersResponse> {
+    return this.send<ListUsersDto, ListUsersResponse>(EVENTS.USER.LIST, query);
   }
 
   /**
@@ -32,8 +32,8 @@ export class UsersController extends BaseGatewayController {
    */
   @Get(':id')
   @UseGuards(AuthGuard)
-  async findById(@Param('id') id: string): Promise<UserResponse> {
-    return await this.send<string, UserResponse>(EVENTS.USER.FIND_BY_ID, id);
+  findById(@Param('id') id: string): Promise<UserResponse> {
+    return this.send<string, UserResponse>(EVENTS.USER.FIND_BY_ID, id);
   }
 
   /**
@@ -42,8 +42,8 @@ export class UsersController extends BaseGatewayController {
    */
   @Get('email/:email')
   @UseGuards(AuthGuard)
-  async findByEmail(@Param('email') email: string): Promise<UserResponse> {
-    return await this.send<string, UserResponse>(EVENTS.USER.FIND_BY_EMAIL, email);
+  findByEmail(@Param('email') email: string): Promise<UserResponse> {
+    return this.send<string, UserResponse>(EVENTS.USER.FIND_BY_EMAIL, email);
   }
 
   /**
@@ -52,8 +52,8 @@ export class UsersController extends BaseGatewayController {
    */
   @Post()
   @UseGuards(AuthGuard)
-  async create(@Body() dto: CreateUserDto): Promise<UserResponse> {
-    return await this.send<CreateUserDto, UserResponse>(EVENTS.USER.CREATE, dto);
+  create(@Body() dto: CreateUserDto): Promise<UserResponse> {
+    return this.send<CreateUserDto, UserResponse>(EVENTS.USER.CREATE, dto);
   }
 
   /**
@@ -62,8 +62,8 @@ export class UsersController extends BaseGatewayController {
    */
   @Put(':id')
   @UseGuards(AuthGuard)
-  async update(@Param('id') id: string, @Body() dto: UpdateUserDto): Promise<UserResponse> {
-    return await this.send<UpdateUserDto & { id: string }, UserResponse>(EVENTS.USER.UPDATE, {
+  update(@Param('id') id: string, @Body() dto: UpdateUserDto): Promise<UserResponse> {
+    return this.send<UpdateUserDto & { id: string }, UserResponse>(EVENTS.USER.UPDATE, {
       id,
       ...dto,
     });
@@ -75,7 +75,7 @@ export class UsersController extends BaseGatewayController {
    */
   @Put(':id/deactivate')
   @UseGuards(AuthGuard)
-  async deactivate(@Param('id') id: string): Promise<UserResponse> {
-    return await this.send<string, UserResponse>(EVENTS.USER.DEACTIVATE, id);
+  deactivate(@Param('id') id: string): Promise<UserResponse> {
+    return this.send<string, UserResponse>(EVENTS.USER.DEACTIVATE, id);
   }
 }

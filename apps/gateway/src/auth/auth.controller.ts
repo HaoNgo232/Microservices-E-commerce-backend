@@ -25,8 +25,8 @@ export class AuthController extends BaseGatewayController {
    * Đăng ký tài khoản mới
    */
   @Post('register')
-  async register(@Body() dto: CreateUserDto): Promise<UserResponse> {
-    return await this.send<CreateUserDto, UserResponse>(EVENTS.AUTH.REGISTER, dto);
+  register(@Body() dto: CreateUserDto): Promise<UserResponse> {
+    return this.send<CreateUserDto, UserResponse>(EVENTS.AUTH.REGISTER, dto);
   }
 
   /**
@@ -34,8 +34,8 @@ export class AuthController extends BaseGatewayController {
    * Xác thực user và trả về JWT tokens
    */
   @Post('login')
-  async login(@Body() dto: LoginDto): Promise<AuthResponse> {
-    return await this.send<LoginDto, AuthResponse>(EVENTS.AUTH.LOGIN, dto);
+  login(@Body() dto: LoginDto): Promise<AuthResponse> {
+    return this.send<LoginDto, AuthResponse>(EVENTS.AUTH.LOGIN, dto);
   }
 
   /**
@@ -43,8 +43,8 @@ export class AuthController extends BaseGatewayController {
    * Làm mới access token bằng refresh token
    */
   @Post('refresh')
-  async refresh(@Body() dto: RefreshDto): Promise<AuthResponse> {
-    return await this.send<RefreshDto, AuthResponse>(EVENTS.AUTH.REFRESH, dto);
+  refresh(@Body() dto: RefreshDto): Promise<AuthResponse> {
+    return this.send<RefreshDto, AuthResponse>(EVENTS.AUTH.REFRESH, dto);
   }
 
   /**
@@ -54,10 +54,10 @@ export class AuthController extends BaseGatewayController {
    */
   @Get('me')
   @UseGuards(AuthGuard)
-  async getCurrentUser(
+  getCurrentUser(
     @Req() req: Request & { user: { userId: string; email: string; role: string } },
   ): Promise<UserResponse> {
-    return await this.send<string, UserResponse>(EVENTS.USER.FIND_BY_ID, req.user.userId);
+    return this.send<string, UserResponse>(EVENTS.USER.FIND_BY_ID, req.user.userId);
   }
 
   /**
@@ -65,7 +65,7 @@ export class AuthController extends BaseGatewayController {
    * Verify JWT token validity
    */
   @Post('verify')
-  async verify(@Body() dto: { token: string }): Promise<VerifyResponse> {
-    return await this.send<{ token: string }, VerifyResponse>(EVENTS.AUTH.VERIFY, dto);
+  verify(@Body() dto: { token: string }): Promise<VerifyResponse> {
+    return this.send<{ token: string }, VerifyResponse>(EVENTS.AUTH.VERIFY, dto);
   }
 }

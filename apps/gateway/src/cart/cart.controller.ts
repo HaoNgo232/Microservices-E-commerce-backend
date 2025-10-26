@@ -30,8 +30,8 @@ export class CartController extends BaseGatewayController {
    * Event: cart.get
    */
   @Get()
-  async get(@Query() dto: CartGetDto): Promise<CartWithProductsResponse> {
-    return await this.send<CartGetDto, CartWithProductsResponse>(EVENTS.CART.GET, dto);
+  get(@Query() dto: CartGetDto): Promise<CartWithProductsResponse> {
+    return this.send<CartGetDto, CartWithProductsResponse>(EVENTS.CART.GET, dto);
   }
 
   /**
@@ -40,8 +40,8 @@ export class CartController extends BaseGatewayController {
    * Event: cart.addItem
    */
   @Post('items')
-  async addItem(@Body() dto: CartAddItemDto): Promise<CartItemOperationResponse> {
-    return await this.send<CartAddItemDto, CartItemOperationResponse>(EVENTS.CART.ADD_ITEM, dto);
+  addItem(@Body() dto: CartAddItemDto): Promise<CartItemOperationResponse> {
+    return this.send<CartAddItemDto, CartItemOperationResponse>(EVENTS.CART.ADD_ITEM, dto);
   }
 
   /**
@@ -50,11 +50,8 @@ export class CartController extends BaseGatewayController {
    * Event: cart.updateItem
    */
   @Patch('items')
-  async updateItem(@Body() dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
-    return await this.send<CartUpdateItemDto, CartItemOperationResponse>(
-      EVENTS.CART.UPDATE_ITEM,
-      dto,
-    );
+  updateItem(@Body() dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
+    return this.send<CartUpdateItemDto, CartItemOperationResponse>(EVENTS.CART.UPDATE_ITEM, dto);
   }
 
   /**
@@ -63,10 +60,7 @@ export class CartController extends BaseGatewayController {
    * Event: cart.removeItem
    */
   @Delete('items')
-  async removeItem(@Body() dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
-    return await this.send<CartRemoveItemDto, CartOperationSuccessResponse>(
-      EVENTS.CART.REMOVE_ITEM,
-      dto,
-    );
+  removeItem(@Body() dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
+    return this.send<CartRemoveItemDto, CartOperationSuccessResponse>(EVENTS.CART.REMOVE_ITEM, dto);
   }
 }

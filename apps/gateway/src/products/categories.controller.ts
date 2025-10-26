@@ -37,8 +37,8 @@ export class CategoriesController extends BaseGatewayController {
    * Lấy danh sách categories với pagination
    */
   @Get()
-  async list(@Query() query: CategoryListQueryDto): Promise<PaginatedCategoriesResponse> {
-    return await this.send<CategoryListQueryDto, PaginatedCategoriesResponse>(
+  list(@Query() query: CategoryListQueryDto): Promise<PaginatedCategoriesResponse> {
+    return this.send<CategoryListQueryDto, PaginatedCategoriesResponse>(
       EVENTS.CATEGORY.LIST,
       query,
     );
@@ -49,8 +49,8 @@ export class CategoriesController extends BaseGatewayController {
    * Lấy chi tiết category theo ID (bao gồm children nếu có)
    */
   @Get(':id')
-  async findById(@Param('id') id: string): Promise<CategoryResponse> {
-    return await this.send<string, CategoryResponse>(EVENTS.CATEGORY.GET_BY_ID, id);
+  findById(@Param('id') id: string): Promise<CategoryResponse> {
+    return this.send<string, CategoryResponse>(EVENTS.CATEGORY.GET_BY_ID, id);
   }
 
   /**
@@ -58,8 +58,8 @@ export class CategoriesController extends BaseGatewayController {
    * Lấy chi tiết category theo slug
    */
   @Get('slug/:slug')
-  async findBySlug(@Param('slug') slug: string): Promise<CategoryResponse> {
-    return await this.send<{ slug: string }, CategoryResponse>(EVENTS.CATEGORY.GET_BY_SLUG, {
+  findBySlug(@Param('slug') slug: string): Promise<CategoryResponse> {
+    return this.send<{ slug: string }, CategoryResponse>(EVENTS.CATEGORY.GET_BY_SLUG, {
       slug,
     });
   }
@@ -70,8 +70,8 @@ export class CategoriesController extends BaseGatewayController {
    */
   @Post()
   @UseGuards(AuthGuard)
-  async create(@Body() dto: CategoryCreateDto): Promise<CategoryResponse> {
-    return await this.send<CategoryCreateDto, CategoryResponse>(EVENTS.CATEGORY.CREATE, dto);
+  create(@Body() dto: CategoryCreateDto): Promise<CategoryResponse> {
+    return this.send<CategoryCreateDto, CategoryResponse>(EVENTS.CATEGORY.CREATE, dto);
   }
 
   /**
@@ -80,14 +80,11 @@ export class CategoriesController extends BaseGatewayController {
    */
   @Put(':id')
   @UseGuards(AuthGuard)
-  async update(@Param('id') id: string, @Body() dto: CategoryUpdateDto): Promise<CategoryResponse> {
-    return await this.send<CategoryUpdateDto & { id: string }, CategoryResponse>(
-      EVENTS.CATEGORY.UPDATE,
-      {
-        id,
-        ...dto,
-      },
-    );
+  update(@Param('id') id: string, @Body() dto: CategoryUpdateDto): Promise<CategoryResponse> {
+    return this.send<CategoryUpdateDto & { id: string }, CategoryResponse>(EVENTS.CATEGORY.UPDATE, {
+      id,
+      ...dto,
+    });
   }
 
   /**
@@ -96,7 +93,7 @@ export class CategoriesController extends BaseGatewayController {
    */
   @Delete(':id')
   @UseGuards(AuthGuard)
-  async delete(@Param('id') id: string): Promise<SuccessResponse> {
-    return await this.send<string, SuccessResponse>(EVENTS.CATEGORY.DELETE, id);
+  delete(@Param('id') id: string): Promise<SuccessResponse> {
+    return this.send<string, SuccessResponse>(EVENTS.CATEGORY.DELETE, id);
   }
 }

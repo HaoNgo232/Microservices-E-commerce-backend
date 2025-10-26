@@ -38,17 +38,14 @@ export class OrdersController extends BaseGatewayController {
    * Tạo order mới từ cart
    */
   @Post()
-  async create(
+  create(
     @Req() req: Request & { user: { userId: string } },
     @Body() dto: OrderCreateDto,
   ): Promise<OrderResponse> {
-    return await this.send<OrderCreateDto & { userId: string }, OrderResponse>(
-      EVENTS.ORDER.CREATE,
-      {
-        ...dto,
-        userId: req.user.userId,
-      },
-    );
+    return this.send<OrderCreateDto & { userId: string }, OrderResponse>(EVENTS.ORDER.CREATE, {
+      ...dto,
+      userId: req.user.userId,
+    });
   }
 
   /**
@@ -56,11 +53,11 @@ export class OrdersController extends BaseGatewayController {
    * Lấy danh sách orders của user hiện tại
    */
   @Get()
-  async list(
+  list(
     @Req() req: Request & { user: { userId: string } },
     @Query() query: OrderListByUserDto,
   ): Promise<PaginatedOrdersResponse> {
-    return await this.send<OrderListByUserDto & { userId: string }, PaginatedOrdersResponse>(
+    return this.send<OrderListByUserDto & { userId: string }, PaginatedOrdersResponse>(
       EVENTS.ORDER.LIST_BY_USER,
       {
         ...query,
@@ -74,8 +71,8 @@ export class OrdersController extends BaseGatewayController {
    * Lấy chi tiết order theo ID
    */
   @Get(':id')
-  async findById(@Param('id') id: string): Promise<OrderResponse> {
-    return await this.send<string, OrderResponse>(EVENTS.ORDER.GET, id);
+  findById(@Param('id') id: string): Promise<OrderResponse> {
+    return this.send<string, OrderResponse>(EVENTS.ORDER.GET, id);
   }
 
   /**
@@ -83,11 +80,11 @@ export class OrdersController extends BaseGatewayController {
    * Cập nhật trạng thái order (admin only)
    */
   @Put(':id/status')
-  async updateStatus(
+  updateStatus(
     @Param('id') id: string,
     @Body() dto: OrderUpdateStatusDto,
   ): Promise<OrderStatusUpdateResponse> {
-    return await this.send<OrderUpdateStatusDto & { id: string }, OrderStatusUpdateResponse>(
+    return this.send<OrderUpdateStatusDto & { id: string }, OrderStatusUpdateResponse>(
       EVENTS.ORDER.UPDATE_STATUS,
       { ...dto, id },
     );
@@ -98,7 +95,7 @@ export class OrdersController extends BaseGatewayController {
    * Hủy order
    */
   @Put(':id/cancel')
-  async cancel(@Param('id') id: string): Promise<OrderResponse> {
-    return await this.send<string, OrderResponse>(EVENTS.ORDER.CANCEL, id);
+  cancel(@Param('id') id: string): Promise<OrderResponse> {
+    return this.send<string, OrderResponse>(EVENTS.ORDER.CANCEL, id);
   }
 }

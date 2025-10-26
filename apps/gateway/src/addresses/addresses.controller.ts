@@ -35,8 +35,8 @@ export class AddressesController extends BaseGatewayController {
    * Lấy danh sách addresses của user hiện tại
    */
   @Get()
-  async list(@Req() req: Request & { user: { userId: string } }): Promise<AddressResponse[]> {
-    return await this.send<string, AddressResponse[]>(EVENTS.ADDRESS.LIST_BY_USER, req.user.userId);
+  list(@Req() req: Request & { user: { userId: string } }): Promise<AddressResponse[]> {
+    return this.send<string, AddressResponse[]>(EVENTS.ADDRESS.LIST_BY_USER, req.user.userId);
   }
 
   /**
@@ -44,11 +44,11 @@ export class AddressesController extends BaseGatewayController {
    * Tạo address mới
    */
   @Post()
-  async create(
+  create(
     @Req() req: Request & { user: { userId: string } },
     @Body() dto: AddressCreateDto,
   ): Promise<AddressResponse> {
-    return await this.send<AddressCreateDto & { userId: string }, AddressResponse>(
+    return this.send<AddressCreateDto & { userId: string }, AddressResponse>(
       EVENTS.ADDRESS.CREATE,
       { ...dto, userId: req.user.userId },
     );
@@ -59,14 +59,11 @@ export class AddressesController extends BaseGatewayController {
    * Cập nhật address
    */
   @Put(':id')
-  async update(@Param('id') id: string, @Body() dto: AddressUpdateDto): Promise<AddressResponse> {
-    return await this.send<AddressUpdateDto & { id: string }, AddressResponse>(
-      EVENTS.ADDRESS.UPDATE,
-      {
-        id,
-        ...dto,
-      },
-    );
+  update(@Param('id') id: string, @Body() dto: AddressUpdateDto): Promise<AddressResponse> {
+    return this.send<AddressUpdateDto & { id: string }, AddressResponse>(EVENTS.ADDRESS.UPDATE, {
+      id,
+      ...dto,
+    });
   }
 
   /**
@@ -74,8 +71,8 @@ export class AddressesController extends BaseGatewayController {
    * Xóa address
    */
   @Delete(':id')
-  async delete(@Param('id') id: string): Promise<SuccessResponse> {
-    return await this.send<string, SuccessResponse>(EVENTS.ADDRESS.DELETE, id);
+  delete(@Param('id') id: string): Promise<SuccessResponse> {
+    return this.send<string, SuccessResponse>(EVENTS.ADDRESS.DELETE, id);
   }
 
   /**
@@ -83,11 +80,11 @@ export class AddressesController extends BaseGatewayController {
    * Đặt address làm default shipping address
    */
   @Put(':id/set-default')
-  async setDefault(
+  setDefault(
     @Req() req: Request & { user: { userId: string } },
     @Param('id') id: string,
   ): Promise<AddressResponse> {
-    return await this.send<{ userId: string; addressId: string }, AddressResponse>(
+    return this.send<{ userId: string; addressId: string }, AddressResponse>(
       EVENTS.ADDRESS.SET_DEFAULT,
       {
         userId: req.user.userId,

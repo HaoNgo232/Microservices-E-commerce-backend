@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ClientProxy } from '@nestjs/microservices';
 import { OrdersService } from './orders.service';
 import { PrismaService } from '@order-app/prisma/prisma.service';
 import {
