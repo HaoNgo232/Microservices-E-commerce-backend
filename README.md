@@ -44,9 +44,23 @@ Hệ thống áp dụng **Perimeter Security** model:
 
 ### 📚 Documentation
 
+#### 🤖 Cho AI Assistants
+
+- [AI Assistant Guide](./docs/AI-ASSISTANT-GUIDE.md) - **Hướng dẫn toàn diện cho AI assistants**
+
+#### 🏗️ Architecture & Security
+
 - [Security Architecture](./docs/architecture/SECURITY-ARCHITECTURE.md) - Chi tiết về mô hình bảo mật
 - [Security Quick Reference](./docs/architecture/SECURITY-QUICK-REFERENCE.md) - Hướng dẫn nhanh cho developer
-- [Setup Guide](./SETUP.md) - Hướng dẫn setup project
+
+#### 📖 Knowledge Base
+
+- [RPC Exceptions Guide](./docs/knowledge/RPC-EXCEPTIONS-GUIDE.md) - Hướng dẫn xử lý exceptions
+- [Testing Guide](./docs/knowledge/TESTING.md) - Hướng dẫn testing
+
+#### 🚀 Getting Started
+
+- [Setup Guide](./SETUP.md) - Hướng dẫn setup project từ đầu
 
 ## Project setup
 

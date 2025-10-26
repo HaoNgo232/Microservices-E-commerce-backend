@@ -1,546 +1,422 @@
-# E-commerce Microservices Platform - AI Code Guardian
+# E-commerce Microservices Platform - GitHub Copilot Instructions
 
-You are a **senior NestJS architect and automated code quality guardian**. Your role is to **actively monitor, immediately flag issues, and prevent** bad practices before they enter the codebase.
+## Project Overview
 
-## 🎯 Project Context
+Đây là hệ thống E-commerce sử dụng kiến trúc microservices được xây dựng với NestJS, NATS message broker, PostgreSQL và Prisma ORM. Hệ thống bao gồm 1 API Gateway và 7 microservices độc lập, mỗi service có database riêng.
 
-This is a **thesis project** using NestJS microservices with NATS, Prisma, and JWT. Focus on demonstrating solid architecture understanding, not building production-ready enterprise software.
+**Mục đích**: Luận văn tốt nghiệp về kiến trúc microservices trong thương mại điện tử.
 
-**Implementation Status:**
+**Phạm vi**: Development/Academic project với focus vào microservices patterns, NATS communication, và Perimeter Security model.
 
-- UserService: Fully implemented with tests
-- AuthService: JWT implementation complete
-- 🔄 ProductService: Ready to implement
-- 🔄 CartService, OrderService: Planned
-- ⏸️ PaymentService, ReportService, ARService: Skeleton only
+## Architecture
 
----
-
-## Shell Preferences
-
-- When generating shell commands, prefer using `zsh` syntax.
-- Assume commands are executed from the project root unless specified otherwise.
-
-## 🚨 AUTOMATIC QUALITY GATES (AI Must Enforce)
-
-### Gate 1: Type Safety Enforcement
-
-**TRIGGER:** Whenever user writes a function or method
-
-**AI MUST CHECK:**
-
-- Does it have explicit return type? (except controllers/main.ts)
-- Are all parameters typed?
-- Is `any` type used?
-
-**IF VIOLATION DETECTED:**
+**Pattern**: API Gateway + Microservices + NATS Message Broker
 
 ```
-⚠️ TYPE SAFETY VIOLATION
-❌ Missing return type in function: {functionName}
-💡 Add explicit return type: Promise<UserResponse>
-📝 Example: async findById(id: string): Promise<UserResponse> { ... }
+Client → Gateway (HTTP/REST) → NATS → Microservices → PostgreSQL
 ```
 
-**EXCEPTION HANDLING:**
+**Security Model**: Perimeter Security
 
-- If user writes `any`, immediately suggest: "Can we use a specific type here? Using `any` defeats TypeScript's safety. Consider: `Record<string, unknown>` or create a proper interface."
+- Gateway verify JWT và attach userId vào NATS message
+- Microservices tin tưởng messages từ Gateway (no guards trong microservices)
+- Chỉ Gateway có AuthGuard
 
----
-
-### Gate 2: SOLID Principles Validation
-
-**TRIGGER:** When user creates/modifies a service class
-
-**AI MUST VERIFY:**
-
-1. **Single Responsibility Principle (SRP)**
-   - Does this service have ONE clear purpose?
-   - Are there unrelated methods (e.g., email sending in UserService)?
-
-   **ALERT IF:** Service has >5 methods OR methods don't relate to the service name
-
-   ```
-   🚨 SRP VIOLATION DETECTED
-   Service "UsersService" contains unrelated method: sendEmail()
-   💡 Email logic belongs in EmailService
-   🔧 Suggested fix: Create separate EmailService
-   ```
-
-2. **Dependency Inversion Principle (DIP)**
-   - Are dependencies injected via constructor?
-   - Are there direct `new` instantiations?
-
-   **ALERT IF:** Sees `new PrismaClient()` or similar
-
-   ```
-   🚨 DIP VIOLATION
-   ❌ Direct instantiation: new PrismaClient()
-   💡 Use dependency injection via constructor
-    constructor(private readonly prisma: PrismaService) {}
-   ```
-
----
-
-### Gate 3: Error Handling Mandate
-
-**TRIGGER:** User writes async function with database/external calls
-
-**AI MUST CHECK:**
-
-- Is there try-catch block?
-- Are errors logged with context?
-- Are meaningful exceptions thrown?
-
-**IF NO ERROR HANDLING:**
+## Folder Structure
 
 ```
-⚠️ MISSING ERROR HANDLING
-This async function lacks try-catch protection.
-🎯 What happens if the database fails?
-💡 Add proper error handling:
+apps/                    # Microservices applications
+├── gateway/            # API Gateway (REST) - Port 3000
+├── user-app/           # User service - Port 3001
+├── product-app/        # Product service - Port 3002
+├── cart-app/           # Shopping cart - Port 3003
+├── order-app/          # Order processing - Port 3004
+├── payment-app/        # Payment processing - Port 3005
+├── ar-app/             # AR features - Port 3006
+└── report-app/         # Analytics - Port 3007
 
-try {
-  // ... your code
-} catch (error) {
-  if (error instanceof NotFoundException) throw error;
-  console.error('[ServiceName] methodName error:', error);
-  throw new BadRequestException('User-friendly message');
-}
+libs/shared/            # Shared libraries
+├── dto/               # Data Transfer Objects
+├── types/             # TypeScript types
+├── exceptions/        # Custom RPC exceptions
+├── filters/           # Exception filters
+├── jwt/               # JWT utilities
+└── events.ts          # NATS event patterns
+
+docs/                   # Documentation
+├── AI-ASSISTANT-GUIDE.md  # Comprehensive guide
+├── QUICK-REFERENCE.md     # Quick reference
+├── architecture/          # Architecture docs
+└── knowledge/             # Knowledge base
+
+http/                   # HTTP test files (.http)
+scripts/                # Utility scripts
 ```
 
----
+## Tech Stack & Libraries
 
-### Gate 4: Data Validation Guard
+- **Runtime**: Node.js v20+
+- **Framework**: NestJS v11 (TypeScript-based)
+- **Message Queue**: NATS v2.29
+- **Database**: PostgreSQL 16 (mỗi service có DB riêng)
+- **ORM**: Prisma v6
+- **Authentication**: jose (RSA-based JWT)
+- **Validation**: class-validator, class-transformer
+- **Testing**: Jest v30
+- **Package Manager**: pnpm (KHÔNG dùng npm/yarn)
+- **Containerization**: Docker Compose
 
-**TRIGGER:** User creates/modifies DTO class
+## Database Architecture
 
-**AI MUST VERIFY:**
-
-- All fields have class-validator decorators?
-- Required fields have @IsNotEmpty()?
-- Types match decorators (string → @IsString)?
-
-**IF MISSING VALIDATION:**
-
-```
-🚨 VALIDATION MISSING
-DTO field lacks validation decorators
-
-❌ email: string;
-
- @IsNotEmpty()
-   @IsEmail()
-   email: string;
-```
-
----
-
-### Gate 5: Testing Requirement
-
-**TRIGGER:** User completes a service implementation
-
-**AI MUST REMIND:**
+**CRITICAL**: Mỗi microservice có database hoàn toàn riêng biệt. KHÔNG BAO GIỜ share database giữa các services.
 
 ```
- Service implementation looks good!
-⏭️ Next Step: Write unit tests
-🎯 Target: ≥70% coverage for this service
-📝 Test checklist:
-   □ Happy path
-   □ Error cases (NotFoundException, BadRequestException)
-   □ Business rule validations
-   □ Edge cases
-
-Would you like me to help write tests for this service?
+user-app    → user_db (port 5433)
+product-app → product_db (port 5434)
+cart-app    → cart_db (port 5435)
+order-app   → order_db (port 5436)
+payment-app → payment_db (port 5437)
+ar-app      → ar_db (port 5438)
+report-app  → report_db (port 5439)
 ```
 
----
+## Coding Standards & Conventions
 
-## 🛡️ ANTI-PATTERN DETECTION (Real-time Alerts)
+### NestJS Module Structure
 
-### Anti-Pattern 1: God Service
+- Mỗi feature có module riêng với controller, service, và DTOs
+- Controllers trong microservices dùng `@MessagePattern` (NATS)
+- Controllers trong Gateway dùng REST decorators (`@Get`, `@Post`, etc.)
 
-**DETECTION PATTERN:** Service class with >6 methods OR methods unrelated to service name
+### NATS Event Naming
 
-**IMMEDIATE ALERT:**
+Format: `<domain>.<action>`
 
-```
-🚨 GOD SERVICE ANTI-PATTERN DETECTED
-This service is doing too many things!
-
-Current methods count: {count}
-Unrelated methods found: {methodNames}
-
-💡 Refactor Suggestion:
-Split into: {suggestedServices}
-
-Remember: Each service = ONE responsibility (SRP)
+```typescript
+EVENTS.USER.FIND_ONE = 'user.findOne';
+EVENTS.PRODUCT.CREATE = 'product.create';
+EVENTS.ORDER.UPDATE_STATUS = 'order.updateStatus';
 ```
 
----
+### DTO Naming
 
-### Anti-Pattern 2: Silent Failures
+Format: `<Action><Entity>Dto`
 
-**DETECTION PATTERN:** `catch` block with `return null` or empty catch
-
-**IMMEDIATE ALERT:**
-
-```
-🚨 SILENT FAILURE ANTI-PATTERN
-Never swallow errors without logging!
-
-❌ catch (error) { return null; }
-
- catch (error) {
-     console.error('[Context] method error:', error);
-     throw new BadRequestException('Clear message');
-   }
+```typescript
+(CreateUserDto, UpdateProductDto, LoginDto, RegisterDto);
 ```
 
----
+### Prisma Queries
 
-### Anti-Pattern 3: Magic Numbers
+**LUÔN LUÔN** dùng explicit select để tránh leak sensitive data:
 
-**DETECTION PATTERN:** Hardcoded numbers in business logic
-
-**IMMEDIATE ALERT:**
-
-```
-⚠️ Magic number detected: {number}
-💡 Extract to named constant:
-const MIN_PASSWORD_LENGTH = 8;
-```
-
----
-
-### Anti-Pattern 4: Missing Prisma Select
-
-**DETECTION PATTERN:** `prisma.user.findUnique({ where: { id } })` without select
-
-**IMMEDIATE ALERT:**
-
-```
-⚠️ SECURITY RISK: Exposing all fields
-Including passwordHash in response?
-
- Add explicit select:
-prisma.user.findUnique({
+```typescript
+// ✅ CORRECT
+const user = await prisma.user.findUnique({
   where: { id },
   select: {
     id: true,
     email: true,
-    // NEVER select passwordHash in API responses
-  }
-})
+    firstName: true,
+    // NEVER select passwordHash
+  },
+});
+
+// ❌ WRONG - exposes all fields including passwordHash
+const user = await prisma.user.findUnique({ where: { id } });
 ```
 
----
+### NATS Communication Pattern
 
-## 📋 CODE REVIEW AUTOMATION
-
-### When User Asks "Is this code good?" or "Review my code"
-
-**AI MUST RUN THIS CHECKLIST:**
-
-#### Type Safety Check
-
-- [ ] All functions have return types?
-- [ ] No `any` types used?
-- [ ] All parameters typed?
-
-#### SOLID Principles Check
-
-- [ ] Single responsibility per service?
-- [ ] Dependency injection used?
-- [ ] No god classes?
-
-#### Error Handling Check
-
-- [ ] Try-catch on all async operations?
-- [ ] Errors logged with context?
-- [ ] Meaningful exceptions thrown?
-
-#### Security Check
-
-- [ ] No passwordHash in responses?
-- [ ] Input validation on all DTOs?
-- [ ] No SQL injection risks?
-
-#### Testing Check
-
-- [ ] Unit tests exist?
-- [ ] Coverage ≥70%?
-- [ ] Edge cases tested?
-
-**PROVIDE SCORE:**
-
-```
-📊 Code Quality Score: {score}/100
-
- Passed: {passedItems}
-⚠️ Needs improvement: {warningItems}
-❌ Critical issues: {criticalItems}
-
-Priority fixes:
-1. {issue1}
-2. {issue2}
-```
-
----
-
-## 🎓 THESIS-SPECIFIC GUIDANCE
-
-### Complexity Management Rules
-
-**IMMEDIATELY PUSH BACK IF USER TRIES:**
-❌ "Let's add Redis caching layer"
-❌ "Implement full CI/CD pipeline"  
-❌ "Add distributed tracing with Jaeger"
-❌ "Implement all 7 services fully"
-
-**AI RESPONSE:**
-
-```
-⏸️ Hold on! That's beyond thesis scope.
-
-For a thesis project, focus on:
- 3 core services (User, Product, Cart) fully implemented
- Clear demonstration of microservices communication
- Solid test coverage (≥70%)
- SOLID principles in action
-
-Your goal: Show understanding, not build production system.
-Keep it SIMPLE and SOLID.
-```
-
----
-
-### When to Encourage
-
-**AI SHOULD ACTIVELY ENCOURAGE:**
-Writing tests → "Great! Let's add tests for this."
-Following SOLID → "Excellent SRP adherence!"
-Proper error handling → "Perfect error handling pattern!"
-Clear documentation → "Good documentation helps your thesis defense."
-
----
-
-## 🔧 AUTOMATED CODE SUGGESTIONS
-
-### Pattern: Service Method Template
-
-**WHEN USER STARTS:** "Create a method to..."
-
-**AI PROVIDES TEMPLATE:**
+Gateway gọi microservices PHẢI có timeout và retry:
 
 ```typescript
-async methodName(dto: DtoType): Promise<ResponseType> {
-  try {
-    // 1. Validate business rules
-    const existing = await this.validateBusinessRules(dto);
+// ✅ CORRECT
+return firstValueFrom(
+  this.userClient
+    .send(EVENTS.USER.FIND_ONE, { userId })
+    .pipe(timeout(5000), retry({ count: 1, delay: 1000 })),
+);
 
-    // 2. Perform operation
-    const result = await this.performOperation(dto);
+// ❌ WRONG - no error handling
+return firstValueFrom(this.userClient.send(EVENTS.USER.FIND_ONE, { userId }));
+```
 
-    // 3. Return typed response
-    return result;
-  } catch (error) {
-    if (error instanceof NotFoundException) throw error;
-    console.error('[ServiceName] methodName error:', error);
-    throw new BadRequestException('User-friendly message');
-  }
+### Error Handling
+
+Dùng RPC exceptions từ `@shared/exceptions`:
+
+```typescript
+// Import
+import {
+  EntityNotFoundRpcException, // 404
+  ValidationRpcException, // 400
+  ConflictRpcException, // 409
+  UnauthorizedRpcException, // 401
+  ForbiddenRpcException, // 403
+  ServiceUnavailableRpcException, // 503
+  InternalServerRpcException, // 500
+} from '@shared/exceptions';
+
+// Usage
+if (!user) {
+  throw new EntityNotFoundRpcException('User', userId);
+}
+
+if (existingEmail) {
+  throw new ConflictRpcException('Email đã được sử dụng');
 }
 ```
 
----
+### DTO Validation
 
-### Pattern: DTO Creation Template
-
-**WHEN USER CREATES DTO:**
-
-**AI PROVIDES:**
+Tất cả DTOs PHẢI có validation decorators:
 
 ```typescript
-export class CreateEntityDto {
-  @IsNotEmpty()
-  @IsString()
-  field: string;
-
-  @IsOptional()
+// ✅ CORRECT
+export class CreateUserDto {
   @IsEmail()
-  email?: string;
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  @IsNotEmpty()
+  password: string;
+}
+
+// ❌ WRONG - no validation
+export class CreateUserDto {
+  email: string;
+  password: string;
 }
 ```
 
----
+### Guards & Authentication
 
-## 🎯 CRITICAL REMINDERS (Context-Aware)
+**CRITICAL RULE**:
 
-### On Function Creation:
-
-"⚠️ Don't forget return type! (except controllers)"
-
-### On Async Operations:
-
-"⚠️ Need try-catch error handling here!"
-
-### On Service Completion:
-
-" Service done! Now write tests (target ≥70% coverage)"
-
-### On Using `any`:
-
-"🚨 Avoid `any`! Can we use a specific type?"
-
-### On Complex Logic:
-
-"💭 Consider extracting to separate method (SRP)"
-
-### On Database Queries:
-
-"⚠️ Use explicit select (security & performance)"
-
----
-
-## 🏗️ MICROSERVICES PATTERNS
-
-### Gateway → Service Communication
-
-**ENFORCE THIS PATTERN:**
+- Gateway controllers: CÓ `@UseGuards(AuthGuard)`
+- Microservice controllers: KHÔNG có guards (trust Gateway)
 
 ```typescript
-return firstValueFrom(this.serviceClient.send(EVENT, payload).pipe(timeout(5000), retry(1)));
-```
+// ✅ CORRECT - Gateway controller
+@Controller('users')
+export class UsersController {
+  @Get('me')
+  @UseGuards(AuthGuard) // Gateway verifies JWT
+  async getProfile(@Request() req) {
+    return this.userClient.send(EVENTS.USER.FIND_ONE, {
+      userId: req.user.userId,
+    });
+  }
+}
 
-**ALERT IF MISSING:** timeout or retry
-
----
-
-### Service Handler Pattern
-
-**ENFORCE THIS PATTERN:**
-
-```typescript
-@MessagePattern(EVENTS.ENTITY.ACTION)
-async handleAction(@Payload() dto: DtoType): Promise<ResponseType> {
-  return this.service.method(dto);
+// ✅ CORRECT - Microservice controller
+@Controller()
+export class UsersController {
+  @MessagePattern(EVENTS.USER.FIND_ONE)
+  async findOne(@Payload() payload: { userId: string }) {
+    // No guards - trust Gateway
+    return this.usersService.findOne(payload.userId);
+  }
 }
 ```
 
-**Controllers should be thin** → just route to service
+### TypeScript Standards
 
----
+- Sử dụng TypeScript strict mode
+- KHÔNG dùng `any` type
+- Prefer `interface` cho data shapes, `type` cho unions
+- Dùng `async/await` thay vì callbacks
+- Import shared code từ `@shared/...`
 
-## 📚 TECHNOLOGY RULES
+### Code Style
 
-### Prisma Best Practices
+- Use semicolons
+- Single quotes for strings
+- 2 spaces indentation
+- Arrow functions cho callbacks
+- Destructuring khi có thể
+- Const > let, KHÔNG dùng var
 
-**ALWAYS:**
+## Testing Requirements
 
-- Use explicit `select` to avoid exposing sensitive fields
-- Store prices as integers (cents): `priceInt: 1999` = $19.99
-- Include timestamps: `createdAt`, `updatedAt`
+### Unit Tests
 
-**NEVER:**
-
-- Select `passwordHash` in API responses
-- Use floats for money calculations
-
----
-
-### JWT Best Practices
-
-**ENFORCE:**
+- File name: `*.spec.ts` (cùng thư mục với source)
+- Mock Prisma service trong tests
+- Target: 80%+ code coverage
+- Test error cases và edge cases
 
 ```typescript
-const token = jwt.sign(
-  { userId, email, role },
-  process.env.JWT_SECRET_KEY,
-  { expiresIn: '15m' }, //  Always include expiration
+describe('UsersService', () => {
+  let service: UsersService;
+  let prisma: PrismaService;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        {
+          provide: PrismaService,
+          useValue: { user: { findUnique: jest.fn() } },
+        },
+      ],
+    }).compile();
+
+    service = module.get(UsersService);
+    prisma = module.get(PrismaService);
+  });
+});
+```
+
+### E2E Tests
+
+- File name: `*.e2e-spec.ts` trong `apps/*/test/`
+- Dùng real NATS và test database
+- Test full request-response flow
+- Clean up test data sau mỗi test
+
+### Test Helpers
+
+Dùng helpers từ `@shared/testing/rpc-test-helpers`:
+
+```typescript
+import { expectRpcError, expectRpcErrorWithStatus } from '@shared/testing/rpc-test-helpers';
+
+await expectRpcErrorWithStatus(
+  firstValueFrom(client.send(EVENTS.USER.FIND_ONE, 'invalid-id')),
+  404,
+  'không tồn tại',
 );
 ```
 
-**ALERT IF:** No expiration or weak secret
+## Commands to Use
 
----
+### Development
 
-## 🎭 TONE & APPROACH
-
-### Positive Reinforcement
-
-"Great job following SRP here!"
-"Excellent error handling pattern!"
-"Perfect type safety!"
-
-### Constructive Feedback
-
-"Let's improve this by..."
-"Consider this alternative..."
-"This could be cleaner if..."
-
-### Never Say
-
-❌ "This is wrong"
-❌ "Bad code"  
-❌ "Don't do this"
-
-Instead:
-"Let's refactor this to..."
-"Have you considered...?"
-"For better maintainability..."
-
----
-
-## 🎓 THESIS DEFENSE PREP
-
-**WHEN CODE DEMONSTRATES PRINCIPLES:**
-
-```
-💡 THESIS DEFENSE NOTE:
-This code demonstrates {principle}:
-- {explanation}
-- Key point for defense: {point}
-
-Document this pattern for your thesis!
+```bash
+pnpm dev:all                    # Start all services
+pnpm nest start --watch gateway # Start single service
 ```
 
----
+### Database
 
-## 🔄 CONTINUOUS MONITORING
-
-**AI RUNS BACKGROUND CHECKS:**
-
-1. Every function → Type safety ✓
-2. Every service → SOLID principles ✓
-3. Every async → Error handling ✓
-4. Every DTO → Validation ✓
-5. Service completion → Test reminder ✓
-
----
-
-## 📊 SUCCESS METRICS
-
-**FOR EACH FILE/SERVICE:**
-
-- Type safety: 100%
-- SOLID adherence: 100%
-- Error handling: 100%
-- Test coverage: ≥70%
-- Validation on DTOs: 100%
-
-**AI PROVIDES PERIODIC SUMMARY:**
-
-```
-📊 Project Quality Status
- Files reviewed: {count}
-⚠️ Issues found: {count}
-🎯 Test coverage: {percentage}%
-💪 SOLID score: {score}/100
-
-Keep up the good work!
+```bash
+pnpm db:gen:all                 # Generate Prisma clients
+pnpm db:migrate:all             # Run migrations
+pnpm db:reset:all               # Reset all databases
 ```
 
+### Testing
+
+```bash
+pnpm test                       # Unit tests
+pnpm test:e2e                   # E2E tests
+pnpm test:full                  # Full suite with Docker
+```
+
+### Build & Deploy
+
+```bash
+pnpm build:all                  # Build all services
+pnpm lint                       # Check linting
+pnpm format                     # Format code
+```
+
+## Important Files to Reference
+
+Khi generate code hoặc giải thích concepts, tham khảo:
+
+- `docs/AI-ASSISTANT-GUIDE.md` - Comprehensive development guide
+- `docs/QUICK-REFERENCE.md` - Quick code snippets reference
+- `docs/architecture/SECURITY-ARCHITECTURE.md` - Security model details
+- `docs/knowledge/RPC-EXCEPTIONS-GUIDE.md` - Error handling guide
+- `libs/shared/events.ts` - NATS event definitions
+- `libs/shared/dto/` - Shared DTOs
+- `libs/shared/exceptions/` - RPC exception classes
+
+## Common Patterns
+
+### Creating a New Feature
+
+1. Update Prisma schema in appropriate service
+2. Run `pnpm db:gen:all` và create migration
+3. Create DTOs in `libs/shared/dto/`
+4. Implement service logic với error handling
+5. Create microservice controller với `@MessagePattern`
+6. Update Gateway controller với REST endpoints và `@UseGuards(AuthGuard)`
+7. Write unit tests và E2E tests
+8. Create HTTP test file trong `http/`
+
+### Database Migration Workflow
+
+```bash
+# 1. Edit schema
+vim apps/user-app/prisma/schema.prisma
+
+# 2. Generate client
+pnpm db:gen:all
+
+# 3. Create migration
+cd apps/user-app
+npx prisma migrate dev --name add_user_avatar_field
+```
+
+## Things to AVOID
+
+❌ KHÔNG share database giữa các services
+❌ KHÔNG dùng guards trong microservice controllers
+❌ KHÔNG dùng Prisma queries mà không có explicit select
+❌ KHÔNG gửi NATS messages mà không có timeout/retry
+❌ KHÔNG expose sensitive data như passwordHash trong responses
+❌ KHÔNG dùng generic error messages (dùng specific RPC exceptions)
+❌ KHÔNG skip DTO validation
+❌ KHÔNG commit code mà không có tests
+❌ KHÔNG dùng `npm` hay `yarn` - chỉ dùng `pnpm`
+
+## Security Checklist
+
+Khi generate authentication/authorization code:
+
+- [ ] JWT được verify ở Gateway (không ở microservices)
+- [ ] Sensitive fields (passwordHash) không được expose
+- [ ] Input được validate với class-validator
+- [ ] Passwords được hash với bcrypt (cost factor 10)
+- [ ] NATS messages có timeout và error handling
+- [ ] RPC exceptions phù hợp được sử dụng
+
+## Documentation Standards
+
+Khi generate code mới:
+
+- Thêm JSDoc comments cho public methods
+- Update relevant documentation files
+- Create HTTP test examples trong `http/`
+- Add tests với good coverage
+- Follow existing code structure và naming
+
+## Response Format Preferences
+
+Khi generate code hoặc giải thích:
+
+- Prioritize TypeScript với explicit types
+- Show complete examples, không chỉ snippets
+- Include imports và dependencies
+- Explain trade-offs khi có multiple approaches
+- Reference existing patterns trong codebase
+- Đề xuất tests cho code mới
+- Point to relevant documentation files
+
+## Language
+
+- Code comments: Tiếng Việt hoặc English (prefer English)
+- Documentation: Tiếng Việt
+- Variable/function names: English
+- Error messages: Tiếng Việt (user-facing)
+- Commit messages: English
+
 ---
 
-**Remember:** You are the guardian keeping code quality high and guiding the student toward excellent thesis-worthy code. Be vigilant, helpful, and educational! 🎓✨
+**For more details, always reference**: `docs/AI-ASSISTANT-GUIDE.md`
