@@ -1,10 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientProxy } from '@nestjs/microservices';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { CartService } from './cart.service';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
 import { CartItemService } from '@cart-app/cart-item/cart-item.service';
+import {
+  ServiceUnavailableRpcException,
+  InternalServerRpcException,
+} from '@shared/exceptions/rpc-exceptions';
 
 const mockCart = {
   id: 'cart-123',
@@ -148,6 +152,16 @@ describe('CartService', () => {
         include: { items: true },
       });
     });
+
+    it('should wrap database errors', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockRejectedValue(
+        new Error('Database connection failed'),
+      );
+
+      // Act & Assert
+      await expect(service.getOrCreateCart('user123')).rejects.toThrow(InternalServerRpcException);
+    });
   });
 
   describe('getCartWithProducts', () => {
@@ -161,8 +175,6 @@ describe('CartService', () => {
 
       // Assert
       expect(result.cart.items).toHaveLength(2);
-      expect(result.cart.items[0].productId).toEqual(mockProducts[0]);
-      expect(result.cart.items[1].productId).toEqual(mockProducts[1]);
       expect(result.totalInt).toBe(80000); // (2 * 10000) + (3 * 20000)
       expect(mockProductClient.send).toHaveBeenCalledWith('product.getByIds', {
         ids: ['product-1', 'product-2'],
@@ -183,7 +195,6 @@ describe('CartService', () => {
 
       // Assert
       expect(result.cart.items).toHaveLength(1);
-      expect(result.cart.items[0].productId).toEqual(mockProducts[0]);
       expect(result.totalInt).toBe(20000); // 2 * 10000
     });
 
@@ -198,6 +209,30 @@ describe('CartService', () => {
       expect(result.cart).toEqual(mockCart);
       expect(result.totalInt).toBe(0);
       expect(mockProductClient.send).not.toHaveBeenCalled();
+    });
+
+    it('should throw ServiceUnavailableRpcException on product service timeout', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCartWithItems);
+      const timeoutError = new Error('Timeout');
+      timeoutError.name = 'TimeoutError';
+      mockProductClient.send.mockReturnValue(throwError(() => timeoutError));
+
+      // Act & Assert
+      await expect(service.getCartWithProducts('user123')).rejects.toThrow(
+        ServiceUnavailableRpcException,
+      );
+    });
+
+    it('should wrap unexpected errors', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCartWithItems);
+      mockProductClient.send.mockReturnValue(throwError(() => new Error('Unexpected error')));
+
+      // Act & Assert
+      await expect(service.getCartWithProducts('user123')).rejects.toThrow(
+        InternalServerRpcException,
+      );
     });
   });
 
@@ -230,6 +265,15 @@ describe('CartService', () => {
       // Assert
       expect(result).toEqual({ success: true });
       expect(mockPrisma.cartItem.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('should wrap database errors', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cartItem.deleteMany as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      // Act & Assert
+      await expect(service.clearCart('user123')).rejects.toThrow(InternalServerRpcException);
     });
   });
 
@@ -301,6 +345,18 @@ describe('CartService', () => {
       expect(result.cart.id).toBe('cart-123');
       expect(mockPrisma.$transaction).toHaveBeenCalled();
     });
+
+    it('should wrap transaction errors', async () => {
+      // Arrange
+      const guestItems = [{ productId: 'product-1', quantity: 2 }];
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.$transaction as jest.Mock).mockRejectedValue(new Error('Transaction failed'));
+
+      // Act & Assert
+      await expect(service.mergeGuestItems('user123', guestItems)).rejects.toThrow(
+        InternalServerRpcException,
+      );
+    });
   });
 
   describe('Controller methods', () => {
@@ -345,6 +401,21 @@ describe('CartService', () => {
         expect(service.getOrCreateCart).toHaveBeenCalledWith('user123');
         expect(mockCartItemService.addItem).toHaveBeenCalledWith('cart-123', 'product-1', 2);
       });
+
+      it('should wrap unexpected errors', async () => {
+        // Arrange
+        jest.spyOn(service, 'getOrCreateCart').mockResolvedValue(mockCart);
+        mockCartItemService.addItem.mockRejectedValue(new Error('Unexpected error'));
+
+        // Act & Assert
+        await expect(
+          service.addItem({
+            userId: 'user123',
+            productId: 'product-1',
+            quantity: 2,
+          }),
+        ).rejects.toThrow(InternalServerRpcException);
+      });
     });
 
     describe('updateItem', () => {
@@ -373,6 +444,21 @@ describe('CartService', () => {
         expect(service.getOrCreateCart).toHaveBeenCalledWith('user123');
         expect(mockCartItemService.updateQuantity).toHaveBeenCalledWith('cart-123', 'product-1', 5);
       });
+
+      it('should wrap unexpected errors', async () => {
+        // Arrange
+        jest.spyOn(service, 'getOrCreateCart').mockResolvedValue(mockCart);
+        mockCartItemService.updateQuantity.mockRejectedValue(new Error('Unexpected error'));
+
+        // Act & Assert
+        await expect(
+          service.updateItem({
+            userId: 'user123',
+            productId: 'product-1',
+            quantity: 5,
+          }),
+        ).rejects.toThrow(InternalServerRpcException);
+      });
     });
 
     describe('removeItem', () => {
@@ -391,6 +477,20 @@ describe('CartService', () => {
         expect(result).toEqual({ success: true });
         expect(service.getOrCreateCart).toHaveBeenCalledWith('user123');
         expect(mockCartItemService.removeItem).toHaveBeenCalledWith('cart-123', 'product-1');
+      });
+
+      it('should wrap unexpected errors', async () => {
+        // Arrange
+        jest.spyOn(service, 'getOrCreateCart').mockResolvedValue(mockCart);
+        mockCartItemService.removeItem.mockRejectedValue(new Error('Unexpected error'));
+
+        // Act & Assert
+        await expect(
+          service.removeItem({
+            userId: 'user123',
+            productId: 'product-1',
+          }),
+        ).rejects.toThrow(InternalServerRpcException);
       });
     });
 

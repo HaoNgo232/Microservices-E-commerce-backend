@@ -4,17 +4,35 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
 import { CartItemService } from '@cart-app/cart-item/cart-item.service';
 import { EVENTS } from '@shared/events';
-import { ServiceUnavailableRpcException } from '@shared/exceptions/rpc-exceptions';
+import {
+  ServiceUnavailableRpcException,
+  InternalServerRpcException,
+} from '@shared/exceptions/rpc-exceptions';
 import {
   CartGetDto,
   CartAddItemDto,
   CartUpdateItemDto,
   CartRemoveItemDto,
-  CartClearDto,
-  CartMergeDto,
 } from '@shared/dto/cart.dto';
-import { Cart, CartItem } from '@cart-app/prisma/generated/client';
+import {
+  CartResponse,
+  CartWithProductsResponse,
+  CartItemOperationResponse,
+  CartOperationSuccessResponse,
+  ProductData,
+  CartItemWithProduct,
+  CartItemResponse,
+} from '@shared/types/cart.types';
 
+/**
+ * CartService - Quản lý giỏ hàng (CRUD đơn giản)
+ *
+ * 4 chức năng cơ bản:
+ * - get: Lấy giỏ hàng với product data
+ * - addItem: Thêm sản phẩm vào giỏ
+ * - updateItem: Cập nhật số lượng sản phẩm
+ * - removeItem: Xóa sản phẩm
+ */
 @Injectable()
 export class CartService {
   constructor(
@@ -23,188 +41,256 @@ export class CartService {
     @Inject('PRODUCT_SERVICE') private readonly productClient: ClientProxy,
   ) {}
 
-  async getOrCreateCart(userId: string): Promise<Cart> {
-    // For user carts, we use userId as sessionId
-    const sessionId = `user-${userId}`;
+  /**
+   * 1. GET - Lấy giỏ hàng với thông tin chi tiết sản phẩm
+   */
+  async get(dto: CartGetDto): Promise<CartWithProductsResponse> {
+    try {
+      const cart = await this.getOrCreateCart(dto.userId);
 
-    let cart = await this.prisma.cart.findUnique({
-      where: { sessionId },
-      include: { items: true },
-    });
+      if (cart.items.length === 0) {
+        return {
+          cart,
+          items: [],
+          totalInt: 0,
+        };
+      }
 
-    if (!cart) {
-      cart = await this.prisma.cart.create({
-        data: {
-          sessionId,
-          userId,
-        },
-        include: { items: true },
-      });
-    }
+      const productIds = cart.items.map(item => item.productId);
+      const products = await this.fetchProductsByIds(productIds);
+      const enrichedItems = this.enrichCartItems(cart.items, products);
+      const totalInt = this.calculateTotal(enrichedItems);
 
-    return cart;
-  }
-
-  async getCartWithProducts(
-    userId: string,
-  ): Promise<{ cart: Cart; totalInt: number; items: Array<CartItem> }> {
-    const cart = await this.getOrCreateCart(userId);
-
-    if (cart.items.length === 0) {
       return {
         cart,
-        totalInt: 0,
-        items: [],
+        items: enrichedItems,
+        totalInt,
       };
-    }
-
-    // Batch fetch products
-    const productIds = cart.items.map(item => item.productId);
-    const products = await this.fetchProductsByIds(productIds);
-
-    // Create product map for quick lookup
-    const productMap = new Map(products.map(p => [p.id, p]));
-
-    // Enrich items with product data
-    const enrichedItems = cart.items.map(item => {
-      const product = productMap.get(item.productId);
-      return {
-        ...item,
-        product: product || null, // null if product deleted
-      };
-    });
-
-    // Calculate total (only for available products)
-    const totalInt = enrichedItems.reduce((sum, item) => {
-      if (
-        item.product &&
-        typeof item.product === 'object' &&
-        item.product !== null &&
-        'priceInt' in item.product
-      ) {
-        return sum + (item.product as { priceInt: number }).priceInt * item.quantity;
+    } catch (error) {
+      if (error instanceof InternalServerRpcException) {
+        throw error;
       }
-      return sum;
-    }, 0);
 
-    return {
-      cart: { ...cart, items: enrichedItems },
-      totalInt,
-    };
-  }
+      console.error('[CartService] get error:', {
+        userId: dto.userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
 
-  async clearCart(userId: string) {
-    const sessionId = `user-${userId}`;
-
-    const cart = await this.prisma.cart.findUnique({
-      where: { sessionId },
-    });
-
-    if (!cart) {
-      return { success: true }; // Idempotent
+      throw new InternalServerRpcException('Lỗi khi lấy thông tin giỏ hàng');
     }
-
-    await this.prisma.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
-
-    return { success: true };
-  }
-
-  async mergeGuestItems(userId: string, guestItems: { productId: string; quantity: number }[]) {
-    const cart = await this.getOrCreateCart(userId);
-
-    // Use transaction for consistency
-    await this.prisma.$transaction(async tx => {
-      for (const guestItem of guestItems) {
-        if (guestItem.quantity <= 0) continue; // Skip invalid items
-
-        const existing = await tx.cartItem.findUnique({
-          where: {
-            cartId_productId: {
-              cartId: cart.id,
-              productId: guestItem.productId,
-            },
-          },
-        });
-
-        if (existing) {
-          // Add quantities
-          await tx.cartItem.update({
-            where: { id: existing.id },
-            data: { quantity: existing.quantity + guestItem.quantity },
-          });
-        } else {
-          // Create new item
-          await tx.cartItem.create({
-            data: {
-              cartId: cart.id,
-              productId: guestItem.productId,
-              quantity: guestItem.quantity,
-            },
-          });
-        }
-      }
-    });
-
-    return {
-      cart: { id: cart.id, itemsCount: cart.items.length },
-    };
-  }
-
-  // Controller methods
-  async get(dto: CartGetDto) {
-    return this.getCartWithProducts(dto.userId);
-  }
-
-  async addItem(dto: CartAddItemDto) {
-    const cart = await this.getOrCreateCart(dto.userId);
-    const cartItem = await this.cartItemService.addItem(cart.id, dto.productId, dto.quantity);
-    return { cartItem };
-  }
-
-  async updateItem(dto: CartUpdateItemDto) {
-    const cart = await this.getOrCreateCart(dto.userId);
-    const cartItem = await this.cartItemService.updateQuantity(
-      cart.id,
-      dto.productId,
-      dto.quantity,
-    );
-    return { cartItem };
-  }
-
-  async removeItem(dto: CartRemoveItemDto) {
-    const cart = await this.getOrCreateCart(dto.userId);
-    return this.cartItemService.removeItem(cart.id, dto.productId);
-  }
-
-  async clear(dto: CartClearDto) {
-    return this.clearCart(dto.userId);
-  }
-
-  async merge(dto: CartMergeDto) {
-    return this.mergeGuestItems(dto.userId, dto.guestItems);
   }
 
   /**
-   * Fetch multiple products from product-service
-   * @private
+   * 2. ADD - Thêm sản phẩm vào giỏ hàng
    */
-  private async fetchProductsByIds(
-    productIds: string[],
-  ): Promise<Array<{ id: string; priceInt: number }>> {
+  async addItem(dto: CartAddItemDto): Promise<CartItemOperationResponse> {
+    try {
+      const cart = await this.getOrCreateCart(dto.userId);
+      const cartItem = await this.cartItemService.addItem(cart.id, dto.productId, dto.quantity);
+      return { cartItem };
+    } catch (error) {
+      if (error instanceof InternalServerRpcException) {
+        throw error;
+      }
+
+      console.error('[CartService] addItem error:', {
+        userId: dto.userId,
+        productId: dto.productId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      throw new InternalServerRpcException('Lỗi khi thêm sản phẩm vào giỏ hàng');
+    }
+  }
+
+  /**
+   * 3. UPDATE - Cập nhật số lượng sản phẩm
+   */
+  async updateItem(dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
+    try {
+      const cart = await this.getOrCreateCart(dto.userId);
+      const cartItem = await this.cartItemService.updateQuantity(
+        cart.id,
+        dto.productId,
+        dto.quantity,
+      );
+      return { cartItem };
+    } catch (error) {
+      if (error instanceof InternalServerRpcException) {
+        throw error;
+      }
+
+      console.error('[CartService] updateItem error:', {
+        userId: dto.userId,
+        productId: dto.productId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      throw new InternalServerRpcException('Lỗi khi cập nhật sản phẩm trong giỏ hàng');
+    }
+  }
+
+  /**
+   * 4. DELETE - Xóa sản phẩm khỏi giỏ hàng
+   */
+  async removeItem(dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
+    try {
+      const cart = await this.getOrCreateCart(dto.userId);
+      return this.cartItemService.removeItem(cart.id, dto.productId);
+    } catch (error) {
+      if (error instanceof InternalServerRpcException) {
+        throw error;
+      }
+
+      console.error('[CartService] removeItem error:', {
+        userId: dto.userId,
+        productId: dto.productId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      throw new InternalServerRpcException('Lỗi khi xóa sản phẩm khỏi giỏ hàng');
+    }
+  }
+
+  // ==================== Private Helper Methods ====================
+
+  /**
+   * Lấy hoặc tạo giỏ hàng cho user
+   */
+  private async getOrCreateCart(userId?: string, sessionId?: string): Promise<CartResponse> {
+    try {
+      const effectiveSessionId = sessionId || (userId ? `user-${userId}` : undefined);
+
+      if (!effectiveSessionId) {
+        throw new Error('Either userId or sessionId must be provided');
+      }
+
+      let cart = await this.prisma.cart.findUnique({
+        where: { sessionId: effectiveSessionId },
+        include: { items: true },
+      });
+
+      if (!cart) {
+        cart = await this.prisma.cart.create({
+          data: {
+            sessionId: effectiveSessionId,
+            userId: userId || null,
+          },
+          include: { items: true },
+        });
+      }
+
+      if (userId && !cart.userId) {
+        cart = await this.prisma.cart.update({
+          where: { id: cart.id },
+          data: { userId },
+          include: { items: true },
+        });
+      }
+
+      return this.toCartResponse(cart);
+    } catch (error) {
+      console.error('[CartService] getOrCreateCart error:', {
+        userId,
+        sessionId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      throw new InternalServerRpcException('Lỗi khi lấy thông tin giỏ hàng');
+    }
+  }
+
+  /**
+   * Fetch thông tin sản phẩm từ Product Service
+   */
+  private async fetchProductsByIds(productIds: string[]): Promise<ProductData[]> {
     if (productIds.length === 0) return [];
 
     try {
-      const products = await firstValueFrom(
+      const products: unknown = await firstValueFrom(
         this.productClient.send(EVENTS.PRODUCT.GET_BY_IDS, { ids: productIds }).pipe(timeout(5000)),
       );
-      return products as Array<{ id: string; priceInt: number }>;
+
+      if (!Array.isArray(products)) {
+        throw new TypeError('Invalid products response format');
+      }
+
+      return products as ProductData[];
     } catch (error) {
       if (error instanceof Error && error.name === 'TimeoutError') {
         throw new ServiceUnavailableRpcException('Product service không phản hồi');
       }
       throw error;
     }
+  }
+
+  /**
+   * Enrich cart items với product data
+   */
+  private enrichCartItems(
+    items: CartItemResponse[],
+    products: ProductData[],
+  ): CartItemWithProduct[] {
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    return items.map(item => {
+      const product = productMap.get(item.productId);
+
+      if (!product) {
+        console.warn('[CartService] Product not found:', item.productId);
+      }
+
+      return {
+        ...item,
+        product: product || null,
+      };
+    });
+  }
+
+  /**
+   * Tính tổng giá trị giỏ hàng
+   */
+  private calculateTotal(items: CartItemWithProduct[]): number {
+    return items.reduce((sum, item) => {
+      if (item.product) {
+        return sum + item.product.priceInt * item.quantity;
+      }
+      return sum;
+    }, 0);
+  }
+
+  /**
+   * Convert Prisma Cart sang CartResponse
+   */
+  private toCartResponse(cart: {
+    id: string;
+    sessionId: string;
+    userId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    items: Array<{
+      id: string;
+      cartId: string;
+      productId: string;
+      quantity: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  }): CartResponse {
+    return {
+      id: cart.id,
+      sessionId: cart.sessionId,
+      userId: cart.userId,
+      items: cart.items.map(item => ({
+        id: item.id,
+        cartId: item.cartId,
+        productId: item.productId,
+        quantity: item.quantity,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      })),
+      createdAt: cart.createdAt,
+      updatedAt: cart.updatedAt,
+    };
   }
 }

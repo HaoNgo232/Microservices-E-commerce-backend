@@ -1,59 +1,92 @@
 /**
  * Cart Response Types
  * Định nghĩa các response types cho cart endpoints
- * Based on Cart và CartItem models trong cart-app Prisma schema
+ * KHÔNG sử dụng Prisma generated types để tránh coupling
  */
 
 /**
- * Cart item response
+ * Cart item cơ bản
  */
 export type CartItemResponse = {
   id: string;
   cartId: string;
   productId: string;
   quantity: number;
-  priceInt: number; // Giá tại thời điểm thêm vào cart (cents) - match Prisma field name
-  createdAt: Date;
-  product?: {
-    // Populated từ product-service
-    id: string;
-    sku: string;
-    name: string;
-    slug: string;
-    priceInt: number;
-    stock: number;
-    imageUrls: string[];
-  };
-};
-
-/**
- * Cart response với full details
- */
-export type CartResponse = {
-  id: string;
-  userId: string | null;
-  sessionId: string; // Match Prisma: sessionId là unique, không null
-  items: CartItemResponse[];
-  totalItems: number; // Computed field
-  subtotalInt: number; // Computed field - Tổng tiền (cents)
   createdAt: Date;
   updatedAt: Date;
 };
 
 /**
- * Cart summary cho quick view
+ * Cart item với thông tin sản phẩm đầy đủ
  */
-export type CartSummary = {
-  totalItems: number;
-  subtotalInt: number;
-  itemCount: number;
+export type CartItemWithProduct = CartItemResponse & {
+  product: {
+    id: string;
+    name: string;
+    priceInt: number;
+    imageUrls: string[];
+  } | null;
 };
 
 /**
- * Transfer cart result
+ * Cart response cơ bản
  */
-export type TransferCartResponse = {
+export type CartResponse = {
+  id: string;
+  sessionId: string;
+  userId: string | null;
+  items: CartItemResponse[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/**
+ * Cart với items và product data đầy đủ
+ */
+export type CartWithProductsResponse = {
+  cart: CartResponse;
+  items: CartItemWithProduct[];
+  totalInt: number;
+};
+
+/**
+ * Kết quả thêm/cập nhật item
+ *
+ * Note: cartItem có thể null nếu updateQuantity set quantity=0 (item bị xóa)
+ */
+export type CartItemOperationResponse = {
+  cartItem: CartItemResponse | null;
+};
+
+/**
+ * Kết quả xóa item hoặc clear cart
+ */
+export type CartOperationSuccessResponse = {
   success: boolean;
-  cartId: string;
-  itemsTransferred: number;
+};
+
+/**
+ * Kết quả merge guest cart
+ */
+export type CartMergeResponse = {
+  cart: {
+    id: string;
+    itemsCount: number;
+  };
+};
+
+/**
+ * Product data từ Product Service (internal type)
+ *
+ * Note: Stock validation is now supported
+ * - stock > 0: Sản phẩm còn hàng
+ * - stock = 0: Hết hàng (không thể thêm, nhưng có thể xem trong cart)
+ * - stock < 0: Lỗi state (không nên xảy ra)
+ */
+export type ProductData = {
+  id: string;
+  name: string;
+  priceInt: number;
+  imageUrls: string[];
+  stock?: number; // Optional stock count for validation
 };
