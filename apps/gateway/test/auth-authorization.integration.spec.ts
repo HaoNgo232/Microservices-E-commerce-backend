@@ -5,7 +5,6 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { of } from 'rxjs';
 import { JwtService } from '@shared/main';
-import { UserRole } from '@shared/dto/user.dto';
 
 describe('AuthGuard + RolesGuard Integration', () => {
   let app: INestApplication;
@@ -107,7 +106,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
       const adminPayload = { sub: 'admin-1', email: 'admin@example.com', role: 'ADMIN' };
       jwtService.verifyToken.mockResolvedValueOnce(adminPayload);
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .get('/users/email/user@example.com')
         .set('Authorization', 'Bearer admin.token')
         .expect(200);
@@ -195,7 +194,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
       };
       jwtService.verifyToken.mockResolvedValueOnce(customerPayload);
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .get('/users/user-123')
         .set('Authorization', 'Bearer customer.token')
         .expect(200);
@@ -207,7 +206,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
       const adminPayload = { sub: 'admin-1', email: 'admin@example.com', role: 'ADMIN' };
       jwtService.verifyToken.mockResolvedValueOnce(adminPayload);
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .get('/users/user-123')
         .set('Authorization', 'Bearer admin.token')
         .expect(200);

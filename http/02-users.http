@@ -1,52 +1,140 @@
 ### User Management Tests
-### Test CRUD operations cho users
+### Test CRUD operations cho users với Role-based Authorization
 
-@token = {{loginAdmin.response.body.accessToken}}
-
-### 1. List All Users (Admin only)
-GET {{gatewayUrl}}/users?page=1&pageSize=10
-Authorization: Bearer {{token}}
-
-### 2. Search Users by Name/Email
-GET {{gatewayUrl}}/users?search=nguyen&page=1&pageSize=10
-Authorization: Bearer {{token}}
-
-### 3. Get User by ID
-# @name getUser
-GET {{gatewayUrl}}/users/user-123
-Authorization: Bearer {{token}}
-
-### 4. Get User by Email
-GET {{gatewayUrl}}/users/email/customer@test.com
-Authorization: Bearer {{token}}
-
-### 5. Create New User (Admin only)
-# @name createUser
-POST {{gatewayUrl}}/users
-Authorization: Bearer {{token}}
+# ==========================================
+# SETUP: Get tokens for different roles
+# ==========================================
+@gatewayUrl = http://localhost:3000
+### Login as Admin
+# @name loginAdmin
+POST {{gatewayUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "newuser@test.com",
-  "password": "NewUser@123456",
-  "fullName": "Trần Văn B",
-  "phone": "0987654321",
-  "role": "CUSTOMER"
+  "email": "admin@test.com",
+  "password": "Admin@123456"
 }
 
-### 6. Update User Info
-PUT {{gatewayUrl}}/users/{{createUser.response.body.id}}
-Authorization: Bearer {{token}}
+### Login as Customer
+# @name loginCustomer
+POST {{gatewayUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "fullName": "Trần Văn B - Updated",
+  "email": "customer@test.com",
+  "password": "Customer@123456"
+}
+
+@adminToken = {{loginAdmin.response.body.accessToken}}
+@customerToken = {{loginCustomer.response.body.accessToken}}
+
+# ==========================================
+# AUTHORIZATION TESTS
+# ==========================================
+
+### 1. List All Users (Admin only - should pass)
+GET {{gatewayUrl}}/users?page=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 1b. List All Users as Customer (should fail with 403)
+GET {{gatewayUrl}}/users?page=1&pageSize=10
+Authorization: Bearer {{customerToken}}
+
+###
+
+### 1c. List All Users without token (should fail with 401)
+GET {{gatewayUrl}}/users?page=1&pageSize=10
+
+### 2. Search Users by Name/Email (Admin only)
+GET {{gatewayUrl}}/users?search=nguyen&page=1&pageSize=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 3. Get User by ID (Both Admin and Customer allowed)
+GET {{gatewayUrl}}/users/user-123
+Authorization: Bearer {{customerToken}}
+
+###
+
+### 3b. Get User by ID as Admin
+GET {{gatewayUrl}}/users/user-123
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 4. Get User by Email (Admin only)
+GET {{gatewayUrl}}/users/email/customer@test.com
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 4b. Get User by Email as Customer (should fail with 403)
+GET {{gatewayUrl}}/users/email/customer@test.com
+Authorization: Bearer {{customerToken}}
+
+### 5. Update User Info (Both Admin and Customer allowed)
+PUT {{gatewayUrl}}/users/user-123
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Updated Name",
   "phone": "0123456789"
 }
 
-### 7. Deactivate User Account
-PUT {{gatewayUrl}}/users/{{createUser.response.body.id}}/deactivate
-Authorization: Bearer {{token}}
+###
 
-### 8. Try to access without token (expect 401)
+### 6. Deactivate User Account (Admin only)
+PUT {{gatewayUrl}}/users/user-456/deactivate
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 6b. Deactivate as Customer (should fail with 403)
+PUT {{gatewayUrl}}/users/user-456/deactivate
+Authorization: Bearer {{customerToken}}
+
+###
+
+# ==========================================
+# AUTHENTICATION TESTS
+# ==========================================
+
+### 7. Try to access without token (expect 401)
 GET {{gatewayUrl}}/users
+
+###
+
+### 8. Try with invalid token (expect 401)
+GET {{gatewayUrl}}/users
+Authorization: Bearer invalid.token.here
+
+###
+
+### 9. Try with expired token (expect 401)
+# You would need to use an actual expired token here
+# GET {{gatewayUrl}}/users
+# Authorization: Bearer expired.token
+
+# ==========================================
+# AUTHORIZATION ERROR EXAMPLES
+# ==========================================
+
+### 10. Customer tries to access admin-only endpoint (expect 403 with detailed message)
+GET {{gatewayUrl}}/users
+Authorization: Bearer {{customerToken}}
+
+###
+
+### 11. Test role-based error message format
+# The response should include:
+# {
+#   "statusCode": 403,
+#   "message": "Access denied. Required roles: ADMIN. Your role: CUSTOMER",
+#   "error": "Forbidden"
+# }
+GET {{gatewayUrl}}/users/email/admin@test.com
+Authorization: Bearer {{customerToken}}

@@ -41,14 +41,17 @@ Chạy các file theo thứ tự:
 
 1. **00-setup.http** - Setup biến môi trường
 2. **01-auth.http** - Đăng ký và đăng nhập
-3. **02-users.http** - Quản lý users
-4. **03-addresses.http** - Quản lý địa chỉ
-5. **04-categories.http** - Quản lý categories
-6. **05-products.http** - Quản lý products
-7. **06-cart.http** - Giỏ hàng
-8. **07-orders.http** - Đặt hàng
-9. **08-payments.http** - Thanh toán
-10. **09-ar.http** - AR snapshots
+3. **02-users.http** - Quản lý users với authorization
+4. **10-authorization-test.http** - 🆕 Test chi tiết authorization
+5. **03-addresses.http** - Quản lý địa chỉ
+6. **04-categories.http** - Quản lý categories
+7. **05-products.http** - Quản lý products
+8. **06-cart.http** - Giỏ hàng
+9. **07-orders.http** - Đặt hàng
+10. **08-payments.http** - Thanh toán
+11. **09-ar.http** - AR snapshots
+
+**📖 Xem thêm**: `README-AUTHORIZATION-TESTING.md` - Hướng dẫn chi tiết test authorization
 
 ## 💡 Tips
 

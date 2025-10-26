@@ -1,6 +1,7 @@
 ### Address Management Tests
 ### Test CRUD operations cho shipping addresses
 
+@gatewayUrl = http://localhost:3000
 @token = {{loginCustomer.response.body.accessToken}}
 
 ### 1. List User's Addresses

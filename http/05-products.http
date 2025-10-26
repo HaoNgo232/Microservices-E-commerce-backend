@@ -1,6 +1,8 @@
 ### Product Management Tests
 ### Test CRUD operations cho products
 
+@gatewayUrl = http://localhost:3000
+
 @token = {{loginAdmin.response.body.accessToken}}
 @categoryId = {{createParentCategory.response.body.id}}
 

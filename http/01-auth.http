@@ -1,6 +1,8 @@
 ### Authentication Tests
 ### Test đăng ký, đăng nhập, verify token
 
+@gatewayUrl = http://localhost:3000
+
 ### 1. Register Customer Account
 POST {{gatewayUrl}}/auth/register
 Content-Type: application/json
