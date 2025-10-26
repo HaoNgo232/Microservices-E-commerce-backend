@@ -3,8 +3,6 @@ import { ClientProxy } from '@nestjs/microservices';
 import { SalesSummaryDto, ProductPerformanceDto, UserCohortDto } from '@shared/dto/report.dto';
 import { PrismaService } from '@report-app/prisma/prisma.service';
 import { ValidationRpcException } from '@shared/exceptions/rpc-exceptions';
-import { EVENTS } from '@shared/events';
-import { firstValueFrom, timeout, catchError, of } from 'rxjs';
 
 /**
  * Sales summary report response
@@ -84,7 +82,9 @@ export class ReportService {
         },
       });
 
-      console.log(`[ReportService] Generated sales summary: ${fromAt} to ${toAt}`);
+      console.log(
+        `[ReportService] Generated sales summary: ${fromAt.toISOString()} to ${toAt.toISOString()}`,
+      );
       return mockData;
     } catch (error) {
       if (error instanceof ValidationRpcException) {
@@ -137,7 +137,9 @@ export class ReportService {
         },
       });
 
-      console.log(`[ReportService] Generated product performance: ${fromAt} to ${toAt}`);
+      console.log(
+        `[ReportService] Generated product performance: ${fromAt.toISOString()} to ${toAt.toISOString()}`,
+      );
       return mockData;
     } catch (error) {
       if (error instanceof ValidationRpcException) {
@@ -179,7 +181,9 @@ export class ReportService {
         },
       });
 
-      console.log(`[ReportService] Generated user cohort: ${fromAt} to ${toAt}`);
+      console.log(
+        `[ReportService] Generated user cohort: ${fromAt.toISOString()} to ${toAt.toISOString()}`,
+      );
       return mockData;
     } catch (error) {
       if (error instanceof ValidationRpcException) {

@@ -236,8 +236,8 @@ export class OrdersService {
 
       // Check all products were found
       if (products.length !== productIds.length) {
-        const foundIds = products.map(p => p.id);
-        const missingIds = productIds.filter(id => !foundIds.includes(id));
+        const foundIds = new Set(products.map(p => p.id));
+        const missingIds = productIds.filter(id => !foundIds.has(id));
         throw new ValidationRpcException(`Products not found: ${missingIds.join(', ')}`);
       }
 
