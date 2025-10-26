@@ -167,7 +167,7 @@ describe('AuthController (e2e)', () => {
         password: 'Test@123456',
         fullName: 'Verify Test User',
       };
-      const registerResult = await firstValueFrom(client.send(EVENTS.AUTH.REGISTER, registerDto));
+      await firstValueFrom(client.send(EVENTS.AUTH.REGISTER, registerDto));
 
       const loginDto: LoginDto = {
         email: registerDto.email,

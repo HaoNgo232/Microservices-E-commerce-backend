@@ -9,14 +9,15 @@ import {
   CategorySlugDto,
   CategoryListQueryDto,
 } from '@shared/dto/category.dto';
+import { CategoryResponse, PaginatedCategoriesResponse } from '@shared/types/product.types';
 
 export interface ICategoriesController {
-  getById(dto: CategoryIdDto): Promise<any>;
-  getBySlug(dto: CategorySlugDto): Promise<any>;
-  list(query: CategoryListQueryDto): Promise<any>;
-  create(dto: CategoryCreateDto): Promise<any>;
-  update(payload: { id: string; dto: CategoryUpdateDto }): Promise<any>;
-  delete(id: string): Promise<any>;
+  getById(dto: CategoryIdDto): Promise<CategoryResponse>;
+  getBySlug(dto: CategorySlugDto): Promise<CategoryResponse>;
+  list(query: CategoryListQueryDto): Promise<PaginatedCategoriesResponse>;
+  create(dto: CategoryCreateDto): Promise<CategoryResponse>;
+  update(payload: { id: string; dto: CategoryUpdateDto }): Promise<CategoryResponse>;
+  delete(id: string): Promise<{ success: boolean; id: string }>;
 }
 
 @Controller()
@@ -24,32 +25,32 @@ export class CategoriesController implements ICategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @MessagePattern(EVENTS.CATEGORY.GET_BY_ID)
-  getById(@Payload() dto: CategoryIdDto) {
+  getById(@Payload() dto: CategoryIdDto): Promise<CategoryResponse> {
     return this.categoriesService.getById(dto);
   }
 
   @MessagePattern(EVENTS.CATEGORY.GET_BY_SLUG)
-  getBySlug(@Payload() dto: CategorySlugDto) {
+  getBySlug(@Payload() dto: CategorySlugDto): Promise<CategoryResponse> {
     return this.categoriesService.getBySlug(dto);
   }
 
   @MessagePattern(EVENTS.CATEGORY.LIST)
-  list(@Payload() query: CategoryListQueryDto) {
+  list(@Payload() query: CategoryListQueryDto): Promise<PaginatedCategoriesResponse> {
     return this.categoriesService.list(query);
   }
 
   @MessagePattern(EVENTS.CATEGORY.CREATE)
-  create(@Payload() dto: CategoryCreateDto) {
+  create(@Payload() dto: CategoryCreateDto): Promise<CategoryResponse> {
     return this.categoriesService.create(dto);
   }
 
   @MessagePattern(EVENTS.CATEGORY.UPDATE)
-  update(@Payload() payload: { id: string; dto: CategoryUpdateDto }) {
+  update(@Payload() payload: { id: string; dto: CategoryUpdateDto }): Promise<CategoryResponse> {
     return this.categoriesService.update(payload.id, payload.dto);
   }
 
   @MessagePattern(EVENTS.CATEGORY.DELETE)
-  delete(@Payload() id: string) {
+  delete(@Payload() id: string): Promise<{ success: boolean; id: string }> {
     return this.categoriesService.delete(id);
   }
 }
