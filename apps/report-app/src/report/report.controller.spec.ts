@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ReportController } from './report.controller';
 import { ReportService } from './report.service';
 import { PrismaService } from '@report-app/prisma/prisma.service';
-import { ClientProxy } from '@nestjs/microservices';
 
 describe('ReportController', () => {
   let controller: ReportController;

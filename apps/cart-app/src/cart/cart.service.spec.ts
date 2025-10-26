@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClientProxy } from '@nestjs/microservices';
 import { of, throwError } from 'rxjs';
@@ -8,7 +7,6 @@ import { CartItemService } from '@cart-app/cart-item/cart-item.service';
 import {
   ServiceUnavailableRpcException,
   InternalServerRpcException,
-  ValidationRpcException,
 } from '@shared/exceptions/rpc-exceptions';
 
 const mockCart = {

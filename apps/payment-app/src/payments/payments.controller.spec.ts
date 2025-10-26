@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '@payment-app/prisma/prisma.service';
-import { ClientProxy } from '@nestjs/microservices';
 
 describe('PaymentsController', () => {
   let controller: PaymentsController;

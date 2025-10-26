@@ -92,8 +92,10 @@ describe('AuthController (e2e)', () => {
       try {
         await firstValueFrom(client.send(EVENTS.AUTH.REGISTER, registerDto));
         fail('Should have thrown an error');
-      } catch (error: any) {
-        expect(error.message).toContain('Email already exists');
+      } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'message' in error) {
+          expect((error as Record<string, unknown>).message).toContain('Email already exists');
+        }
       }
     });
 
