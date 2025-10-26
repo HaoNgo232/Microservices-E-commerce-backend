@@ -7,6 +7,8 @@ import { EVENTS } from '@shared/events';
 import {
   ServiceUnavailableRpcException,
   InternalServerRpcException,
+  ValidationRpcException,
+  EntityNotFoundRpcException,
 } from '@shared/exceptions/rpc-exceptions';
 import {
   CartGetDto,
@@ -68,7 +70,10 @@ export class CartService implements ICartService {
         totalInt,
       };
     } catch (error) {
-      if (error instanceof InternalServerRpcException) {
+      if (
+        error instanceof InternalServerRpcException ||
+        error instanceof ServiceUnavailableRpcException
+      ) {
         throw error;
       }
 
@@ -90,7 +95,7 @@ export class CartService implements ICartService {
       const cartItem = await this.cartItemService.addItem(cart.id, dto.productId, dto.quantity);
       return { cartItem };
     } catch (error) {
-      if (error instanceof InternalServerRpcException) {
+      if (error instanceof InternalServerRpcException || error instanceof ValidationRpcException) {
         throw error;
       }
 
@@ -117,7 +122,11 @@ export class CartService implements ICartService {
       );
       return { cartItem };
     } catch (error) {
-      if (error instanceof InternalServerRpcException) {
+      if (
+        error instanceof InternalServerRpcException ||
+        error instanceof ValidationRpcException ||
+        error instanceof EntityNotFoundRpcException
+      ) {
         throw error;
       }
 
@@ -139,7 +148,7 @@ export class CartService implements ICartService {
       const cart = await this.getOrCreateCart(dto.userId);
       return this.cartItemService.removeItem(cart.id, dto.productId);
     } catch (error) {
-      if (error instanceof InternalServerRpcException) {
+      if (error instanceof InternalServerRpcException || error instanceof ValidationRpcException) {
         throw error;
       }
 
@@ -163,7 +172,7 @@ export class CartService implements ICartService {
       const effectiveSessionId = sessionId || (userId ? `user-${userId}` : undefined);
 
       if (!effectiveSessionId) {
-        throw new Error('Either userId or sessionId must be provided');
+        throw new ValidationRpcException('Either userId or sessionId must be provided');
       }
 
       let cart = await this.prisma.cart.findUnique({
@@ -213,7 +222,7 @@ export class CartService implements ICartService {
       );
 
       if (!Array.isArray(products)) {
-        throw new TypeError('Invalid products response format');
+        throw new InternalServerRpcException('Invalid products response format');
       }
 
       return products as ProductData[];
@@ -221,7 +230,19 @@ export class CartService implements ICartService {
       if (error instanceof Error && error.name === 'TimeoutError') {
         throw new ServiceUnavailableRpcException('Product service không phản hồi');
       }
-      throw error;
+      if (
+        error instanceof ServiceUnavailableRpcException ||
+        error instanceof InternalServerRpcException
+      ) {
+        throw error;
+      }
+
+      console.error('[CartService] fetchProductsByIds error:', {
+        productIds,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      throw new InternalServerRpcException('Lỗi khi lấy thông tin sản phẩm');
     }
   }
 

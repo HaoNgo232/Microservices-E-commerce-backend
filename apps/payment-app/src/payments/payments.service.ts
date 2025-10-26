@@ -176,8 +176,13 @@ export class PaymentsService {
       const order = (await firstValueFrom(
         this.orderClient.send(EVENTS.ORDER.GET, { id: orderId }).pipe(
           timeout(5000),
-          catchError(() => {
-            throw new EntityNotFoundRpcException('Order', orderId);
+          catchError(error => {
+            if (error instanceof Error && error.name === 'TimeoutError') {
+              return throwError(
+                () => new ValidationRpcException('Order service không phản hồi, vui lòng thử lại'),
+              );
+            }
+            return throwError(() => new EntityNotFoundRpcException('Order', orderId));
           }),
         ),
       )) as OrderResponse;

@@ -34,7 +34,6 @@ describe('AddressController (e2e)', () => {
   let client: ClientProxy;
   let prisma: PrismaService;
   let testUserId: string;
-  let deleteTestUserId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -329,6 +328,7 @@ describe('AddressController (e2e)', () => {
 
   describe('ADDRESS.DELETE', () => {
     let addressId: string;
+    let deleteTestUserId: string;
 
     beforeEach(async () => {
       // Clean database

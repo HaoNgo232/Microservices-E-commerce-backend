@@ -90,7 +90,13 @@ export class ReportService {
       if (error instanceof ValidationRpcException) {
         throw error;
       }
-      console.error('[ReportService] salesSummary error:', error);
+
+      console.error('[ReportService] salesSummary error:', {
+        fromAt: dto.fromAt,
+        toAt: dto.toAt,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
       throw new ValidationRpcException('Failed to generate sales summary');
     }
   }
@@ -145,7 +151,13 @@ export class ReportService {
       if (error instanceof ValidationRpcException) {
         throw error;
       }
-      console.error('[ReportService] productPerformance error:', error);
+
+      console.error('[ReportService] productPerformance error:', {
+        fromAt: dto.fromAt,
+        toAt: dto.toAt,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
       throw new ValidationRpcException('Failed to generate product performance report');
     }
   }
@@ -189,7 +201,13 @@ export class ReportService {
       if (error instanceof ValidationRpcException) {
         throw error;
       }
-      console.error('[ReportService] userCohort error:', error);
+
+      console.error('[ReportService] userCohort error:', {
+        fromAt: dto.fromAt,
+        toAt: dto.toAt,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
       throw new ValidationRpcException('Failed to generate user cohort report');
     }
   }

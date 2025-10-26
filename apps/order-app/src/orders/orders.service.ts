@@ -15,7 +15,7 @@ import {
 } from '@shared/exceptions/rpc-exceptions';
 import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
 import { EVENTS } from '@shared/events';
-import { firstValueFrom, timeout, catchError, of } from 'rxjs';
+import { firstValueFrom, timeout, catchError, of, throwError } from 'rxjs';
 import { ProductResponse } from '@shared/types/product.types';
 
 @Injectable()
@@ -229,7 +229,12 @@ export class OrdersService {
             timeout(5000),
             catchError(error => {
               console.error('[OrdersService] Error fetching products:', error);
-              throw new ValidationRpcException('Failed to validate products');
+              if (error instanceof Error && error.name === 'TimeoutError') {
+                return throwError(
+                  () => new ValidationRpcException('Product service không phản hồi'),
+                );
+              }
+              return throwError(() => new ValidationRpcException('Failed to validate products'));
             }),
           ),
       );

@@ -35,7 +35,16 @@ export class ArService {
         createdAt: snapshot.createdAt,
       };
     } catch (error) {
-      console.error('[ArService] snapshotCreate error:', error);
+      if (error instanceof ValidationRpcException) {
+        throw error;
+      }
+
+      console.error('[ArService] snapshotCreate error:', {
+        userId: dto.userId,
+        productId: dto.productId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
       throw new ValidationRpcException('Failed to create AR snapshot');
     }
   }
@@ -82,7 +91,17 @@ export class ArService {
         pageSize,
       };
     } catch (error) {
-      console.error('[ArService] snapshotList error:', error);
+      if (error instanceof ValidationRpcException) {
+        throw error;
+      }
+
+      console.error('[ArService] snapshotList error:', {
+        filters: { userId: dto.userId, productId: dto.productId },
+        page: dto.page,
+        pageSize: dto.pageSize,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
       throw new ValidationRpcException('Failed to list AR snapshots');
     }
   }

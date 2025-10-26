@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestMicroservice } from '@nestjs/common';
 import { ClientsModule, Transport, ClientProxy } from '@nestjs/microservices';
@@ -119,9 +118,6 @@ describe('AuthController (e2e)', () => {
       expect(result.refreshToken).toBeDefined();
       expect(result.user).toBeDefined();
       expect(result.user.email).toBe(testUserEmail);
-
-      accessToken = result.accessToken;
-      refreshToken = result.refreshToken;
     });
 
     it('should fail login with wrong password', async () => {
