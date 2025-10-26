@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RpcException } from '@nestjs/microservices';
 import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
+import { PrismaService } from '@cart-app/prisma/prisma.service';
+import { CartItemService } from '@cart-app/cart-item/cart-item.service';
+import { ClientProxy } from '@nestjs/microservices';
 
 describe('CartController', () => {
   let controller: CartController;
@@ -37,12 +39,42 @@ describe('CartController', () => {
       removeItem: jest.fn(),
     };
 
+    const mockPrismaService = {
+      cart: {
+        findUnique: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+      },
+    };
+
+    const mockCartItemServiceInstance = {
+      addItem: jest.fn(),
+      updateQuantity: jest.fn(),
+      removeItem: jest.fn(),
+    };
+
+    const mockClientProxy = {
+      send: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CartController],
       providers: [
         {
           provide: CartService,
           useValue: mockCartServiceInstance,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
+        },
+        {
+          provide: CartItemService,
+          useValue: mockCartItemServiceInstance,
+        },
+        {
+          provide: 'PRODUCT_SERVICE',
+          useValue: mockClientProxy,
         },
       ],
     }).compile();
@@ -65,19 +97,11 @@ describe('CartController', () => {
       expect(mockCartService.get).toHaveBeenCalledWith({ userId: 'user123' });
     });
 
-    it('should re-throw RPC exceptions', async () => {
-      const rpcError = new RpcException({ statusCode: 400, message: 'Validation error' });
-      mockCartService.get.mockRejectedValue(rpcError);
+    it('should propagate errors from service', async () => {
+      const error = new Error('Service error');
+      mockCartService.get.mockRejectedValue(error);
 
-      await expect(controller.get({ userId: 'user123' })).rejects.toThrow(rpcError);
-      expect(mockCartService.get).toHaveBeenCalledWith({ userId: 'user123' });
-    });
-
-    it('should wrap unexpected errors', async () => {
-      const unexpectedError = new Error('Database connection failed');
-      mockCartService.get.mockRejectedValue(unexpectedError);
-
-      await expect(controller.get({ userId: 'user123' })).rejects.toThrow(unexpectedError);
+      await expect(controller.get({ userId: 'user123' })).rejects.toThrow(error);
       expect(mockCartService.get).toHaveBeenCalledWith({ userId: 'user123' });
     });
   });
@@ -94,12 +118,12 @@ describe('CartController', () => {
       expect(mockCartService.addItem).toHaveBeenCalledWith(addItemData);
     });
 
-    it('should re-throw RPC exceptions', async () => {
+    it('should propagate errors from service', async () => {
       const addItemData = { userId: 'user123', productId: 'product-123', quantity: 2 };
-      const rpcError = new RpcException({ statusCode: 404, message: 'Product not found' });
-      mockCartService.addItem.mockRejectedValue(rpcError);
+      const error = new Error('Service error');
+      mockCartService.addItem.mockRejectedValue(error);
 
-      await expect(controller.addItem(addItemData)).rejects.toThrow(rpcError);
+      await expect(controller.addItem(addItemData)).rejects.toThrow(error);
       expect(mockCartService.addItem).toHaveBeenCalledWith(addItemData);
     });
   });
@@ -107,7 +131,7 @@ describe('CartController', () => {
   describe('updateItem', () => {
     it('should call CartService.updateItem and return result', async () => {
       const updateItemData = { userId: 'user123', productId: 'product-123', quantity: 5 };
-      const expectedResult = { cartItem: mockCartItem };
+      const expectedResult = { cartItem: { ...mockCartItem, quantity: 5 } };
       mockCartService.updateItem.mockResolvedValue(expectedResult);
 
       const result = await controller.updateItem(updateItemData);
@@ -116,12 +140,12 @@ describe('CartController', () => {
       expect(mockCartService.updateItem).toHaveBeenCalledWith(updateItemData);
     });
 
-    it('should re-throw RPC exceptions', async () => {
+    it('should propagate errors from service', async () => {
       const updateItemData = { userId: 'user123', productId: 'product-123', quantity: 5 };
-      const rpcError = new RpcException({ statusCode: 404, message: 'CartItem not found' });
-      mockCartService.updateItem.mockRejectedValue(rpcError);
+      const error = new Error('Service error');
+      mockCartService.updateItem.mockRejectedValue(error);
 
-      await expect(controller.updateItem(updateItemData)).rejects.toThrow(rpcError);
+      await expect(controller.updateItem(updateItemData)).rejects.toThrow(error);
       expect(mockCartService.updateItem).toHaveBeenCalledWith(updateItemData);
     });
   });
@@ -138,12 +162,12 @@ describe('CartController', () => {
       expect(mockCartService.removeItem).toHaveBeenCalledWith(removeItemData);
     });
 
-    it('should re-throw RPC exceptions', async () => {
+    it('should propagate errors from service', async () => {
       const removeItemData = { userId: 'user123', productId: 'product-123' };
-      const rpcError = new RpcException({ statusCode: 500, message: 'Database error' });
-      mockCartService.removeItem.mockRejectedValue(rpcError);
+      const error = new Error('Service error');
+      mockCartService.removeItem.mockRejectedValue(error);
 
-      await expect(controller.removeItem(removeItemData)).rejects.toThrow(rpcError);
+      await expect(controller.removeItem(removeItemData)).rejects.toThrow(error);
       expect(mockCartService.removeItem).toHaveBeenCalledWith(removeItemData);
     });
   });

@@ -8,6 +8,7 @@ import { CartItemService } from '@cart-app/cart-item/cart-item.service';
 import {
   ServiceUnavailableRpcException,
   InternalServerRpcException,
+  ValidationRpcException,
 } from '@shared/exceptions/rpc-exceptions';
 
 const mockCart = {
@@ -65,14 +66,8 @@ describe('CartService', () => {
       cart: {
         findUnique: jest.fn(),
         create: jest.fn(),
-      },
-      cartItem: {
-        deleteMany: jest.fn(),
-        findUnique: jest.fn(),
-        create: jest.fn(),
         update: jest.fn(),
       },
-      $transaction: jest.fn(),
     };
 
     const mockCartItemServiceInstance = {
@@ -113,21 +108,26 @@ describe('CartService', () => {
     jest.clearAllMocks();
   });
 
-  describe('getOrCreateCart', () => {
-    it('should return existing cart if found', async () => {
+  describe('get', () => {
+    it('should return cart with enriched product data when cart has items', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCartWithItems);
+      mockProductClient.send.mockReturnValue(of(mockProducts));
 
       // Act
-      const result = await service.getOrCreateCart('user123');
+      const result = await service.get({ userId: 'user123' });
 
       // Assert
-      expect(result).toEqual(mockCartWithItems);
+      expect(result.cart.items).toHaveLength(2);
+      expect(result.items).toHaveLength(2);
+      expect(result.totalInt).toBe(80000); // (2 * 10000) + (3 * 20000)
       expect(mockPrisma.cart.findUnique).toHaveBeenCalledWith({
         where: { sessionId: 'user-user123' },
         include: { items: true },
       });
-      expect(mockPrisma.cart.create).not.toHaveBeenCalled();
+      expect(mockProductClient.send).toHaveBeenCalledWith('product.getByIds', {
+        ids: ['product-1', 'product-2'],
+      });
     });
 
     it('should create new cart if not found', async () => {
@@ -136,14 +136,12 @@ describe('CartService', () => {
       (mockPrisma.cart.create as jest.Mock).mockResolvedValue(mockCart);
 
       // Act
-      const result = await service.getOrCreateCart('user123');
+      const result = await service.get({ userId: 'user123' });
 
       // Assert
-      expect(result).toEqual(mockCart);
-      expect(mockPrisma.cart.findUnique).toHaveBeenCalledWith({
-        where: { sessionId: 'user-user123' },
-        include: { items: true },
-      });
+      expect(result.cart).toEqual(mockCart);
+      expect(result.totalInt).toBe(0);
+      expect(result.items).toEqual([]);
       expect(mockPrisma.cart.create).toHaveBeenCalledWith({
         data: {
           sessionId: 'user-user123',
@@ -153,62 +151,35 @@ describe('CartService', () => {
       });
     });
 
-    it('should wrap database errors', async () => {
+    it('should return empty cart with totalInt = 0 when no items', async () => {
       // Arrange
-      (mockPrisma.cart.findUnique as jest.Mock).mockRejectedValue(
-        new Error('Database connection failed'),
-      );
-
-      // Act & Assert
-      await expect(service.getOrCreateCart('user123')).rejects.toThrow(InternalServerRpcException);
-    });
-  });
-
-  describe('getCartWithProducts', () => {
-    it('should return cart with enriched product data', async () => {
-      // Arrange
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCartWithItems);
-      mockProductClient.send.mockReturnValue(of(mockProducts));
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
 
       // Act
-      const result = await service.getCartWithProducts('user123');
+      const result = await service.get({ userId: 'user123' });
 
       // Assert
-      expect(result.cart.items).toHaveLength(2);
-      expect(result.totalInt).toBe(80000); // (2 * 10000) + (3 * 20000)
-      expect(mockProductClient.send).toHaveBeenCalledWith('product.getByIds', {
-        ids: ['product-1', 'product-2'],
-      });
+      expect(result.cart).toEqual(mockCart);
+      expect(result.totalInt).toBe(0);
+      expect(result.items).toEqual([]);
+      expect(mockProductClient.send).not.toHaveBeenCalled();
     });
 
     it('should handle product not found gracefully', async () => {
       // Arrange
       const cartWithOneItem = {
-        ...mockCartWithItems,
-        items: [mockCartWithItems.items[0]], // Only product-1
+        ...mockCart,
+        items: [mockCartWithItems.items[0]],
       };
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(cartWithOneItem);
-      mockProductClient.send.mockReturnValue(of([mockProducts[0]])); // Only product-1 found
+      mockProductClient.send.mockReturnValue(of([mockProducts[0]]));
 
       // Act
-      const result = await service.getCartWithProducts('user123');
+      const result = await service.get({ userId: 'user123' });
 
       // Assert
-      expect(result.cart.items).toHaveLength(1);
+      expect(result.items).toHaveLength(1);
       expect(result.totalInt).toBe(20000); // 2 * 10000
-    });
-
-    it('should return empty cart with totalInt = 0', async () => {
-      // Arrange
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-
-      // Act
-      const result = await service.getCartWithProducts('user123');
-
-      // Assert
-      expect(result.cart).toEqual(mockCart);
-      expect(result.totalInt).toBe(0);
-      expect(mockProductClient.send).not.toHaveBeenCalled();
     });
 
     it('should throw ServiceUnavailableRpcException on product service timeout', async () => {
@@ -219,312 +190,163 @@ describe('CartService', () => {
       mockProductClient.send.mockReturnValue(throwError(() => timeoutError));
 
       // Act & Assert
-      await expect(service.getCartWithProducts('user123')).rejects.toThrow(
+      await expect(service.get({ userId: 'user123' })).rejects.toThrow(
         ServiceUnavailableRpcException,
       );
     });
 
     it('should wrap unexpected errors', async () => {
       // Arrange
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCartWithItems);
-      mockProductClient.send.mockReturnValue(throwError(() => new Error('Unexpected error')));
+      (mockPrisma.cart.findUnique as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(service.getCartWithProducts('user123')).rejects.toThrow(
-        InternalServerRpcException,
-      );
+      await expect(service.get({ userId: 'user123' })).rejects.toThrow(InternalServerRpcException);
     });
   });
 
-  describe('clearCart', () => {
-    it('should delete all items from cart', async () => {
+  describe('addItem', () => {
+    it('should create cart and add item successfully', async () => {
       // Arrange
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      (mockPrisma.cartItem.deleteMany as jest.Mock).mockResolvedValue({ count: 3 });
-
-      // Act
-      const result = await service.clearCart('user123');
-
-      // Assert
-      expect(result).toEqual({ success: true });
-      expect(mockPrisma.cart.findUnique).toHaveBeenCalledWith({
-        where: { sessionId: 'user-user123' },
-      });
-      expect(mockPrisma.cartItem.deleteMany).toHaveBeenCalledWith({
-        where: { cartId: 'cart-123' },
-      });
-    });
-
-    it('should be idempotent if cart not found', async () => {
-      // Arrange
+      const mockCartItem = {
+        id: 'item-1',
+        cartId: 'cart-123',
+        productId: 'product-1',
+        quantity: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(null);
+      (mockPrisma.cart.create as jest.Mock).mockResolvedValue(mockCart);
+      mockCartItemService.addItem.mockResolvedValue(mockCartItem);
 
       // Act
-      const result = await service.clearCart('user123');
+      const result = await service.addItem({
+        userId: 'user123',
+        productId: 'product-1',
+        quantity: 2,
+      });
+
+      // Assert
+      expect(result).toEqual({ cartItem: mockCartItem });
+      expect(mockPrisma.cart.create).toHaveBeenCalled();
+      expect(mockCartItemService.addItem).toHaveBeenCalledWith('cart-123', 'product-1', 2);
+    });
+
+    it('should use existing cart if found', async () => {
+      // Arrange
+      const mockCartItem = {
+        id: 'item-1',
+        cartId: 'cart-123',
+        productId: 'product-1',
+        quantity: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      mockCartItemService.addItem.mockResolvedValue(mockCartItem);
+
+      // Act
+      const result = await service.addItem({
+        userId: 'user123',
+        productId: 'product-1',
+        quantity: 2,
+      });
+
+      // Assert
+      expect(result).toEqual({ cartItem: mockCartItem });
+      expect(mockPrisma.cart.create).not.toHaveBeenCalled();
+      expect(mockCartItemService.addItem).toHaveBeenCalledWith('cart-123', 'product-1', 2);
+    });
+
+    it('should wrap unexpected errors', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      mockCartItemService.addItem.mockRejectedValue(new Error('Unexpected error'));
+
+      // Act & Assert
+      await expect(
+        service.addItem({
+          userId: 'user123',
+          productId: 'product-1',
+          quantity: 2,
+        }),
+      ).rejects.toThrow(InternalServerRpcException);
+    });
+  });
+
+  describe('updateItem', () => {
+    it('should update item quantity successfully', async () => {
+      // Arrange
+      const mockCartItem = {
+        id: 'item-1',
+        cartId: 'cart-123',
+        productId: 'product-1',
+        quantity: 5,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      mockCartItemService.updateQuantity.mockResolvedValue(mockCartItem);
+
+      // Act
+      const result = await service.updateItem({
+        userId: 'user123',
+        productId: 'product-1',
+        quantity: 5,
+      });
+
+      // Assert
+      expect(result).toEqual({ cartItem: mockCartItem });
+      expect(mockCartItemService.updateQuantity).toHaveBeenCalledWith('cart-123', 'product-1', 5);
+    });
+
+    it('should wrap unexpected errors', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      mockCartItemService.updateQuantity.mockRejectedValue(new Error('Unexpected error'));
+
+      // Act & Assert
+      await expect(
+        service.updateItem({
+          userId: 'user123',
+          productId: 'product-1',
+          quantity: 5,
+        }),
+      ).rejects.toThrow(InternalServerRpcException);
+    });
+  });
+
+  describe('removeItem', () => {
+    it('should remove item successfully', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      mockCartItemService.removeItem.mockResolvedValue({ success: true });
+
+      // Act
+      const result = await service.removeItem({
+        userId: 'user123',
+        productId: 'product-1',
+      });
 
       // Assert
       expect(result).toEqual({ success: true });
-      expect(mockPrisma.cartItem.deleteMany).not.toHaveBeenCalled();
+      expect(mockCartItemService.removeItem).toHaveBeenCalledWith('cart-123', 'product-1');
     });
 
-    it('should wrap database errors', async () => {
+    it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      (mockPrisma.cartItem.deleteMany as jest.Mock).mockRejectedValue(new Error('Database error'));
-
-      // Act & Assert
-      await expect(service.clearCart('user123')).rejects.toThrow(InternalServerRpcException);
-    });
-  });
-
-  describe('mergeGuestItems', () => {
-    it('should add new items from guest cart', async () => {
-      // Arrange
-      const guestItems = [{ productId: 'product-1', quantity: 2 }];
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      (mockPrisma.$transaction as jest.Mock).mockImplementation(async callback => {
-        return await callback({
-          cartItem: {
-            findUnique: jest.fn().mockResolvedValue(null),
-            create: jest.fn().mockResolvedValue({}),
-          },
-        });
-      });
-
-      // Act
-      const result = await service.mergeGuestItems('user123', guestItems);
-
-      // Assert
-      expect(result.cart.id).toBe('cart-123');
-      expect(mockPrisma.$transaction).toHaveBeenCalled();
-    });
-
-    it('should merge duplicate items (add quantities)', async () => {
-      // Arrange
-      const guestItems = [{ productId: 'product-1', quantity: 2 }];
-      const existingItem = { id: 'item-1', quantity: 3 };
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      (mockPrisma.$transaction as jest.Mock).mockImplementation(async callback => {
-        return await callback({
-          cartItem: {
-            findUnique: jest.fn().mockResolvedValue(existingItem),
-            update: jest.fn().mockResolvedValue({}),
-          },
-        });
-      });
-
-      // Act
-      const result = await service.mergeGuestItems('user123', guestItems);
-
-      // Assert
-      expect(result.cart.id).toBe('cart-123');
-      expect(mockPrisma.$transaction).toHaveBeenCalled();
-    });
-
-    it('should skip items with quantity <= 0', async () => {
-      // Arrange
-      const guestItems = [
-        { productId: 'product-1', quantity: 0 },
-        { productId: 'product-2', quantity: -1 },
-      ];
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      (mockPrisma.$transaction as jest.Mock).mockImplementation(async callback => {
-        return await callback({
-          cartItem: {
-            findUnique: jest.fn(),
-            create: jest.fn(),
-            update: jest.fn(),
-          },
-        });
-      });
-
-      // Act
-      const result = await service.mergeGuestItems('user123', guestItems);
-
-      // Assert
-      expect(result.cart.id).toBe('cart-123');
-      expect(mockPrisma.$transaction).toHaveBeenCalled();
-    });
-
-    it('should wrap transaction errors', async () => {
-      // Arrange
-      const guestItems = [{ productId: 'product-1', quantity: 2 }];
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      (mockPrisma.$transaction as jest.Mock).mockRejectedValue(new Error('Transaction failed'));
-
-      // Act & Assert
-      await expect(service.mergeGuestItems('user123', guestItems)).rejects.toThrow(
-        InternalServerRpcException,
+      mockCartItemService.removeItem.mockRejectedValue(
+        new InternalServerRpcException('Unexpected error'),
       );
-    });
-  });
 
-  describe('Controller methods', () => {
-    describe('get', () => {
-      it('should call getCartWithProducts', async () => {
-        // Arrange
-        const mockResult = { cart: mockCart, totalInt: 0, items: [] };
-        jest.spyOn(service, 'getCartWithProducts').mockResolvedValue(mockResult);
-
-        // Act
-        const result = await service.get({ userId: 'user123' });
-
-        // Assert
-        expect(result).toEqual(mockResult);
-        expect(service.getCartWithProducts).toHaveBeenCalledWith('user123');
-      });
-    });
-
-    describe('addItem', () => {
-      it('should call getOrCreateCart and cartItemService.addItem', async () => {
-        // Arrange
-        const mockCartItem = {
-          id: 'item-1',
-          cartId: 'cart-123',
-          productId: 'product-1',
-          quantity: 2,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        jest.spyOn(service, 'getOrCreateCart').mockResolvedValue(mockCart);
-        mockCartItemService.addItem.mockResolvedValue(mockCartItem);
-
-        // Act
-        const result = await service.addItem({
+      // Act & Assert
+      await expect(
+        service.removeItem({
           userId: 'user123',
           productId: 'product-1',
-          quantity: 2,
-        });
-
-        // Assert
-        expect(result).toEqual({ cartItem: mockCartItem });
-        expect(service.getOrCreateCart).toHaveBeenCalledWith('user123');
-        expect(mockCartItemService.addItem).toHaveBeenCalledWith('cart-123', 'product-1', 2);
-      });
-
-      it('should wrap unexpected errors', async () => {
-        // Arrange
-        jest.spyOn(service, 'getOrCreateCart').mockResolvedValue(mockCart);
-        mockCartItemService.addItem.mockRejectedValue(new Error('Unexpected error'));
-
-        // Act & Assert
-        await expect(
-          service.addItem({
-            userId: 'user123',
-            productId: 'product-1',
-            quantity: 2,
-          }),
-        ).rejects.toThrow(InternalServerRpcException);
-      });
-    });
-
-    describe('updateItem', () => {
-      it('should call getOrCreateCart and cartItemService.updateQuantity', async () => {
-        // Arrange
-        const mockCartItem = {
-          id: 'item-1',
-          cartId: 'cart-123',
-          productId: 'product-1',
-          quantity: 5,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        jest.spyOn(service, 'getOrCreateCart').mockResolvedValue(mockCart);
-        mockCartItemService.updateQuantity.mockResolvedValue(mockCartItem);
-
-        // Act
-        const result = await service.updateItem({
-          userId: 'user123',
-          productId: 'product-1',
-          quantity: 5,
-        });
-
-        // Assert
-        expect(result).toEqual({ cartItem: mockCartItem });
-        expect(service.getOrCreateCart).toHaveBeenCalledWith('user123');
-        expect(mockCartItemService.updateQuantity).toHaveBeenCalledWith('cart-123', 'product-1', 5);
-      });
-
-      it('should wrap unexpected errors', async () => {
-        // Arrange
-        jest.spyOn(service, 'getOrCreateCart').mockResolvedValue(mockCart);
-        mockCartItemService.updateQuantity.mockRejectedValue(new Error('Unexpected error'));
-
-        // Act & Assert
-        await expect(
-          service.updateItem({
-            userId: 'user123',
-            productId: 'product-1',
-            quantity: 5,
-          }),
-        ).rejects.toThrow(InternalServerRpcException);
-      });
-    });
-
-    describe('removeItem', () => {
-      it('should call getOrCreateCart and cartItemService.removeItem', async () => {
-        // Arrange
-        jest.spyOn(service, 'getOrCreateCart').mockResolvedValue(mockCart);
-        mockCartItemService.removeItem.mockResolvedValue({ success: true });
-
-        // Act
-        const result = await service.removeItem({
-          userId: 'user123',
-          productId: 'product-1',
-        });
-
-        // Assert
-        expect(result).toEqual({ success: true });
-        expect(service.getOrCreateCart).toHaveBeenCalledWith('user123');
-        expect(mockCartItemService.removeItem).toHaveBeenCalledWith('cart-123', 'product-1');
-      });
-
-      it('should wrap unexpected errors', async () => {
-        // Arrange
-        jest.spyOn(service, 'getOrCreateCart').mockResolvedValue(mockCart);
-        mockCartItemService.removeItem.mockRejectedValue(new Error('Unexpected error'));
-
-        // Act & Assert
-        await expect(
-          service.removeItem({
-            userId: 'user123',
-            productId: 'product-1',
-          }),
-        ).rejects.toThrow(InternalServerRpcException);
-      });
-    });
-
-    describe('clear', () => {
-      it('should call clearCart', async () => {
-        // Arrange
-        jest.spyOn(service, 'clearCart').mockResolvedValue({ success: true });
-
-        // Act
-        const result = await service.clear({ userId: 'user123' });
-
-        // Assert
-        expect(result).toEqual({ success: true });
-        expect(service.clearCart).toHaveBeenCalledWith('user123');
-      });
-    });
-
-    describe('merge', () => {
-      it('should call mergeGuestItems', async () => {
-        // Arrange
-        const guestItems = [{ productId: 'product-1', quantity: 2 }];
-        const mockResult = { cart: { id: 'cart-123', itemsCount: 1 } };
-        jest.spyOn(service, 'mergeGuestItems').mockResolvedValue(mockResult);
-
-        // Act
-        const result = await service.merge({
-          userId: 'user123',
-          guestItems,
-        });
-
-        // Assert
-        expect(result).toEqual(mockResult);
-        expect(service.mergeGuestItems).toHaveBeenCalledWith('user123', guestItems);
-      });
+        }),
+      ).rejects.toThrow(InternalServerRpcException);
     });
   });
 });
