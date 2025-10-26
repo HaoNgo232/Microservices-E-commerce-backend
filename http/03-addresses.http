@@ -1,0 +1,59 @@
+### Address Management Tests
+### Test CRUD operations cho shipping addresses
+
+@token = {{loginCustomer.response.body.accessToken}}
+
+### 1. List User's Addresses
+GET {{gatewayUrl}}/addresses
+Authorization: Bearer {{token}}
+
+### 2. Create New Address
+# @name createAddress
+POST {{gatewayUrl}}/addresses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Nguyễn Văn A",
+  "phone": "0912345678",
+  "street": "123 Lê Lợi",
+  "ward": "Phường Bến Nghé",
+  "district": "Quận 1",
+  "city": "TP. Hồ Chí Minh",
+  "isDefault": true
+}
+
+### 3. Create Second Address
+# @name createAddress2
+POST {{gatewayUrl}}/addresses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Nguyễn Văn A",
+  "phone": "0912345678",
+  "street": "456 Nguyễn Huệ",
+  "ward": "Phường 1",
+  "district": "Quận 1",
+  "city": "TP. Hồ Chí Minh",
+  "isDefault": false
+}
+
+### 4. Update Address
+PUT {{gatewayUrl}}/addresses/{{createAddress.response.body.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Nguyễn Văn A - Updated",
+  "phone": "0987654321",
+  "street": "789 Hai Bà Trưng"
+}
+
+### 5. Set Address as Default
+PUT {{gatewayUrl}}/addresses/{{createAddress2.response.body.id}}/set-default
+Authorization: Bearer {{token}}
+
+### 6. Delete Address
+DELETE {{gatewayUrl}}/addresses/{{createAddress2.response.body.id}}
+Authorization: Bearer {{token}}

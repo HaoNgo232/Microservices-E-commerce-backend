@@ -1,0 +1,64 @@
+### Payment Tests
+### Test payment processing and verification
+
+@token = {{loginCustomer.response.body.accessToken}}
+@orderId = {{createOrder.response.body.id}}
+
+### 1. Process COD Payment
+# @name processCOD
+POST {{gatewayUrl}}/payments/process
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "method": "COD",
+  "amountInt": 5998000000
+}
+
+### 2. Process SePay Payment
+# @name processSePay
+POST {{gatewayUrl}}/payments/process
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "method": "SePay",
+  "amountInt": 5998000000
+}
+
+### 3. Verify Payment (Mock callback from gateway)
+POST {{gatewayUrl}}/payments/verify
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "payload": {
+    "status": "success",
+    "transactionId": "TXN-123456789",
+    "verified": true
+  }
+}
+
+### 4. Get Payment by ID
+GET {{gatewayUrl}}/payments/{{processCOD.response.body.paymentId}}
+Authorization: Bearer {{token}}
+
+### 5. Get Payment by Order ID
+GET {{gatewayUrl}}/payments/order/{{orderId}}
+Authorization: Bearer {{token}}
+
+### 6. Verify Failed Payment
+POST {{gatewayUrl}}/payments/verify
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "payload": {
+    "status": "failed",
+    "errorCode": "INSUFFICIENT_FUNDS"
+  }
+}

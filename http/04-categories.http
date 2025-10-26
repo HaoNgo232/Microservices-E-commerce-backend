@@ -1,0 +1,61 @@
+### Category Management Tests
+### Test CRUD operations cho product categories
+
+@token = {{loginAdmin.response.body.accessToken}}
+
+### 1. List All Categories
+GET {{gatewayUrl}}/categories?page=1&pageSize=20
+
+### 2. Search Categories
+GET {{gatewayUrl}}/categories?q=điện&page=1&pageSize=10
+
+### 3. Create Parent Category
+# @name createParentCategory
+POST {{gatewayUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Điện tử",
+  "slug": "dien-tu",
+  "description": "Các sản phẩm điện tử"
+}
+
+### 4. Create Child Category
+# @name createChildCategory
+POST {{gatewayUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Điện thoại",
+  "slug": "dien-thoai",
+  "description": "Điện thoại di động",
+  "parentId": "{{createParentCategory.response.body.id}}"
+}
+
+### 5. Get Category by ID (with children)
+GET {{gatewayUrl}}/categories/{{createParentCategory.response.body.id}}
+
+### 6. Get Category by Slug
+GET {{gatewayUrl}}/categories/slug/dien-tu
+
+### 7. List Categories by Parent
+GET {{gatewayUrl}}/categories?parentSlug=dien-tu
+
+### 8. Update Category
+PUT {{gatewayUrl}}/categories/{{createChildCategory.response.body.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Điện thoại thông minh",
+  "description": "Smartphone cao cấp"
+}
+
+### 9. Delete Category (expect error if has children/products)
+DELETE {{gatewayUrl}}/categories/{{createChildCategory.response.body.id}}
+Authorization: Bearer {{token}}
+
+### 10. List without authentication (public endpoint)
+GET {{gatewayUrl}}/categories

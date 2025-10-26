@@ -1,0 +1,63 @@
+### AR (Augmented Reality) Tests
+### Test AR snapshot creation and listing
+
+@token = {{loginCustomer.response.body.accessToken}}
+@productId = {{createProduct.response.body.id}}
+
+### 1. Create AR Snapshot (User chụp ảnh với AR)
+# @name createSnapshot
+POST {{gatewayUrl}}/ar/snapshots
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "userId": "user-123",
+  "productId": "{{productId}}",
+  "imageUrl": "https://example.com/ar-snapshots/snapshot-1.jpg",
+  "metadata": {
+    "cameraPosition": {
+      "x": 0,
+      "y": 1.5,
+      "z": 2
+    },
+    "lighting": "natural",
+    "deviceModel": "iPhone 14 Pro"
+  }
+}
+
+### 2. Create Another Snapshot
+POST {{gatewayUrl}}/ar/snapshots
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "userId": "user-123",
+  "productId": "{{productId}}",
+  "imageUrl": "https://example.com/ar-snapshots/snapshot-2.jpg",
+  "metadata": {
+    "cameraPosition": {
+      "x": 1,
+      "y": 1.5,
+      "z": 1.5
+    },
+    "lighting": "studio"
+  }
+}
+
+### 3. List All AR Snapshots (Public)
+GET {{gatewayUrl}}/ar/snapshots?page=1&pageSize=20
+
+### 4. List Snapshots by User
+GET {{gatewayUrl}}/ar/snapshots?userId=user-123&page=1&pageSize=10
+
+### 5. List Snapshots by Product
+GET {{gatewayUrl}}/ar/snapshots?productId={{productId}}&page=1&pageSize=10
+
+### 6. Create Anonymous Snapshot (no userId)
+POST {{gatewayUrl}}/ar/snapshots
+Content-Type: application/json
+
+{
+  "productId": "{{productId}}",
+  "imageUrl": "https://example.com/ar-snapshots/anonymous-snapshot.jpg"
+}

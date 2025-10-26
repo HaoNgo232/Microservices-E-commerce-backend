@@ -1,0 +1,24 @@
+### HTTP Test Setup
+### Định nghĩa các biến dùng chung
+
+# Base URLs
+@baseUrl = http://localhost:3000
+@gatewayUrl = {{baseUrl}}
+
+# Test Users
+@adminEmail = admin@test.com
+@adminPassword = Admin@123456
+
+@customerEmail = customer@test.com
+@customerPassword = Customer@123456
+
+# Tokens (sẽ được set sau khi login)
+@adminToken = 
+@customerToken = 
+
+# Test IDs (sẽ được set sau khi tạo)
+@userId = 
+@productId = 
+@categoryId = 
+@orderId = 
+@addressId =
