@@ -39,6 +39,8 @@ describe('RolesGuard', () => {
         switchToHttp: jest.fn().mockReturnValue({
           getRequest: jest.fn().mockReturnValue(mockRequest),
         }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
       };
     });
 

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RpcException } from '@nestjs/microservices';
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto, UserRole } from '@shared/dto/user.dto';
+import { UpdateUserDto, UserRole } from '@shared/dto/user.dto';
 import * as bcrypt from 'bcryptjs';
 import { UserResponse } from '@shared/main';
 import { PrismaService } from '@user-app/prisma/prisma.service';
@@ -84,48 +84,6 @@ describe('UsersService', () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(service.findById('999')).rejects.toThrow(RpcException);
-    });
-  });
-
-  describe('create', () => {
-    it('should create new user successfully', async () => {
-      const createDto: CreateUserDto = {
-        email: 'new@example.com',
-        password: 'password123',
-        fullName: 'New User',
-      };
-
-      const mockCreatedUser = {
-        id: '1',
-        email: createDto.email,
-        fullName: createDto.fullName,
-        phone: null,
-        role: 'CUSTOMER',
-      };
-
-      prisma.user.findUnique.mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_password');
-      prisma.user.create.mockResolvedValue(mockCreatedUser);
-
-      const result = await service.create(createDto);
-
-      expect(result).toEqual(mockCreatedUser);
-      expect(bcrypt.hash).toHaveBeenCalledWith(createDto.password, 10);
-      expect(prisma.user.create).toHaveBeenCalled();
-    });
-
-    it('should throw RpcException when email exists', async () => {
-      const createDto: CreateUserDto = {
-        email: 'existing@example.com',
-        password: 'password123',
-      };
-
-      prisma.user.findUnique.mockResolvedValue({
-        id: '1',
-        email: createDto.email,
-      });
-
-      await expect(service.create(createDto)).rejects.toThrow(RpcException);
     });
   });
 

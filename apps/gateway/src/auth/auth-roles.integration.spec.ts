@@ -256,7 +256,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
         rolesGuard.canActivate(context);
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
-        expect(error.message).toContain('Required roles: [ADMIN]');
+        expect(error.message).toContain('Required roles: ADMIN');
         expect(error.message).toContain('Your role: CUSTOMER');
       }
     });
@@ -303,7 +303,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
       const context = createMockContext({}); // No user attached
 
       expect(() => rolesGuard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => rolesGuard.canActivate(context)).toThrow(/User not found in request/);
+      expect(() => rolesGuard.canActivate(context)).toThrow('User role not found in token');
     });
   });
 

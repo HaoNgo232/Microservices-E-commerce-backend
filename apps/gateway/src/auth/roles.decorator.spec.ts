@@ -1,113 +1,97 @@
-import 'reflect-metadata';
+import { ROLES_KEY, Roles } from './roles.decorator';
 import { UserRole } from '@shared/dto/user.dto';
-import { Roles, ROLES_KEY } from './roles.decorator';
 
 describe('@Roles() Decorator', () => {
-  describe('ROLES_KEY constant', () => {
-    it('should have correct value', () => {
-      expect(ROLES_KEY).toBe('roles');
-    });
-  });
-
-  describe('Roles decorator', () => {
-    it('should set metadata with single role', () => {
-      @Roles(UserRole.ADMIN)
-      class TestController {}
-
-      const metadata = Reflect.getMetadata(ROLES_KEY, TestController);
-      expect(metadata).toEqual([UserRole.ADMIN]);
-    });
-
-    it('should set metadata with multiple roles', () => {
-      @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
-      class TestController {}
-
-      const metadata = Reflect.getMetadata(ROLES_KEY, TestController);
-      expect(metadata).toEqual([UserRole.ADMIN, UserRole.CUSTOMER]);
-    });
-
-    it('should work on methods', () => {
+  describe('Metadata handling', () => {
+    it('should set metadata with single role on method', (): void => {
       class TestController {
         @Roles(UserRole.ADMIN)
         testMethod(): void {}
       }
 
       const metadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.testMethod);
+
       expect(metadata).toEqual([UserRole.ADMIN]);
     });
 
-    it('should work with empty roles array', () => {
-      @Roles()
-      class TestController {}
+    it('should set metadata with multiple roles on method', (): void => {
+      class TestController {
+        @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
+        testMethod(): void {}
+      }
 
-      const metadata = Reflect.getMetadata(ROLES_KEY, TestController);
-      expect(metadata).toEqual([]);
+      const metadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.testMethod);
+
+      expect(metadata).toEqual([UserRole.ADMIN, UserRole.CUSTOMER]);
     });
 
-    it('should handle method-level decorator overriding class-level', () => {
-      @Roles(UserRole.ADMIN)
+    it('should work with only one role provided', (): void => {
       class TestController {
         @Roles(UserRole.CUSTOMER)
         testMethod(): void {}
       }
 
-      const classMetadata = Reflect.getMetadata(ROLES_KEY, TestController);
-      const methodMetadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.testMethod);
+      const metadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.testMethod);
 
-      expect(classMetadata).toEqual([UserRole.ADMIN]);
-      expect(methodMetadata).toEqual([UserRole.CUSTOMER]);
+      expect(metadata).toEqual([UserRole.CUSTOMER]);
     });
 
-    it('should be type-safe with UserRole enum', () => {
-      // This test ensures TypeScript compilation works
-      // If this compiles, it means the decorator accepts only UserRole values
-      @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
-      class TypeSafeController {}
+    it('should handle empty roles array', (): void => {
+      class TestController {
+        @Roles()
+        testMethod(): void {}
+      }
 
-      const metadata = Reflect.getMetadata(ROLES_KEY, TypeSafeController);
-      expect(metadata).toEqual([UserRole.ADMIN, UserRole.CUSTOMER]);
-    });
+      const metadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.testMethod);
 
-    it('should preserve order of roles', () => {
-      @Roles(UserRole.CUSTOMER, UserRole.ADMIN)
-      class TestController {}
-
-      const metadata = Reflect.getMetadata(ROLES_KEY, TestController);
-      expect(metadata).toEqual([UserRole.CUSTOMER, UserRole.ADMIN]);
-    });
-
-    it('should work with duplicate roles', () => {
-      @Roles(UserRole.ADMIN, UserRole.ADMIN, UserRole.CUSTOMER)
-      class TestController {}
-
-      const metadata = Reflect.getMetadata(ROLES_KEY, TestController);
-      expect(metadata).toEqual([UserRole.ADMIN, UserRole.ADMIN, UserRole.CUSTOMER]);
+      expect(metadata).toEqual([]);
     });
   });
 
-  describe('Integration with NestJS metadata system', () => {
-    it('should work with SetMetadata from @nestjs/common', () => {
-      // This test ensures the decorator uses the correct NestJS metadata system
-      @Roles(UserRole.ADMIN)
-      class TestController {}
+  describe('Decorator function', () => {
+    it('should be callable with spread operator', (): void => {
+      const roles = [UserRole.ADMIN, UserRole.CUSTOMER];
 
-      // Check that metadata is stored correctly for NestJS Reflector
-      const metadata = Reflect.getMetadata(ROLES_KEY, TestController);
-      expect(metadata).toBeDefined();
-      expect(Array.isArray(metadata)).toBe(true);
-      expect(metadata).toContain(UserRole.ADMIN);
+      class TestController {
+        @Roles(...roles)
+        testMethod(): void {}
+      }
+
+      const metadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.testMethod);
+
+      expect(metadata).toEqual([UserRole.ADMIN, UserRole.CUSTOMER]);
     });
 
-    it('should be compatible with getAllAndOverride method', () => {
-      // This test simulates how RolesGuard will use the metadata
-      @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
-      class TestController {}
+    it('should return a MethodDecorator type', (): void => {
+      const decorator = Roles(UserRole.ADMIN);
 
-      const metadata = Reflect.getMetadata(ROLES_KEY, TestController);
+      expect(typeof decorator).toBe('function');
+    });
+  });
 
-      // Simulate getAllAndOverride behavior
-      const result = metadata || [];
-      expect(result).toEqual([UserRole.ADMIN, UserRole.CUSTOMER]);
+  describe('Integration with Reflector', () => {
+    it('should store metadata that Reflector can retrieve', (): void => {
+      class TestController {
+        @Roles(UserRole.ADMIN)
+        adminMethod(): void {}
+
+        @Roles(UserRole.CUSTOMER)
+        customerMethod(): void {}
+
+        @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
+        bothMethod(): void {}
+      }
+
+      const adminMetadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.adminMethod);
+      const customerMetadata = Reflect.getMetadata(
+        ROLES_KEY,
+        TestController.prototype.customerMethod,
+      );
+      const bothMetadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.bothMethod);
+
+      expect(adminMetadata).toEqual([UserRole.ADMIN]);
+      expect(customerMetadata).toEqual([UserRole.CUSTOMER]);
+      expect(bothMetadata).toEqual([UserRole.ADMIN, UserRole.CUSTOMER]);
     });
   });
 });

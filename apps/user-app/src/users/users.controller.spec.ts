@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto, ListUsersDto, UserRole } from '@shared/dto/user.dto';
+import { UpdateUserDto, ListUsersDto, UserRole } from '@shared/dto/user.dto';
 import { ListUsersResponse, UserResponse } from '@shared/main';
 
 describe('UsersController', () => {
@@ -11,7 +11,6 @@ describe('UsersController', () => {
   const mockUsersService = {
     findById: jest.fn(),
     findByEmail: jest.fn(),
-    create: jest.fn(),
     update: jest.fn(),
     deactivate: jest.fn(),
     list: jest.fn(),
@@ -98,62 +97,6 @@ describe('UsersController', () => {
 
       await expect(controller.findByEmail(email)).rejects.toThrow('User not found');
       expect(service.findByEmail).toHaveBeenCalledWith(email);
-    });
-  });
-
-  describe('create', () => {
-    it('nên tạo user mới thành công', async () => {
-      const createUserDto: CreateUserDto = {
-        email: 'newuser@example.com',
-        password: 'Password123!',
-        fullName: 'New User',
-        phone: '0987654321',
-        role: UserRole.CUSTOMER,
-      };
-      const expectedResponse = {
-        ...mockUserResponse,
-        email: createUserDto.email,
-        fullName: createUserDto.fullName,
-      };
-      mockUsersService.create.mockResolvedValue(expectedResponse);
-
-      const result = await controller.create(createUserDto);
-
-      expect(result).toEqual(expectedResponse);
-      expect(service.create).toHaveBeenCalledWith(createUserDto);
-      expect(service.create).toHaveBeenCalledTimes(1);
-    });
-
-    it('nên handle lỗi khi email đã tồn tại', async () => {
-      const createUserDto: CreateUserDto = {
-        email: 'existing@example.com',
-        password: 'Password123!',
-        fullName: 'Existing User',
-      };
-      const error = new Error('Email already exists');
-      mockUsersService.create.mockRejectedValue(error);
-
-      await expect(controller.create(createUserDto)).rejects.toThrow('Email already exists');
-      expect(service.create).toHaveBeenCalledWith(createUserDto);
-    });
-
-    it('nên tạo user với role ADMIN', async () => {
-      const adminUserDto: CreateUserDto = {
-        email: 'admin@example.com',
-        password: 'Password123!',
-        fullName: 'Admin User',
-        role: UserRole.ADMIN,
-      };
-      const adminResponse = {
-        ...mockUserResponse,
-        role: UserRole.ADMIN,
-      };
-      mockUsersService.create.mockResolvedValue(adminResponse);
-
-      const result = await controller.create(adminUserDto);
-
-      expect(result.role).toBe(UserRole.ADMIN);
-      expect(service.create).toHaveBeenCalledWith(adminUserDto);
     });
   });
 
@@ -325,7 +268,6 @@ describe('UsersController', () => {
     it('nên maintain service method signatures', () => {
       expect(typeof controller.findById).toBe('function');
       expect(typeof controller.findByEmail).toBe('function');
-      expect(typeof controller.create).toBe('function');
       expect(typeof controller.update).toBe('function');
       expect(typeof controller.deactivate).toBe('function');
       expect(typeof controller.list).toBe('function');
