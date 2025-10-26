@@ -24,17 +24,18 @@ import {
   CartItemResponse,
 } from '@shared/types/cart.types';
 
+export interface ICartService {
+  get(dto: CartGetDto): Promise<CartWithProductsResponse>;
+  addItem(dto: CartAddItemDto): Promise<CartItemOperationResponse>;
+  updateItem(dto: CartUpdateItemDto): Promise<CartItemOperationResponse>;
+  removeItem(dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse>;
+}
+
 /**
- * CartService - Quản lý giỏ hàng (CRUD đơn giản)
- *
- * 4 chức năng cơ bản:
- * - get: Lấy giỏ hàng với product data
- * - addItem: Thêm sản phẩm vào giỏ
- * - updateItem: Cập nhật số lượng sản phẩm
- * - removeItem: Xóa sản phẩm
+ * CartService - Quản lý giỏ hàng
  */
 @Injectable()
-export class CartService {
+export class CartService implements ICartService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cartItemService: CartItemService,

@@ -1,15 +1,22 @@
-import { Controller, Get, Post, Delete, Body, Query, UseGuards, Req, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Query, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { CartAddItemDto, CartRemoveItemDto, CartGetDto } from '@shared/dto/cart.dto';
-import { AuthGuard } from '../auth/auth.guard';
+import {
+  CartGetDto,
+  CartAddItemDto,
+  CartUpdateItemDto,
+  CartRemoveItemDto,
+} from '@shared/dto/cart.dto';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
-import { CartResponse, TransferCartResponse } from '@shared/types/cart.types';
-import { SuccessResponse } from '@shared/types/response.types';
+import {
+  CartWithProductsResponse,
+  CartItemOperationResponse,
+  CartOperationSuccessResponse,
+} from '@shared/types';
 
 /**
- * Cart Controller
- * Gateway endpoint cho shopping cart - forward requests đến cart-service
+ * Cart Controller - Gateway endpoint cho shopping cart
+ * Forward requests đến cart-service qua NATS messaging
  */
 @Controller('cart')
 export class CartController extends BaseGatewayController {
@@ -19,56 +26,47 @@ export class CartController extends BaseGatewayController {
 
   /**
    * GET /cart
-   * Lấy cart theo userId hoặc sessionId
+   * Lấy giỏ hàng của user với thông tin chi tiết sản phẩm
+   * Event: cart.get
    */
   @Get()
-  async get(@Query() query: CartGetDto): Promise<CartResponse> {
-    return this.send<CartGetDto, CartResponse>(EVENTS.CART.GET, query);
+  async get(@Query() dto: CartGetDto): Promise<CartWithProductsResponse> {
+    return await this.send<CartGetDto, CartWithProductsResponse>(EVENTS.CART.GET, dto);
   }
 
   /**
    * POST /cart/items
-   * Thêm item vào cart
+   * Thêm sản phẩm vào giỏ hàng
+   * Event: cart.addItem
    */
   @Post('items')
-  async addItem(@Body() dto: CartAddItemDto): Promise<CartResponse> {
-    return this.send<CartAddItemDto, CartResponse>(EVENTS.CART.ADD_ITEM, dto);
+  async addItem(@Body() dto: CartAddItemDto): Promise<CartItemOperationResponse> {
+    return await this.send<CartAddItemDto, CartItemOperationResponse>(EVENTS.CART.ADD_ITEM, dto);
+  }
+
+  /**
+   * PATCH /cart/items
+   * Cập nhật số lượng sản phẩm trong giỏ hàng
+   * Event: cart.updateItem
+   */
+  @Patch('items')
+  async updateItem(@Body() dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
+    return await this.send<CartUpdateItemDto, CartItemOperationResponse>(
+      EVENTS.CART.UPDATE_ITEM,
+      dto,
+    );
   }
 
   /**
    * DELETE /cart/items
-   * Xóa item khỏi cart
+   * Xóa sản phẩm khỏi giỏ hàng
+   * Event: cart.removeItem
    */
   @Delete('items')
-  async removeItem(@Body() dto: CartRemoveItemDto): Promise<CartResponse> {
-    return this.send<CartRemoveItemDto, CartResponse>(EVENTS.CART.REMOVE_ITEM, dto);
-  }
-
-  /**
-   * DELETE /cart
-   * Xóa toàn bộ items trong cart
-   */
-  @Delete()
-  async clear(@Query() query: CartGetDto): Promise<SuccessResponse> {
-    return this.send<CartGetDto, SuccessResponse>(EVENTS.CART.CLEAR, query);
-  }
-
-  /**
-   * POST /cart/transfer
-   * Chuyển cart từ session sang user (khi user login)
-   */
-  @Post('transfer')
-  @UseGuards(AuthGuard)
-  async transferToUser(
-    @Req() req: Request & { user: { userId: string } },
-    @Body() body: { sessionId: string },
-  ): Promise<TransferCartResponse> {
-    return this.send<{ sessionId: string; userId: string }, TransferCartResponse>(
-      EVENTS.CART.TRANSFER_TO_USER,
-      {
-        sessionId: body.sessionId,
-        userId: req.user.userId,
-      },
+  async removeItem(@Body() dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
+    return await this.send<CartRemoveItemDto, CartOperationSuccessResponse>(
+      EVENTS.CART.REMOVE_ITEM,
+      dto,
     );
   }
 }

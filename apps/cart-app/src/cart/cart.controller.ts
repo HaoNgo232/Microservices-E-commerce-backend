@@ -8,15 +8,14 @@ import {
   CartUpdateItemDto,
   CartRemoveItemDto,
 } from '@shared/dto/cart.dto';
+import {
+  CartItemOperationResponse,
+  CartOperationSuccessResponse,
+  CartWithProductsResponse,
+} from '@shared/types';
 
 /**
  * CartController - NATS Message Handler cho Cart operations
- *
- * Chỉ giữ lại 4 method CRUD cơ bản:
- * - get: Lấy giỏ hàng
- * - addItem: Thêm sản phẩm
- * - updateItem: Cập nhật số lượng
- * - removeItem: Xóa sản phẩm
  */
 @Controller()
 export class CartController {
@@ -27,7 +26,7 @@ export class CartController {
    * Event: cart.get
    */
   @MessagePattern(EVENTS.CART.GET)
-  get(@Payload() dto: CartGetDto) {
+  get(@Payload() dto: CartGetDto): Promise<CartWithProductsResponse> {
     return this.cartService.get(dto);
   }
 
@@ -36,7 +35,7 @@ export class CartController {
    * Event: cart.addItem
    */
   @MessagePattern(EVENTS.CART.ADD_ITEM)
-  addItem(@Payload() dto: CartAddItemDto) {
+  addItem(@Payload() dto: CartAddItemDto): Promise<CartItemOperationResponse> {
     return this.cartService.addItem(dto);
   }
 
@@ -45,7 +44,7 @@ export class CartController {
    * Event: cart.updateItem
    */
   @MessagePattern(EVENTS.CART.UPDATE_ITEM)
-  updateItem(@Payload() dto: CartUpdateItemDto) {
+  updateItem(@Payload() dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
     return this.cartService.updateItem(dto);
   }
 
@@ -54,7 +53,7 @@ export class CartController {
    * Event: cart.removeItem
    */
   @MessagePattern(EVENTS.CART.REMOVE_ITEM)
-  removeItem(@Payload() dto: CartRemoveItemDto) {
+  removeItem(@Payload() dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
     return this.cartService.removeItem(dto);
   }
 }

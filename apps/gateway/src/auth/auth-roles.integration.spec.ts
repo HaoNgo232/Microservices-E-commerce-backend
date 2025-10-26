@@ -296,7 +296,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
       await expect(authGuard.canActivate(context)).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should handle user missing from request in RolesGuard', async () => {
+    it('should handle user missing from request in RolesGuard', () => {
       // Setup: RolesGuard without AuthGuard (user not attached)
       reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
 
