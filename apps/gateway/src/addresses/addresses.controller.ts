@@ -36,7 +36,7 @@ export class AddressesController extends BaseGatewayController {
    */
   @Get()
   async list(@Req() req: Request & { user: { userId: string } }): Promise<AddressResponse[]> {
-    return this.send<string, AddressResponse[]>(EVENTS.ADDRESS.LIST_BY_USER, req.user.userId);
+    return await this.send<string, AddressResponse[]>(EVENTS.ADDRESS.LIST_BY_USER, req.user.userId);
   }
 
   /**
@@ -48,7 +48,7 @@ export class AddressesController extends BaseGatewayController {
     @Req() req: Request & { user: { userId: string } },
     @Body() dto: AddressCreateDto,
   ): Promise<AddressResponse> {
-    return this.send<AddressCreateDto & { userId: string }, AddressResponse>(
+    return await this.send<AddressCreateDto & { userId: string }, AddressResponse>(
       EVENTS.ADDRESS.CREATE,
       { ...dto, userId: req.user.userId },
     );
@@ -60,10 +60,13 @@ export class AddressesController extends BaseGatewayController {
    */
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: AddressUpdateDto): Promise<AddressResponse> {
-    return this.send<AddressUpdateDto & { id: string }, AddressResponse>(EVENTS.ADDRESS.UPDATE, {
-      id,
-      ...dto,
-    });
+    return await this.send<AddressUpdateDto & { id: string }, AddressResponse>(
+      EVENTS.ADDRESS.UPDATE,
+      {
+        id,
+        ...dto,
+      },
+    );
   }
 
   /**
@@ -72,7 +75,7 @@ export class AddressesController extends BaseGatewayController {
    */
   @Delete(':id')
   async delete(@Param('id') id: string): Promise<SuccessResponse> {
-    return this.send<string, SuccessResponse>(EVENTS.ADDRESS.DELETE, id);
+    return await this.send<string, SuccessResponse>(EVENTS.ADDRESS.DELETE, id);
   }
 
   /**
@@ -84,7 +87,7 @@ export class AddressesController extends BaseGatewayController {
     @Req() req: Request & { user: { userId: string } },
     @Param('id') id: string,
   ): Promise<AddressResponse> {
-    return this.send<{ userId: string; addressId: string }, AddressResponse>(
+    return await this.send<{ userId: string; addressId: string }, AddressResponse>(
       EVENTS.ADDRESS.SET_DEFAULT,
       {
         userId: req.user.userId,

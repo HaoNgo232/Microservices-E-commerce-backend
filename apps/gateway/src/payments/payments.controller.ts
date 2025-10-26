@@ -29,7 +29,7 @@ export class PaymentsController extends BaseGatewayController {
    */
   @Post('process')
   async process(@Body() dto: PaymentProcessDto): Promise<PaymentProcessResponse> {
-    return this.send<PaymentProcessDto, PaymentProcessResponse>(EVENTS.PAYMENT.PROCESS, dto);
+    return await this.send<PaymentProcessDto, PaymentProcessResponse>(EVENTS.PAYMENT.PROCESS, dto);
   }
 
   /**
@@ -38,7 +38,7 @@ export class PaymentsController extends BaseGatewayController {
    */
   @Post('verify')
   async verify(@Body() dto: PaymentVerifyDto): Promise<PaymentVerifyResponse> {
-    return this.send<PaymentVerifyDto, PaymentVerifyResponse>(EVENTS.PAYMENT.VERIFY, dto);
+    return await this.send<PaymentVerifyDto, PaymentVerifyResponse>(EVENTS.PAYMENT.VERIFY, dto);
   }
 
   /**
@@ -47,7 +47,7 @@ export class PaymentsController extends BaseGatewayController {
    */
   @Get(':id')
   async findById(@Param('id') id: string): Promise<PaymentResponse> {
-    return this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ID, id);
+    return await this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ID, id);
   }
 
   /**
@@ -56,6 +56,6 @@ export class PaymentsController extends BaseGatewayController {
    */
   @Get('order/:orderId')
   async findByOrder(@Param('orderId') orderId: string): Promise<PaymentResponse> {
-    return this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ORDER, orderId);
+    return await this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ORDER, orderId);
   }
 }

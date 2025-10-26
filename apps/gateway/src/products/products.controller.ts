@@ -34,7 +34,10 @@ export class ProductsController extends BaseGatewayController {
    */
   @Get()
   async list(@Query() query: ProductListQueryDto): Promise<PaginatedProductsResponse> {
-    return this.send<ProductListQueryDto, PaginatedProductsResponse>(EVENTS.PRODUCT.LIST, query);
+    return await this.send<ProductListQueryDto, PaginatedProductsResponse>(
+      EVENTS.PRODUCT.LIST,
+      query,
+    );
   }
 
   /**
@@ -43,7 +46,7 @@ export class ProductsController extends BaseGatewayController {
    */
   @Get(':id')
   async findById(@Param('id') id: string): Promise<ProductResponse> {
-    return this.send<string, ProductResponse>(EVENTS.PRODUCT.GET_BY_ID, id);
+    return await this.send<string, ProductResponse>(EVENTS.PRODUCT.GET_BY_ID, id);
   }
 
   /**
@@ -52,7 +55,7 @@ export class ProductsController extends BaseGatewayController {
    */
   @Get('slug/:slug')
   async findBySlug(@Param('slug') slug: string): Promise<ProductResponse> {
-    return this.send<{ slug: string }, ProductResponse>(EVENTS.PRODUCT.GET_BY_SLUG, { slug });
+    return await this.send<{ slug: string }, ProductResponse>(EVENTS.PRODUCT.GET_BY_SLUG, { slug });
   }
 
   /**
@@ -62,7 +65,7 @@ export class ProductsController extends BaseGatewayController {
   @Post()
   @UseGuards(AuthGuard)
   async create(@Body() dto: ProductCreateDto): Promise<ProductResponse> {
-    return this.send<ProductCreateDto, ProductResponse>(EVENTS.PRODUCT.CREATE, dto);
+    return await this.send<ProductCreateDto, ProductResponse>(EVENTS.PRODUCT.CREATE, dto);
   }
 
   /**
@@ -72,10 +75,13 @@ export class ProductsController extends BaseGatewayController {
   @Put(':id')
   @UseGuards(AuthGuard)
   async update(@Param('id') id: string, @Body() dto: ProductUpdateDto): Promise<ProductResponse> {
-    return this.send<ProductUpdateDto & { id: string }, ProductResponse>(EVENTS.PRODUCT.UPDATE, {
-      id,
-      ...dto,
-    });
+    return await this.send<ProductUpdateDto & { id: string }, ProductResponse>(
+      EVENTS.PRODUCT.UPDATE,
+      {
+        id,
+        ...dto,
+      },
+    );
   }
 
   /**
@@ -85,6 +91,6 @@ export class ProductsController extends BaseGatewayController {
   @Delete(':id')
   @UseGuards(AuthGuard)
   async delete(@Param('id') id: string): Promise<SuccessResponse> {
-    return this.send<string, SuccessResponse>(EVENTS.PRODUCT.DELETE, id);
+    return await this.send<string, SuccessResponse>(EVENTS.PRODUCT.DELETE, id);
   }
 }

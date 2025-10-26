@@ -42,10 +42,13 @@ export class OrdersController extends BaseGatewayController {
     @Req() req: Request & { user: { userId: string } },
     @Body() dto: OrderCreateDto,
   ): Promise<OrderResponse> {
-    return this.send<OrderCreateDto & { userId: string }, OrderResponse>(EVENTS.ORDER.CREATE, {
-      ...dto,
-      userId: req.user.userId,
-    });
+    return await this.send<OrderCreateDto & { userId: string }, OrderResponse>(
+      EVENTS.ORDER.CREATE,
+      {
+        ...dto,
+        userId: req.user.userId,
+      },
+    );
   }
 
   /**
@@ -57,7 +60,7 @@ export class OrdersController extends BaseGatewayController {
     @Req() req: Request & { user: { userId: string } },
     @Query() query: OrderListByUserDto,
   ): Promise<PaginatedOrdersResponse> {
-    return this.send<OrderListByUserDto & { userId: string }, PaginatedOrdersResponse>(
+    return await this.send<OrderListByUserDto & { userId: string }, PaginatedOrdersResponse>(
       EVENTS.ORDER.LIST_BY_USER,
       {
         ...query,
@@ -72,7 +75,7 @@ export class OrdersController extends BaseGatewayController {
    */
   @Get(':id')
   async findById(@Param('id') id: string): Promise<OrderResponse> {
-    return this.send<string, OrderResponse>(EVENTS.ORDER.GET, id);
+    return await this.send<string, OrderResponse>(EVENTS.ORDER.GET, id);
   }
 
   /**
@@ -84,7 +87,7 @@ export class OrdersController extends BaseGatewayController {
     @Param('id') id: string,
     @Body() dto: OrderUpdateStatusDto,
   ): Promise<OrderStatusUpdateResponse> {
-    return this.send<OrderUpdateStatusDto & { id: string }, OrderStatusUpdateResponse>(
+    return await this.send<OrderUpdateStatusDto & { id: string }, OrderStatusUpdateResponse>(
       EVENTS.ORDER.UPDATE_STATUS,
       { ...dto, id },
     );
@@ -96,6 +99,6 @@ export class OrdersController extends BaseGatewayController {
    */
   @Put(':id/cancel')
   async cancel(@Param('id') id: string): Promise<OrderResponse> {
-    return this.send<string, OrderResponse>(EVENTS.ORDER.CANCEL, id);
+    return await this.send<string, OrderResponse>(EVENTS.ORDER.CANCEL, id);
   }
 }

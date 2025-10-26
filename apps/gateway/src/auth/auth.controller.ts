@@ -26,7 +26,7 @@ export class AuthController extends BaseGatewayController {
    */
   @Post('register')
   async register(@Body() dto: CreateUserDto): Promise<UserResponse> {
-    return this.send<CreateUserDto, UserResponse>(EVENTS.AUTH.REGISTER, dto);
+    return await this.send<CreateUserDto, UserResponse>(EVENTS.AUTH.REGISTER, dto);
   }
 
   /**
@@ -35,7 +35,7 @@ export class AuthController extends BaseGatewayController {
    */
   @Post('login')
   async login(@Body() dto: LoginDto): Promise<AuthResponse> {
-    return this.send<LoginDto, AuthResponse>(EVENTS.AUTH.LOGIN, dto);
+    return await this.send<LoginDto, AuthResponse>(EVENTS.AUTH.LOGIN, dto);
   }
 
   /**
@@ -44,7 +44,7 @@ export class AuthController extends BaseGatewayController {
    */
   @Post('refresh')
   async refresh(@Body() dto: RefreshDto): Promise<AuthResponse> {
-    return this.send<RefreshDto, AuthResponse>(EVENTS.AUTH.REFRESH, dto);
+    return await this.send<RefreshDto, AuthResponse>(EVENTS.AUTH.REFRESH, dto);
   }
 
   /**
@@ -57,7 +57,7 @@ export class AuthController extends BaseGatewayController {
   async getCurrentUser(
     @Req() req: Request & { user: { userId: string; email: string; role: string } },
   ): Promise<UserResponse> {
-    return this.send<string, UserResponse>(EVENTS.USER.FIND_BY_ID, req.user.userId);
+    return await this.send<string, UserResponse>(EVENTS.USER.FIND_BY_ID, req.user.userId);
   }
 
   /**
@@ -66,6 +66,6 @@ export class AuthController extends BaseGatewayController {
    */
   @Post('verify')
   async verify(@Body() dto: { token: string }): Promise<VerifyResponse> {
-    return this.send<{ token: string }, VerifyResponse>(EVENTS.AUTH.VERIFY, dto);
+    return await this.send<{ token: string }, VerifyResponse>(EVENTS.AUTH.VERIFY, dto);
   }
 }

@@ -26,7 +26,10 @@ export class ArController extends BaseGatewayController {
   @Post('snapshots')
   @UseGuards(AuthGuard)
   async createSnapshot(@Body() dto: ARSnapshotCreateDto): Promise<ARSnapshotCreateResponse> {
-    return this.send<ARSnapshotCreateDto, ARSnapshotCreateResponse>(EVENTS.AR.SNAPSHOT_CREATE, dto);
+    return await this.send<ARSnapshotCreateDto, ARSnapshotCreateResponse>(
+      EVENTS.AR.SNAPSHOT_CREATE,
+      dto,
+    );
   }
 
   /**
@@ -36,7 +39,7 @@ export class ArController extends BaseGatewayController {
    */
   @Get('snapshots')
   async listSnapshots(@Query() query: ARSnapshotListDto): Promise<PaginatedARSnapshotsResponse> {
-    return this.send<ARSnapshotListDto, PaginatedARSnapshotsResponse>(
+    return await this.send<ARSnapshotListDto, PaginatedARSnapshotsResponse>(
       EVENTS.AR.SNAPSHOT_LIST,
       query,
     );
