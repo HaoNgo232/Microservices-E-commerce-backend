@@ -10,8 +10,7 @@ Content-Type: application/json
 {
   "email": "{{email}}",
   "password": "{{password}}",
-  "fullName": "Test User",
-  "phone": "0123456789"
+  "fullName": "Test User"
 }
 
 ### Login

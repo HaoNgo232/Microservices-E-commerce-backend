@@ -258,4 +258,99 @@ describe('Gateway (e2e)', () => {
       expect(productService.send).toHaveBeenCalled();
     });
   });
+
+  describe('Authorization (Role-based Access Control)', () => {
+    const mockUserList = [
+      { id: 'user-1', email: 'user1@example.com', fullName: 'User One', role: 'CUSTOMER' },
+      { id: 'user-2', email: 'user2@example.com', fullName: 'User Two', role: 'ADMIN' },
+    ];
+
+    beforeEach(() => {
+      userService.send.mockReturnValue(
+        of({ users: mockUserList, total: 2, page: 1, pageSize: 10 }),
+      );
+    });
+
+    it('should allow ADMIN to access /users endpoint', async () => {
+      // Mock ADMIN token
+      const adminPayload = { sub: 'admin-1', email: 'admin@example.com', role: 'ADMIN' };
+      jwtService.verifyToken.mockResolvedValueOnce(adminPayload);
+
+      await request(app.getHttpServer())
+        .get('/users')
+        .set('Authorization', `Bearer admin.token`)
+        .expect(200);
+
+      expect(userService.send).toHaveBeenCalled();
+    });
+
+    it('should deny CUSTOMER access to /users endpoint (admin-only)', async () => {
+      // Mock CUSTOMER token
+      const customerPayload = { sub: 'user-123', email: 'user@example.com', role: 'CUSTOMER' };
+      jwtService.verifyToken.mockResolvedValueOnce(customerPayload);
+
+      await request(app.getHttpServer())
+        .get('/users')
+        .set('Authorization', `Bearer customer.token`)
+        .expect(403);
+
+      expect(userService.send).not.toHaveBeenCalled();
+    });
+
+    it('should allow both ADMIN and CUSTOMER to access /users/:id', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+        fullName: 'Test User',
+        role: 'CUSTOMER',
+      };
+
+      // Test with CUSTOMER token
+      const customerPayload = { sub: 'user-123', email: 'user@example.com', role: 'CUSTOMER' };
+      jwtService.verifyToken.mockResolvedValueOnce(customerPayload);
+      userService.send.mockReturnValue(of(mockUser));
+
+      await request(app.getHttpServer())
+        .get('/users/user-123')
+        .set('Authorization', `Bearer customer.token`)
+        .expect(200);
+
+      // Test with ADMIN token
+      const adminPayload = { sub: 'admin-1', email: 'admin@example.com', role: 'ADMIN' };
+      jwtService.verifyToken.mockResolvedValueOnce(adminPayload);
+
+      await request(app.getHttpServer())
+        .get('/users/user-123')
+        .set('Authorization', `Bearer admin.token`)
+        .expect(200);
+
+      expect(userService.send).toHaveBeenCalled();
+    });
+
+    it('should deny CUSTOMER access to /users/email/:email (admin-only)', async () => {
+      const customerPayload = { sub: 'user-123', email: 'user@example.com', role: 'CUSTOMER' };
+      jwtService.verifyToken.mockResolvedValueOnce(customerPayload);
+
+      await request(app.getHttpServer())
+        .get('/users/email/test@example.com')
+        .set('Authorization', `Bearer customer.token`)
+        .expect(403);
+
+      expect(userService.send).not.toHaveBeenCalled();
+    });
+
+    it('should return 403 with proper error message when role mismatch', async () => {
+      const customerPayload = { sub: 'user-123', email: 'user@example.com', role: 'CUSTOMER' };
+      jwtService.verifyToken.mockResolvedValueOnce(customerPayload);
+
+      const response = await request(app.getHttpServer())
+        .get('/users')
+        .set('Authorization', `Bearer customer.token`)
+        .expect(403);
+
+      expect(response.body.message).toContain('Access denied');
+      expect(response.body.message).toContain('Required roles: ADMIN');
+      expect(response.body.message).toContain('Your role: CUSTOMER');
+    });
+  });
 });

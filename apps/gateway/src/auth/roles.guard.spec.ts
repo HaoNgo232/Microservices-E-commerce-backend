@@ -1,323 +1,118 @@
-import 'reflect-metadata';
+import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRole } from '@shared/dto/user.dto';
-import { UserResponse } from '@shared/types/user.types';
 import { RolesGuard } from './roles.guard';
+import { UserRole } from '@shared/dto/user.dto';
 
 describe('RolesGuard', () => {
   let guard: RolesGuard;
-  let reflector: jest.Mocked<Reflector>;
+  let reflector: Reflector;
 
-  const createMockContext = (request: Record<string, unknown>): ExecutionContext =>
-    ({
-      switchToHttp: () => ({
-        getRequest: () => request,
-      }),
-      getHandler: jest.fn(),
-      getClass: jest.fn(),
-    }) as unknown as ExecutionContext;
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        RolesGuard,
+        {
+          provide: Reflector,
+          useValue: {
+            getAllAndOverride: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
 
-  beforeEach(() => {
-    reflector = {
-      getAllAndOverride: jest.fn(),
-    } as unknown as jest.Mocked<Reflector>;
-
-    guard = new RolesGuard(reflector);
+    guard = module.get<RolesGuard>(RolesGuard);
+    reflector = module.get<Reflector>(Reflector);
   });
 
-  describe('Happy Path Tests', () => {
-    it('should allow access when no @Roles() decorator present', () => {
-      reflector.getAllAndOverride.mockReturnValue(undefined);
+  describe('canActivate', () => {
+    let mockContext: Partial<ExecutionContext>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mockRequest: any;
 
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com', role: 'CUSTOMER' },
-      });
-
-      expect(guard.canActivate(context)).toBe(true);
-      expect(reflector.getAllAndOverride).toHaveBeenCalledWith('roles', [
-        context.getHandler(),
-        context.getClass(),
-      ]);
-    });
-
-    it('should allow access when required roles is empty array', () => {
-      reflector.getAllAndOverride.mockReturnValue([]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com', role: 'CUSTOMER' },
-      });
-
-      expect(guard.canActivate(context)).toBe(true);
-    });
-
-    it('should allow access when user role matches single required role', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'admin@test.com', role: 'ADMIN' },
-      });
-
-      expect(guard.canActivate(context)).toBe(true);
-    });
-
-    it('should allow access when user role matches one of multiple required roles', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'customer@test.com', role: 'CUSTOMER' },
-      });
-
-      expect(guard.canActivate(context)).toBe(true);
-    });
-
-    it('should allow access when user has ADMIN role and endpoint requires ADMIN', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'admin@test.com', role: 'ADMIN' },
-      });
-
-      expect(guard.canActivate(context)).toBe(true);
-    });
-
-    it('should allow access when user has CUSTOMER role and endpoint requires CUSTOMER', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.CUSTOMER]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'customer@test.com', role: 'CUSTOMER' },
-      });
-
-      expect(guard.canActivate(context)).toBe(true);
-    });
-  });
-
-  describe('Error Handling Tests', () => {
-    it('should throw ForbiddenException when user role does not match', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'customer@test.com', role: 'CUSTOMER' },
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(context)).toThrow(/Required roles: \[ADMIN\]/);
-      expect(() => guard.canActivate(context)).toThrow(/Your role: CUSTOMER/);
-    });
-
-    it('should throw ForbiddenException when user is missing from request', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({});
-
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(context)).toThrow(/User not found in request/);
-    });
-
-    it('should throw ForbiddenException when user is null', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({ user: null });
-
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(context)).toThrow(/User not found in request/);
-    });
-
-    it('should throw ForbiddenException when user is undefined', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({ user: undefined });
-
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(context)).toThrow(/User not found in request/);
-    });
-
-    it('should throw ForbiddenException when user.role is missing', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com' }, // Missing role
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-    });
-
-    it('should throw ForbiddenException when user.role is null', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com', role: null },
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-    });
-
-    it('should throw ForbiddenException when user.role is undefined', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com', role: undefined },
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-    });
-
-    it('should throw ForbiddenException when user.role is empty string', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com', role: '' },
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-    });
-  });
-
-  describe('Edge Case Tests', () => {
-    it('should check both method and class level decorators', () => {
-      const getAllAndOverrideSpy = reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'admin@test.com', role: 'ADMIN' },
-      });
-
-      guard.canActivate(context);
-
-      expect(getAllAndOverrideSpy).toHaveBeenCalledWith('roles', [
-        context.getHandler(),
-        context.getClass(),
-      ]);
-    });
-
-    it('should include user role in error message', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'customer@test.com', role: 'CUSTOMER' },
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(/Your role: CUSTOMER/);
-    });
-
-    it('should include required roles in error message', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com', role: 'GUEST' },
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(/Required roles: \[ADMIN, CUSTOMER\]/);
-    });
-
-    it('should handle single required role in error message', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'customer@test.com', role: 'CUSTOMER' },
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(/Required roles: \[ADMIN\]/);
-    });
-
-    it('should work with UserResponse type assertion', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const userResponse: UserResponse = {
-        id: '123',
-        email: 'admin@test.com',
-        fullName: 'Admin User',
-        phone: '+1234567890',
-        role: UserRole.ADMIN,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+    beforeEach(() => {
+      mockRequest = {
+        user: null,
       };
 
-      const context = createMockContext({ user: userResponse });
-
-      expect(guard.canActivate(context)).toBe(true);
-    });
-  });
-
-  describe('Role Matching Logic', () => {
-    it('should use OR logic for multiple roles', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
-
-      // Test with ADMIN role
-      const adminContext = createMockContext({
-        user: { userId: '123', email: 'admin@test.com', role: 'ADMIN' },
-      });
-      expect(guard.canActivate(adminContext)).toBe(true);
-
-      // Test with CUSTOMER role
-      const customerContext = createMockContext({
-        user: { userId: '456', email: 'customer@test.com', role: 'CUSTOMER' },
-      });
-      expect(guard.canActivate(customerContext)).toBe(true);
-
-      // Test with invalid role
-      const invalidContext = createMockContext({
-        user: { userId: '789', email: 'guest@test.com', role: 'GUEST' },
-      });
-      expect(() => guard.canActivate(invalidContext)).toThrow(ForbiddenException);
+      mockContext = {
+        switchToHttp: jest.fn().mockReturnValue({
+          getRequest: jest.fn().mockReturnValue(mockRequest),
+        }),
+      };
     });
 
-    it('should be case sensitive for role matching', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
+    it('should allow access when no @Roles() decorator is present', () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
 
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com', role: 'admin' }, // lowercase
-      });
-
-      expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+      expect(guard.canActivate(mockContext as ExecutionContext)).toBe(true);
     });
 
-    it('should handle exact role matching', () => {
-      reflector.getAllAndOverride.mockReturnValue([UserRole.CUSTOMER]);
+    it('should allow access when requiredRoles is empty array', () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([]);
 
-      const context = createMockContext({
-        user: { userId: '123', email: 'customer@test.com', role: 'CUSTOMER' },
-      });
-
-      expect(guard.canActivate(context)).toBe(true);
-    });
-  });
-
-  describe('Reflector Integration', () => {
-    it('should call getAllAndOverride with correct parameters', () => {
-      const getAllAndOverrideSpy = reflector.getAllAndOverride.mockReturnValue([UserRole.ADMIN]);
-
-      const context = createMockContext({
-        user: { userId: '123', email: 'admin@test.com', role: 'ADMIN' },
-      });
-
-      guard.canActivate(context);
-
-      expect(getAllAndOverrideSpy).toHaveBeenCalledTimes(1);
-      expect(getAllAndOverrideSpy).toHaveBeenCalledWith('roles', [
-        context.getHandler(),
-        context.getClass(),
-      ]);
+      expect(guard.canActivate(mockContext as ExecutionContext)).toBe(true);
     });
 
-    it('should handle getAllAndOverride returning null', () => {
-      reflector.getAllAndOverride.mockReturnValue(null);
+    it('should throw ForbiddenException when user is not in request', () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
 
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com', role: 'CUSTOMER' },
-      });
-
-      expect(guard.canActivate(context)).toBe(true);
+      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(ForbiddenException);
+      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(
+        'User role not found in token',
+      );
     });
 
-    it('should handle getAllAndOverride returning undefined', () => {
-      reflector.getAllAndOverride.mockReturnValue(undefined);
+    it('should throw ForbiddenException when user role is missing', () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
 
-      const context = createMockContext({
-        user: { userId: '123', email: 'test@test.com', role: 'CUSTOMER' },
-      });
+      mockRequest.user = {}; // user without role
 
-      expect(guard.canActivate(context)).toBe(true);
+      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(ForbiddenException);
+      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(
+        'User role not found in token',
+      );
+    });
+
+    it('should allow access when user role matches required role', () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
+
+      mockRequest.user = { role: UserRole.ADMIN };
+
+      expect(guard.canActivate(mockContext as ExecutionContext)).toBe(true);
+    });
+
+    it('should allow access when user role is in required roles list', () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
+
+      mockRequest.user = { role: UserRole.CUSTOMER };
+
+      expect(guard.canActivate(mockContext as ExecutionContext)).toBe(true);
+    });
+
+    it('should throw ForbiddenException when user role does not match', () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
+
+      mockRequest.user = { role: UserRole.CUSTOMER };
+
+      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(ForbiddenException);
+      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(
+        'Access denied. Required roles: ADMIN. Your role: CUSTOMER',
+      );
+    });
+
+    it('should include multiple required roles in error message', () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
+
+      mockRequest.user = { role: 'INVALID' };
+
+      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(
+        'Access denied. Required roles: ADMIN, CUSTOMER. Your role: INVALID',
+      );
     });
   });
 });

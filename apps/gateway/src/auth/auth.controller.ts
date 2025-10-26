@@ -1,7 +1,6 @@
 import { Controller, Post, Body, Get, UseGuards, Req, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { LoginDto, RefreshDto } from '@shared/dto/auth.dto';
-import { CreateUserDto } from '@shared/dto/user.dto';
+import { LoginDto, RefreshDto, RegisterDto } from '@shared/dto/auth.dto';
 import { AuthGuard } from '@gateway/auth/auth.guard';
 import { BaseGatewayController } from '@gateway/base.controller';
 import { EVENTS } from '@shared/events';
@@ -25,8 +24,8 @@ export class AuthController extends BaseGatewayController {
    * Đăng ký tài khoản mới
    */
   @Post('register')
-  register(@Body() dto: CreateUserDto): Promise<UserResponse> {
-    return this.send<CreateUserDto, UserResponse>(EVENTS.AUTH.REGISTER, dto);
+  register(@Body() dto: RegisterDto): Promise<UserResponse> {
+    return this.send<RegisterDto, UserResponse>(EVENTS.AUTH.REGISTER, dto);
   }
 
   /**

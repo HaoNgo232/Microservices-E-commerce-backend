@@ -2,13 +2,12 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from '@user-app/users/users.service';
 import { EVENTS } from '@shared/events';
-import { CreateUserDto, UpdateUserDto, ListUsersDto } from '@shared/dto/user.dto';
+import { UpdateUserDto, ListUsersDto } from '@shared/dto/user.dto';
 import { ListUsersResponse, UserResponse } from '@shared/main';
 
 export interface IUsersController {
   findById(id: string): Promise<UserResponse>;
   findByEmail(email: string): Promise<UserResponse>;
-  create(dto: CreateUserDto): Promise<UserResponse>;
   update(payload: { id: string; dto: UpdateUserDto }): Promise<UserResponse>;
   deactivate(id: string): Promise<{ message: string }>;
   list(query: ListUsersDto): Promise<ListUsersResponse>;
@@ -26,11 +25,6 @@ export class UsersController implements IUsersController {
   @MessagePattern(EVENTS.USER.FIND_BY_EMAIL)
   findByEmail(@Payload() email: string): Promise<UserResponse> {
     return this.usersService.findByEmail(email);
-  }
-
-  @MessagePattern(EVENTS.USER.CREATE)
-  create(@Payload() dto: CreateUserDto): Promise<UserResponse> {
-    return this.usersService.create(dto);
   }
 
   @MessagePattern(EVENTS.USER.UPDATE)

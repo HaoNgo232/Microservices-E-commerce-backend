@@ -1,9 +1,7 @@
 import { Type } from 'class-transformer';
 import {
-  IsNotEmpty,
   IsOptional,
   IsString,
-  IsEmail,
   IsEnum,
   IsBoolean,
   IsNumber,
@@ -14,32 +12,6 @@ import {
 export enum UserRole {
   ADMIN = 'ADMIN',
   CUSTOMER = 'CUSTOMER',
-}
-
-export class CreateUserDto {
-  @IsNotEmpty()
-  @IsEmail()
-  email: string;
-
-  @IsNotEmpty()
-  @IsString()
-  password: string;
-
-  @IsOptional()
-  @IsString()
-  fullName?: string;
-
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole = UserRole.CUSTOMER;
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean = true;
 }
 
 export class UpdateUserDto {

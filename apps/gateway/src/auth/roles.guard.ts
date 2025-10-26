@@ -1,20 +1,25 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRole } from '@shared/dto/user.dto';
+import { Request } from 'express';
 import { ROLES_KEY } from './roles.decorator';
-import { UserResponse } from '@shared/types/user.types';
 
 /**
- * Authorization Guard - Kiểm tra user có role phù hợp để truy cập endpoint
+ * RolesGuard - Role-based Authorization Guard
  *
- * QUAN TRỌNG: Guard này phải được sử dụng CÙNG VỚI AuthGuard
- * và AuthGuard phải chạy TRƯỚC để attach user vào request
+ * Kiểm tra xem user có role phù hợp để truy cập endpoint không.
+ * Chỉ hoạt động khi có @Roles() decorator, nếu không thì chỉ cần authentication.
+ *
+ * Execution Order:
+ * 1. AuthGuard runs first → Verify JWT, attach user to request
+ * 2. RolesGuard runs second → Check if user.role matches @Roles() requirement
  *
  * @example
  * ```typescript
- * @Controller('users')
- * @UseGuards(AuthGuard, RolesGuard)  // ← Đúng order!
- * export class UsersController { }
+ * @Get('users')
+ * @UseGuards(AuthGuard, RolesGuard)
+ * @Roles(UserRole.ADMIN)
+ * async listAllUsers() { ... }
  * ```
  */
 @Injectable()
@@ -22,38 +27,35 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // Step 1: Lấy required roles từ @Roles() decorator
-    // getAllAndOverride checks both method and class decorators
+    // 1. Lấy roles yêu cầu từ decorator @Roles()
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
-      context.getHandler(), // Method-level decorator
-      context.getClass(), // Class-level decorator
+      context.getHandler(),
+      context.getClass(),
     ]);
 
-    // Step 2: Nếu không có @Roles() decorator → allow access
-    // Endpoint chỉ cần authentication, không cần authorization
+    // 2. Nếu không có @Roles() decorator → cho phép truy cập (chỉ cần authentication)
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
-    // Step 3: Lấy user từ request (đã được AuthGuard attach)
-    const request = context.switchToHttp().getRequest<Request>();
+    // 3. Lấy user từ request (đã được AuthGuard attach vào)
+    const request = context.switchToHttp().getRequest<Request & { user?: { role: UserRole } }>();
+    const user = request.user;
 
-    if (!request['user']) {
-      throw new ForbiddenException('User not found in request');
+    // 4. Kiểm tra user có role phù hợp không
+    if (!user || !user.role) {
+      throw new ForbiddenException('User role not found in token');
     }
 
-    const user = request['user'] as UserResponse;
+    // 5. Check if user's role matches any required roles
+    const hasRole = requiredRoles.includes(user.role);
 
-    // Step 5: Check if user's role matches any required roles (OR logic)
-    const hasRequiredRole = requiredRoles.includes(user.role);
-
-    if (!hasRequiredRole) {
+    if (!hasRole) {
       throw new ForbiddenException(
-        `Access denied. Required roles: [${requiredRoles.join(', ')}]. Your role: ${user.role}`,
+        `Access denied. Required roles: ${requiredRoles.join(', ')}. Your role: ${user.role}`,
       );
     }
 
-    // Step 6: Authorization successful
     return true;
   }
 }

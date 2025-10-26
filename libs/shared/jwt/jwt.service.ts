@@ -97,7 +97,7 @@ export class JwtService implements OnModuleInit {
   async signToken(payload: jose.JWTPayload, expiresInSeconds: number): Promise<string> {
     if (!this.privateKey) {
       throw new UnauthorizedException(
-        '[JwtService] Cannot sign token: Private key not loaded (set JWT_PRIVATE_KEY_BASE64)',
+        '[JwtService] Cannot sign token: Private key not loaded (ensure keys/private-key.pem exists in user-app)',
       );
     }
 
@@ -143,7 +143,9 @@ export class JwtService implements OnModuleInit {
    */
   async verifyToken(token: string): Promise<jose.JWTPayload> {
     if (!this.publicKey) {
-      throw new UnauthorizedException('[JwtService] Cannot verify token: Public key not loaded');
+      throw new UnauthorizedException(
+        '[JwtService] Cannot verify token: Public key not loaded (ensure keys/public-key.pem exists)',
+      );
     }
 
     try {

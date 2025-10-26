@@ -1,37 +1,39 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { SetMetadata } from '@nestjs/common';
 import { UserRole } from '@shared/dto/user.dto';
 
 /**
- * Metadata key để lưu required roles
- * Được sử dụng bởi RolesGuard để retrieve metadata
+ * Metadata key để lưu roles trong Reflector
  */
 export const ROLES_KEY = 'roles';
 
 /**
  * Decorator để chỉ định roles được phép truy cập endpoint
  *
- * @param roles - Một hoặc nhiều UserRole values
+ * Sử dụng cùng với @UseGuards(AuthGuard, RolesGuard)
  *
- * @example Single role
+ * @param roles - Danh sách roles được phép (OR logic - chỉ cần 1 role match)
+ *
+ * @example Admin-only endpoint
  * ```typescript
+ * @Get('users')
+ * @UseGuards(AuthGuard, RolesGuard)
  * @Roles(UserRole.ADMIN)
- * @Post('users')
- * async createUser() { }
+ * async listAllUsers() { ... }
  * ```
  *
- * @example Multiple roles (OR logic)
+ * @example Multiple roles allowed
  * ```typescript
- * @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
  * @Get('products')
- * async listProducts() { }
+ * @UseGuards(AuthGuard, RolesGuard)
+ * @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
+ * async listProducts() { ... }
  * ```
  *
- * @example Class-level usage
+ * @example No @Roles() decorator (authentication-only)
  * ```typescript
- * @Controller('users')
- * @Roles(UserRole.ADMIN) // Apply to all methods in class
- * export class UsersController { }
+ * @Get('me')
+ * @UseGuards(AuthGuard, RolesGuard)
+ * async getMyProfile() { ... }
  * ```
  */
-export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
+export const Roles = (...roles: UserRole[]): MethodDecorator => SetMetadata(ROLES_KEY, roles);
