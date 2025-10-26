@@ -11,7 +11,7 @@ import { PrismaService } from '@user-app/prisma/prisma.service';
 
 export interface IAddressService {
   listByUser(dto: AddressListByUserDto): Promise<AddressResponse[]>;
-  create(dto: AddressCreateDto): Promise<AddressResponse>;
+  create(payload: { userId: string; dto: AddressCreateDto }): Promise<AddressResponse>;
   update(id: string, dto: AddressUpdateDto): Promise<AddressResponse>;
   delete(id: string): Promise<{ success: boolean; message: string }>;
   setDefaultAddress(dto: AddressSetDefaultDto): Promise<AddressResponse>;
@@ -38,24 +38,26 @@ export class AddressService implements IAddressService {
     }
   }
 
-  async create(dto: AddressCreateDto): Promise<AddressResponse> {
+  async create(payload: { userId: string; dto: AddressCreateDto }): Promise<AddressResponse> {
     try {
+      const { userId, dto } = payload;
+
       // Kiểm tra user có tồn tại không
       const userExists = await this.prisma.user.findUnique({
-        where: { id: dto.userId },
+        where: { id: userId },
         select: { id: true },
       });
 
       if (!userExists) {
         throw new RpcException({
           statusCode: 404,
-          message: `Người dùng ${dto.userId} không tồn tại`,
+          message: `Người dùng ${userId} không tồn tại`,
         });
       }
 
       // Kiểm tra xem user đã có địa chỉ nào chưa
       const existingAddressCount = await this.prisma.address.count({
-        where: { userId: dto.userId },
+        where: { userId },
       });
 
       // LOGIC QUAN TRỌNG: Địa chỉ đầu tiên tự động là default
@@ -67,7 +69,7 @@ export class AddressService implements IAddressService {
       // Nếu đánh dấu địa chỉ mới là mặc định → bỏ mặc định tất cả địa chỉ cũ
       if (shouldBeDefault) {
         await this.prisma.address.updateMany({
-          where: { userId: dto.userId },
+          where: { userId },
           data: { isDefault: false },
         });
       }
@@ -75,7 +77,7 @@ export class AddressService implements IAddressService {
       // Tạo địa chỉ mới
       const address = await this.prisma.address.create({
         data: {
-          userId: dto.userId,
+          userId,
           fullName: dto.fullName,
           phone: dto.phone,
           street: dto.street,

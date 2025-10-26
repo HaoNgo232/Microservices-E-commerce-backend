@@ -48,9 +48,11 @@ export class AddressesController extends BaseGatewayController {
     @Req() req: Request & { user: { userId: string } },
     @Body() dto: AddressCreateDto,
   ): Promise<AddressResponse> {
-    return this.send<AddressCreateDto & { userId: string }, AddressResponse>(
+    // IMPORTANT: Extract userId from JWT token, NOT from request body
+    // This prevents security vulnerability where users could create addresses for other users
+    return this.send<{ userId: string; dto: AddressCreateDto }, AddressResponse>(
       EVENTS.ADDRESS.CREATE,
-      { ...dto, userId: req.user.userId },
+      { userId: req.user.userId, dto },
     );
   }
 

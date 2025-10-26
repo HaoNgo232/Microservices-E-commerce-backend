@@ -12,7 +12,7 @@ import { AddressResponse } from '@shared/types/address.types';
 
 export interface IAddressController {
   listByUser(dto: AddressListByUserDto): Promise<AddressResponse[]>;
-  create(dto: AddressCreateDto): Promise<AddressResponse>;
+  create(payload: { userId: string; dto: AddressCreateDto }): Promise<AddressResponse>;
   update(payload: { id: string; dto: AddressUpdateDto }): Promise<AddressResponse>;
   delete(id: string): Promise<{ success: boolean; message: string }>;
   setDefault(dto: AddressSetDefaultDto): Promise<AddressResponse>;
@@ -28,8 +28,8 @@ export class AddressController implements IAddressController {
   }
 
   @MessagePattern(EVENTS.ADDRESS.CREATE)
-  create(@Payload() dto: AddressCreateDto): Promise<AddressResponse> {
-    return this.addressService.create(dto);
+  create(@Payload() payload: { userId: string; dto: AddressCreateDto }): Promise<AddressResponse> {
+    return this.addressService.create(payload);
   }
 
   @MessagePattern(EVENTS.ADDRESS.UPDATE)

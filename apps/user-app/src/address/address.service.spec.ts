@@ -113,7 +113,6 @@ describe('AddressService', () => {
   describe('create', () => {
     it('nên tạo địa chỉ mới thành công', async () => {
       const dto: AddressCreateDto = {
-        userId: 'user123',
         fullName: 'Nguyễn Văn A',
         phone: '0123456789',
         street: '123 Lê Lợi',

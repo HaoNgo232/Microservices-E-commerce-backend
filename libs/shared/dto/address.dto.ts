@@ -1,9 +1,8 @@
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class AddressCreateDto {
-  @IsNotEmpty()
-  @IsString()
-  userId: string;
+  // NOTE: userId is NOT in DTO - it comes from JWT token for security
+  // Gateway will automatically extract userId from request.user.userId
 
   @IsNotEmpty()
   @IsString()

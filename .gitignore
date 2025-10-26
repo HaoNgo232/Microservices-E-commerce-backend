@@ -62,3 +62,5 @@ generated/
 .aider*
 
 /generated/prisma
+
+test-results.json

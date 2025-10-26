@@ -1,6 +1,17 @@
 ### Address Management Tests
 ### Test CRUD operations cho shipping addresses
 
+### Login as Customer
+# @name loginCustomer
+POST {{gatewayUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "customer@test.com",
+  "password": "Customer@123456"
+}
+
+### Variables
 @gatewayUrl = http://localhost:3000
 @token = {{loginCustomer.response.body.accessToken}}
 
@@ -10,6 +21,8 @@ Authorization: Bearer {{token}}
 
 ### 2. Create New Address
 # @name createAddress
+# NOTE: userId is automatically extracted from JWT token (security)
+# You DON'T need to provide userId in request body
 POST {{gatewayUrl}}/addresses
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -26,6 +39,7 @@ Content-Type: application/json
 
 ### 3. Create Second Address
 # @name createAddress2
+# userId automatically extracted from JWT token
 POST {{gatewayUrl}}/addresses
 Authorization: Bearer {{token}}
 Content-Type: application/json

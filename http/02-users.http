@@ -25,6 +25,8 @@ Content-Type: application/json
   "password": "Customer@123456"
 }
 
+###
+
 @adminToken = {{loginAdmin.response.body.accessToken}}
 @customerToken = {{loginCustomer.response.body.accessToken}}
 
