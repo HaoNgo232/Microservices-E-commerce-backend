@@ -73,9 +73,8 @@ describe('AuthController (e2e)', () => {
       expect(result).toBeDefined();
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
-      expect(result.user).toBeDefined();
-      expect(result.user.email).toBe(registerDto.email);
-      expect(result.user.fullName).toBe(registerDto.fullName);
+      // User info có trong JWT payload, không trả về riêng
+      expect(result.user).toBeUndefined();
     });
 
     it('should fail registration with duplicate email', async () => {
@@ -118,8 +117,8 @@ describe('AuthController (e2e)', () => {
       expect(result).toBeDefined();
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
-      expect(result.user).toBeDefined();
-      expect(result.user.email).toBe(testUserEmail);
+      // User info có trong JWT payload, không trả về riêng
+      expect(result.user).toBeUndefined();
     });
 
     it('should fail login with wrong password', async () => {

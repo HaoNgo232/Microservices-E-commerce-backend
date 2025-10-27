@@ -21,16 +21,18 @@ export class AuthController extends BaseGatewayController {
 
   /**
    * POST /auth/register
-   * Đăng ký tài khoản mới
+   * Đăng ký tài khoản mới - trả về tokens
+   * Client decode accessToken để lấy user info
    */
   @Post('register')
-  register(@Body() dto: RegisterDto): Promise<UserResponse> {
-    return this.send<RegisterDto, UserResponse>(EVENTS.AUTH.REGISTER, dto);
+  register(@Body() dto: RegisterDto): Promise<AuthResponse> {
+    return this.send<RegisterDto, AuthResponse>(EVENTS.AUTH.REGISTER, dto);
   }
 
   /**
    * POST /auth/login
    * Xác thực user và trả về JWT tokens
+   * Client decode accessToken để lấy user info (sub, email, role)
    */
   @Post('login')
   login(@Body() dto: LoginDto): Promise<AuthResponse> {

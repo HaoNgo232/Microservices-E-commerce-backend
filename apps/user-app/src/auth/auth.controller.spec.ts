@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, VerifyDto, RefreshDto } from '@shared/dto/auth.dto';
-import { AuthTokens, UserRole } from '@shared/main';
+import { AuthResponse, UserRole } from '@shared/main';
 import { JWTPayload } from 'jose';
 
 describe('AuthController', () => {
@@ -16,26 +16,9 @@ describe('AuthController', () => {
     refresh: jest.fn(),
   };
 
-  const mockAuthTokens: AuthTokens = {
+  const mockAuthResponse: AuthResponse = {
     accessToken: 'mock.access.token',
     refreshToken: 'mock.refresh.token',
-    user: {
-      sub: 'user-123',
-      email: 'test@example.com',
-      fullName: 'Test User',
-      role: UserRole.CUSTOMER,
-    },
-  };
-
-  const mockUserData = {
-    sub: 'user-123',
-    email: 'test@example.com',
-    role: 'CUSTOMER',
-  };
-
-  const mockAuthResponse = {
-    ...mockAuthTokens,
-    user: mockUserData,
   };
 
   const mockJWTPayload: JWTPayload = {
@@ -82,7 +65,6 @@ describe('AuthController', () => {
       expect(result).toEqual(mockAuthResponse);
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
-      expect(result.user).toEqual(mockUserData);
       expect(service.login).toHaveBeenCalledWith(loginDto);
       expect(service.login).toHaveBeenCalledTimes(1);
     });
@@ -119,21 +101,13 @@ describe('AuthController', () => {
         password: 'Password123!',
         fullName: 'New User',
       };
-      const registerResponse = {
-        ...mockAuthResponse,
-        user: {
-          ...mockUserData,
-          email: registerDto.email,
-        },
-      };
-      mockAuthService.register.mockResolvedValue(registerResponse);
+      mockAuthService.register.mockResolvedValue(mockAuthResponse);
 
       const result = await controller.register(registerDto);
 
-      expect(result).toEqual(registerResponse);
+      expect(result).toEqual(mockAuthResponse);
       expect(result.accessToken).toBeDefined();
       expect(result.refreshToken).toBeDefined();
-      expect(result.user.email).toBe(registerDto.email);
       expect(service.register).toHaveBeenCalledWith(registerDto);
       expect(service.register).toHaveBeenCalledTimes(1);
     });
@@ -157,18 +131,13 @@ describe('AuthController', () => {
         password: 'Password123!',
         fullName: 'Customer User',
       };
-      const customerResponse = {
-        ...mockAuthResponse,
-        user: {
-          ...mockUserData,
-          role: 'CUSTOMER',
-        },
-      };
-      mockAuthService.register.mockResolvedValue(customerResponse);
+      mockAuthService.register.mockResolvedValue(mockAuthResponse);
 
       const result = await controller.register(registerDto);
 
-      expect(result.user.role).toBe('CUSTOMER');
+      // Token được tạo thành công (role sẽ có trong JWT payload)
+      expect(result.accessToken).toBeDefined();
+      expect(result.refreshToken).toBeDefined();
       expect(service.register).toHaveBeenCalledWith(registerDto);
     });
   });

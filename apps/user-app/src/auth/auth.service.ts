@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { LoginDto, VerifyDto, RefreshDto, RegisterDto } from '@shared/dto/auth.dto';
-import { AuthTokens, JwtService, UserResponse } from '@shared/main';
+import { AuthResponse, JwtService, UserResponse } from '@shared/main';
 import { PrismaService } from '@user-app/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as jose from 'jose';
 
 export interface IAuthService {
-  login(dto: LoginDto): Promise<AuthTokens>;
-  register(dto: RegisterDto): Promise<AuthTokens & { user: object }>;
+  login(dto: LoginDto): Promise<AuthResponse>;
+  register(dto: RegisterDto): Promise<AuthResponse>;
   verify(dto: VerifyDto): Promise<jose.JWTPayload>;
-  refresh(dto: RefreshDto): Promise<{ accessToken: string; refreshToken: string }>;
+  refresh(dto: RefreshDto): Promise<AuthResponse>;
 }
 
 @Injectable()
@@ -26,29 +26,20 @@ export class AuthService implements IAuthService {
     this.jwtRefreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
   }
 
-  async login(dto: LoginDto): Promise<AuthTokens> {
+  async login(dto: LoginDto): Promise<AuthResponse> {
     try {
       // Find and validate user
       const user = await this.validateUserCredentials(dto.email, dto.password);
 
-      // Generate tokens
+      // Generate tokens (user info đã có trong JWT payload)
       const tokens = await this.generateTokens({
         sub: user.id, // Use 'sub' claim (JOSE standard)
         email: user.email,
         role: user.role,
       });
 
-      const results = {
-        ...tokens,
-        user: {
-          sub: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-        },
-      } as AuthTokens;
-
-      return results;
+      // Chỉ trả về tokens - client sẽ decode để lấy user info
+      return tokens;
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;
@@ -61,7 +52,7 @@ export class AuthService implements IAuthService {
     }
   }
 
-  async register(dto: RegisterDto): Promise<AuthTokens> {
+  async register(dto: RegisterDto): Promise<AuthResponse> {
     try {
       // Check email có ton tại chưa
       const existingEmail = await this.prisma.user.findUnique({
@@ -88,24 +79,16 @@ export class AuthService implements IAuthService {
         },
       });
 
-      // Tự động login sau khi register thành công → trả về tokens luôn
+      // Tự động login sau khi register thành công
+      // User info đã có trong JWT payload (sub, email, role)
       const tokens = await this.generateTokens({
         sub: newUser.id, // 'sub' là standard claim trong JWT (subject/user ID)
         email: newUser.email,
         role: newUser.role,
       });
 
-      const results = {
-        ...tokens,
-        user: {
-          sub: newUser.id,
-          email: newUser.email,
-          fullName: newUser.fullName,
-          role: newUser.role,
-        },
-      } as AuthTokens;
-
-      return results;
+      // Chỉ trả về tokens - client sẽ decode để lấy user info
+      return tokens;
     } catch (error) {
       if (error instanceof RpcException) throw error;
       console.error('[AuthService] register error:', error);
@@ -157,7 +140,7 @@ export class AuthService implements IAuthService {
     }
   }
 
-  async refresh(dto: RefreshDto): Promise<{ accessToken: string; refreshToken: string }> {
+  async refresh(dto: RefreshDto): Promise<AuthResponse> {
     try {
       // Verify refresh token with JwtService
       const decoded = await this.jwtService.verifyToken(dto.refreshToken);
@@ -190,6 +173,7 @@ export class AuthService implements IAuthService {
         });
       }
 
+      // Generate new tokens (user info đã có trong JWT payload)
       const tokens = await this.generateTokens({
         sub: user.id, // Use 'sub' claim (JOSE standard)
         email: user.email,

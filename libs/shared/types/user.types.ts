@@ -38,13 +38,11 @@ export type User = {
   updatedAt: Date;
 } | null;
 
-export type AuthTokens = {
+/**
+ * Auth tokens response
+ * Không bao gồm user object - client decode từ accessToken
+ */
+export type AuthResponse = {
   accessToken: string;
   refreshToken: string;
-  user: {
-    sub: string;
-    email: string;
-    fullName: string;
-    role: UserRole;
-  };
 };
