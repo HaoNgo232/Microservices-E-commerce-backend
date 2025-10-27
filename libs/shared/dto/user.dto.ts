@@ -7,11 +7,37 @@ import {
   IsNumber,
   IsPositive,
   Min,
+  IsNotEmpty,
+  IsEmail,
+  MinLength,
 } from 'class-validator';
 
 export enum UserRole {
   ADMIN = 'ADMIN',
   CUSTOMER = 'CUSTOMER',
+}
+
+export class CreateUserDto {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(8)
+  password: string;
+
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsNotEmpty()
+  @IsEnum(UserRole)
+  role: UserRole;
 }
 
 export class UpdateUserDto {

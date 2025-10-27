@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
-import { UpdateUserDto, ListUsersDto } from '@shared/dto/user.dto';
+import { UpdateUserDto, ListUsersDto, CreateUserDto } from '@shared/dto/user.dto';
 import { ListUsersResponse, UserResponse } from '@shared/main';
 import { PrismaService } from '@user-app/prisma/prisma.service';
+import * as bcrypt from 'bcryptjs';
 
 export interface IUserService {
+  create(dto: CreateUserDto): Promise<UserResponse>;
   findById(id: string): Promise<UserResponse>;
   findByEmail(email: string): Promise<UserResponse>;
   update(id: string, dto: UpdateUserDto): Promise<UserResponse>;
@@ -15,6 +17,65 @@ export interface IUserService {
 @Injectable()
 export class UsersService implements IUserService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async create(dto: CreateUserDto): Promise<UserResponse> {
+    try {
+      // Check if user already exists
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (existingUser) {
+        throw new RpcException({
+          statusCode: 400,
+          message: 'Email already exists',
+        });
+      }
+
+      // Hash password với bcrypt (salt rounds = 10)
+      // QUAN TRỌNG: Không bao giờ lưu plain password vào DB
+      const passwordHash = await bcrypt.hash(dto.password, 10);
+
+      // Create user
+      const user = await this.prisma.user.create({
+        data: {
+          email: dto.email,
+          passwordHash,
+          fullName: dto.fullName,
+          phone: dto.phone,
+          role: dto.role || 'CUSTOMER', // Mặc định role là CUSTOMER nếu không truyền
+        },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          phone: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!user) {
+        throw new RpcException({
+          statusCode: 400,
+          message: 'Failed to create user',
+        });
+      }
+
+      // Type assertion: Prisma enum → Shared enum
+      // LƯU Ý: Response KHÔNG bao gồm passwordHash (vì không select nó)
+      return user as UserResponse;
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      console.error('[UsersService] create error:', error);
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Failed to create user',
+      });
+    }
+  }
 
   async findById(id: string): Promise<UserResponse> {
     try {

@@ -92,7 +92,6 @@ describe('AddressController (e2e)', () => {
   describe('ADDRESS.CREATE', () => {
     it('should create a new address successfully', async () => {
       const createDto: AddressCreateDto = {
-        userId: testUserId,
         fullName: 'Nguyễn Văn A',
         phone: '0912345678',
         city: 'Hồ Chí Minh',
@@ -102,7 +101,9 @@ describe('AddressController (e2e)', () => {
         isDefault: false,
       };
 
-      const result = await firstValueFrom(client.send(EVENTS.ADDRESS.CREATE, createDto));
+      const result = await firstValueFrom(
+        client.send(EVENTS.ADDRESS.CREATE, { userId: testUserId, dto: createDto }),
+      );
 
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
@@ -115,7 +116,6 @@ describe('AddressController (e2e)', () => {
 
     it('should set first address as default automatically', async () => {
       const createDto: AddressCreateDto = {
-        userId: testUserId,
         fullName: 'First Address',
         phone: '0912345678',
         city: 'Hà Nội',
@@ -125,7 +125,9 @@ describe('AddressController (e2e)', () => {
         isDefault: false,
       };
 
-      const result = await firstValueFrom(client.send(EVENTS.ADDRESS.CREATE, createDto));
+      const result = await firstValueFrom(
+        client.send(EVENTS.ADDRESS.CREATE, { userId: testUserId, dto: createDto }),
+      );
 
       // Địa chỉ đầu tiên sẽ tự động trở thành default
       expect(result.isDefault).toBe(true);
@@ -133,7 +135,6 @@ describe('AddressController (e2e)', () => {
 
     it('should throw error when userId not found', async () => {
       const createDto: AddressCreateDto = {
-        userId: 'non-existent-user-id',
         fullName: 'Test Address',
         phone: '0912345678',
         city: 'Hồ Chí Minh',
@@ -144,7 +145,9 @@ describe('AddressController (e2e)', () => {
       };
 
       await expectRpcError(
-        firstValueFrom(client.send(EVENTS.ADDRESS.CREATE, createDto)),
+        firstValueFrom(
+          client.send(EVENTS.ADDRESS.CREATE, { userId: 'non-existent-user-id', dto: createDto }),
+        ),
         'không tồn tại',
       );
     });
@@ -214,7 +217,6 @@ describe('AddressController (e2e)', () => {
     beforeEach(async () => {
       // Tạo address để test update
       const createDto: AddressCreateDto = {
-        userId: testUserId,
         fullName: 'Original Name',
         phone: '0912345678',
         city: 'Hồ Chí Minh',
@@ -224,7 +226,9 @@ describe('AddressController (e2e)', () => {
         isDefault: false,
       };
 
-      const created = await firstValueFrom(client.send(EVENTS.ADDRESS.CREATE, createDto));
+      const created = await firstValueFrom(
+        client.send(EVENTS.ADDRESS.CREATE, { userId: testUserId, dto: createDto }),
+      );
       addressId = created.id;
     });
 
