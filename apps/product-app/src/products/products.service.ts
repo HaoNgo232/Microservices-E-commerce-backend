@@ -7,13 +7,8 @@ import {
   ProductIdDto,
   ProductIdsDto,
   ProductSlugDto,
-  StockChangeDto,
 } from '@shared/dto/product.dto';
-import {
-  ProductResponse,
-  PaginatedProductsResponse,
-  StockChangeResult,
-} from '@shared/types/product.types';
+import { ProductResponse, PaginatedProductsResponse } from '@shared/types/product.types';
 import { PrismaService } from '@product-app/prisma/prisma.service';
 import { ProductMapper } from './mappers/product.mapper';
 import { ProductValidator } from './validators/product.validator';
@@ -26,8 +21,6 @@ export interface IProductsService {
   list(query: ProductListQueryDto): Promise<PaginatedProductsResponse>;
   create(dto: ProductCreateDto): Promise<ProductResponse>;
   update(id: string, dto: ProductUpdateDto): Promise<ProductResponse>;
-  incrementStock(dto: StockChangeDto): Promise<StockChangeResult>;
-  decrementStock(dto: StockChangeDto): Promise<StockChangeResult>;
 }
 
 @Injectable()
@@ -303,109 +296,6 @@ export class ProductsService implements IProductsService {
       throw new RpcException({
         statusCode: 400,
         message: 'Failed to delete product',
-      });
-    }
-  }
-
-  /**
-   * Increment product stock
-   * @throws RpcException if product not found
-   * @throws RpcException if quantity is invalid
-   */
-  async incrementStock(dto: StockChangeDto): Promise<StockChangeResult> {
-    try {
-      this.validator.validateStockChangeQuantity(dto.quantity);
-
-      const product = await this.prisma.product.findUnique({
-        where: { id: dto.productId },
-      });
-
-      if (!product) {
-        throw new RpcException({
-          statusCode: 404,
-          message: `Product with ID ${dto.productId} not found`,
-        });
-      }
-
-      const previousStock = product.stock;
-      const newStock = previousStock + dto.quantity;
-
-      await this.prisma.product.update({
-        where: { id: dto.productId },
-        data: { stock: newStock },
-      });
-
-      console.log(
-        `[ProductsService] Incremented stock for ${dto.productId}: ${previousStock} -> ${newStock}`,
-      );
-
-      return {
-        productId: dto.productId,
-        previousStock,
-        newStock,
-        quantityChanged: dto.quantity,
-      };
-    } catch (error) {
-      if (error instanceof RpcException) {
-        throw error;
-      }
-      console.error('[ProductsService] incrementStock error:', error);
-      throw new RpcException({
-        statusCode: 400,
-        message: 'Failed to increment stock',
-      });
-    }
-  }
-
-  /**
-   * Decrement product stock
-   * @throws RpcException if product not found
-   * @throws RpcException if insufficient stock
-   */
-  async decrementStock(dto: StockChangeDto): Promise<StockChangeResult> {
-    try {
-      this.validator.validateStockChangeQuantity(dto.quantity);
-
-      const product = await this.prisma.product.findUnique({
-        where: { id: dto.productId },
-      });
-
-      if (!product) {
-        throw new RpcException({
-          statusCode: 404,
-          message: `Product with ID ${dto.productId} not found`,
-        });
-      }
-
-      const previousStock = product.stock;
-      const newStock = previousStock - dto.quantity;
-
-      // Validate sufficient stock
-      this.validator.validateSufficientStock(previousStock, dto.quantity);
-
-      await this.prisma.product.update({
-        where: { id: dto.productId },
-        data: { stock: newStock },
-      });
-
-      console.log(
-        `[ProductsService] Decremented stock for ${dto.productId}: ${previousStock} -> ${newStock}`,
-      );
-
-      return {
-        productId: dto.productId,
-        previousStock,
-        newStock,
-        quantityChanged: dto.quantity,
-      };
-    } catch (error) {
-      if (error instanceof RpcException) {
-        throw error;
-      }
-      console.error('[ProductsService] decrementStock error:', error);
-      throw new RpcException({
-        statusCode: 400,
-        message: 'Failed to decrement stock',
       });
     }
   }

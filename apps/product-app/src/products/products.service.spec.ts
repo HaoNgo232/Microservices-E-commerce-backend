@@ -37,8 +37,6 @@ describe('ProductsService', () => {
     validateUniqueSKUAndSlug: jest.fn(),
     validateSlugForUpdate: jest.fn(),
     validateCategoryExists: jest.fn(),
-    validateStockChangeQuantity: jest.fn(),
-    validateSufficientStock: jest.fn(),
   };
 
   const mockProductQueryBuilder = {
@@ -199,7 +197,7 @@ describe('ProductsService', () => {
       });
       mockProductMapper.mapManyToProductResponse.mockReturnValue([]);
 
-      await service.list({ q: 'search term', page: 1, pageSize: 20 });
+      await service.list({ search: 'search term', page: 1, pageSize: 20 });
 
       expect(queryBuilder.buildWhereClause).toHaveBeenCalled();
     });
@@ -377,93 +375,6 @@ describe('ProductsService', () => {
       mockPrismaService.product.findUnique.mockResolvedValue(null);
 
       await expect(service.delete('non-existent')).rejects.toThrow(RpcException);
-    });
-  });
-
-  describe('incrementStock', () => {
-    it('should increment stock successfully', async () => {
-      mockProductValidator.validateStockChangeQuantity.mockReturnValue(undefined);
-      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
-      mockPrismaService.product.update.mockResolvedValue({
-        ...mockProduct,
-        stock: 15,
-      });
-
-      const result = await service.incrementStock({
-        productId: 'prod-1',
-        quantity: 5,
-      });
-
-      expect(result).toEqual({
-        productId: 'prod-1',
-        previousStock: 10,
-        newStock: 15,
-        quantityChanged: 5,
-      });
-      expect(validator.validateStockChangeQuantity).toHaveBeenCalledWith(5);
-      expect(prisma.product.update).toHaveBeenCalledWith({
-        where: { id: 'prod-1' },
-        data: { stock: 15 },
-      });
-    });
-
-    it('should throw RpcException if product not found', async () => {
-      mockProductValidator.validateStockChangeQuantity.mockReturnValue(undefined);
-      mockPrismaService.product.findUnique.mockResolvedValue(null);
-
-      await expect(
-        service.incrementStock({ productId: 'non-existent', quantity: 5 }),
-      ).rejects.toThrow(RpcException);
-    });
-  });
-
-  describe('decrementStock', () => {
-    it('should decrement stock successfully', async () => {
-      mockProductValidator.validateStockChangeQuantity.mockReturnValue(undefined);
-      mockProductValidator.validateSufficientStock.mockReturnValue(undefined);
-      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
-      mockPrismaService.product.update.mockResolvedValue({
-        ...mockProduct,
-        stock: 7,
-      });
-
-      const result = await service.decrementStock({
-        productId: 'prod-1',
-        quantity: 3,
-      });
-
-      expect(result).toEqual({
-        productId: 'prod-1',
-        previousStock: 10,
-        newStock: 7,
-        quantityChanged: 3,
-      });
-      expect(validator.validateStockChangeQuantity).toHaveBeenCalledWith(3);
-      expect(validator.validateSufficientStock).toHaveBeenCalledWith(10, 3);
-    });
-
-    it('should throw RpcException if insufficient stock', async () => {
-      mockProductValidator.validateStockChangeQuantity.mockReturnValue(undefined);
-      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
-      mockProductValidator.validateSufficientStock.mockImplementation(() => {
-        throw new RpcException({
-          statusCode: 400,
-          message: 'Insufficient stock. Available: 10, Requested: 15',
-        });
-      });
-
-      await expect(service.decrementStock({ productId: 'prod-1', quantity: 15 })).rejects.toThrow(
-        RpcException,
-      );
-    });
-
-    it('should throw RpcException if product not found', async () => {
-      mockProductValidator.validateStockChangeQuantity.mockReturnValue(undefined);
-      mockPrismaService.product.findUnique.mockResolvedValue(null);
-
-      await expect(
-        service.decrementStock({ productId: 'non-existent', quantity: 5 }),
-      ).rejects.toThrow(RpcException);
     });
   });
 });

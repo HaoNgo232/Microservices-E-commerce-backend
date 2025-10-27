@@ -9,9 +9,8 @@ import {
   ProductIdDto,
   ProductIdsDto,
   ProductSlugDto,
-  StockChangeDto,
 } from '@shared/dto/product.dto';
-import { PaginatedProductsResponse, ProductResponse, StockChangeResult } from '@shared/types';
+import { PaginatedProductsResponse, ProductResponse } from '@shared/types';
 
 export interface IProductsController {
   getById(dto: ProductIdDto): Promise<ProductResponse>;
@@ -21,8 +20,6 @@ export interface IProductsController {
   create(dto: ProductCreateDto): Promise<ProductResponse>;
   update(payload: { id: string; dto: ProductUpdateDto }): Promise<ProductResponse>;
   delete(id: string): Promise<{ success: boolean; id: string }>;
-  incrementStock(dto: StockChangeDto): Promise<StockChangeResult>;
-  decrementStock(dto: StockChangeDto): Promise<StockChangeResult>;
 }
 
 @Controller()
@@ -62,15 +59,5 @@ export class ProductsController implements IProductsController {
   @MessagePattern(EVENTS.PRODUCT.DELETE)
   delete(@Payload() id: string): Promise<{ success: boolean; id: string }> {
     return this.productsService.delete(id);
-  }
-
-  @MessagePattern(EVENTS.PRODUCT.INC_STOCK)
-  incrementStock(@Payload() dto: StockChangeDto): Promise<StockChangeResult> {
-    return this.productsService.incrementStock(dto);
-  }
-
-  @MessagePattern(EVENTS.PRODUCT.DEC_STOCK)
-  decrementStock(@Payload() dto: StockChangeDto): Promise<StockChangeResult> {
-    return this.productsService.decrementStock(dto);
   }
 }
