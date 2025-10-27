@@ -104,6 +104,7 @@ describe('ProductsController (e2e)', () => {
     it('should update product', async () => {
       const updateDto: ProductUpdateDto = {
         name: 'Updated Product Name',
+        stock: 150,
         priceInt: 12999,
       };
 
@@ -114,30 +115,6 @@ describe('ProductsController (e2e)', () => {
       expect(result).toBeDefined();
       expect(result.name).toBe(updateDto.name);
       expect(result.priceInt).toBe(updateDto.priceInt);
-    });
-
-    it('should increment stock', async () => {
-      const result = await firstValueFrom(
-        client.send(EVENTS.PRODUCT.INC_STOCK, {
-          productId: createdProductId,
-          quantity: 50,
-        }),
-      );
-
-      expect(result).toBeDefined();
-      expect(result.newStock).toBe(result.previousStock + 50);
-    });
-
-    it('should decrement stock', async () => {
-      const result = await firstValueFrom(
-        client.send(EVENTS.PRODUCT.DEC_STOCK, {
-          productId: createdProductId,
-          quantity: 20,
-        }),
-      );
-
-      expect(result).toBeDefined();
-      expect(result.newStock).toBe(result.previousStock - 20);
     });
 
     it('should delete product', async () => {

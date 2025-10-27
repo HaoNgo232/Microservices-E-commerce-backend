@@ -7,6 +7,17 @@ import { EVENTS } from '@shared/events';
 import { AddressCreateDto, AddressUpdateDto, AddressSetDefaultDto } from '@shared/dto/address.dto';
 import { RegisterDto } from '@shared/dto/auth.dto';
 import { firstValueFrom } from 'rxjs';
+import * as jose from 'jose';
+import { AuthResponse } from '@shared/types';
+
+// Helper function to decode JWT and extract userId
+const getUserIdFromToken = (token: string): string => {
+  const decoded = jose.decodeJwt(token);
+  if (!decoded.sub) {
+    throw new Error('Token does not contain sub claim');
+  }
+  return decoded.sub;
+};
 
 // Helper function to assert NATS RpcException errors
 const expectRpcError = async (
@@ -86,7 +97,7 @@ describe('AddressController (e2e)', () => {
     };
 
     const authResult = await firstValueFrom(client.send(EVENTS.AUTH.REGISTER, registerDto));
-    testUserId = authResult.user.sub;
+    testUserId = getUserIdFromToken((authResult as AuthResponse).accessToken);
   });
 
   describe('ADDRESS.CREATE', () => {
@@ -200,10 +211,13 @@ describe('AddressController (e2e)', () => {
         password: 'Test@123456',
         fullName: 'No Address User',
       };
-      const newUser = await firstValueFrom(client.send(EVENTS.AUTH.REGISTER, newUserDto));
+      const newUser: AuthResponse = await firstValueFrom(
+        client.send(EVENTS.AUTH.REGISTER, newUserDto),
+      );
+      const newUserId = getUserIdFromToken(newUser.accessToken);
 
       const result = await firstValueFrom(
-        client.send(EVENTS.ADDRESS.LIST_BY_USER, { userId: newUser.user.sub }),
+        client.send(EVENTS.ADDRESS.LIST_BY_USER, { userId: newUserId }),
       );
 
       expect(result).toBeInstanceOf(Array);
@@ -346,7 +360,7 @@ describe('AddressController (e2e)', () => {
         fullName: 'Delete Test User',
       };
       const authResult = await firstValueFrom(client.send(EVENTS.AUTH.REGISTER, registerDto));
-      deleteTestUserId = authResult.user.sub;
+      deleteTestUserId = getUserIdFromToken((authResult as AuthResponse).accessToken);
 
       // Tạo address để test delete
       const created = await prisma.address.create({
@@ -393,7 +407,7 @@ describe('AddressController (e2e)', () => {
         fullName: 'Default Delete Test User',
       };
       const authResult = await firstValueFrom(client.send(EVENTS.AUTH.REGISTER, registerDto));
-      const userId = authResult.user.sub;
+      const userId = getUserIdFromToken((authResult as AuthResponse).accessToken);
 
       // Tạo 2 addresses, 1 default
       const defaultAddr = await prisma.address.create({
