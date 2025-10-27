@@ -259,7 +259,9 @@ describe('CartService', () => {
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.addItem.mockRejectedValue(new Error('Unexpected error'));
+      mockCartItemService.addItem.mockRejectedValue(
+        new InternalServerRpcException('Unexpected error'),
+      );
 
       // Act & Assert
       await expect(
@@ -301,7 +303,9 @@ describe('CartService', () => {
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.updateQuantity.mockRejectedValue(new Error('Unexpected error'));
+      mockCartItemService.updateQuantity.mockRejectedValue(
+        new InternalServerRpcException('Unexpected error'),
+      );
 
       // Act & Assert
       await expect(

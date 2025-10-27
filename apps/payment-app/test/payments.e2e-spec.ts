@@ -16,10 +16,15 @@ describe('PaymentsController (e2e)', () => {
   let app: INestMicroservice;
   let client: ClientProxy;
   let prisma: PrismaService;
-  let orderClient: ClientProxy;
 
   // Test data
   const testOrderId = 'order-123';
+
+  // Mock Order Service client
+  const mockOrderClient = {
+    send: jest.fn(),
+    emit: jest.fn(),
+  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -33,16 +38,12 @@ describe('PaymentsController (e2e)', () => {
               servers: [process.env.NATS_URL ?? 'nats://localhost:4223'],
             },
           },
-          {
-            name: 'ORDER_SERVICE',
-            transport: Transport.NATS,
-            options: {
-              servers: [process.env.NATS_URL ?? 'nats://localhost:4223'],
-            },
-          },
         ]),
       ],
-    }).compile();
+    })
+      .overrideProvider('ORDER_SERVICE')
+      .useValue(mockOrderClient)
+      .compile();
 
     app = moduleFixture.createNestMicroservice({
       transport: Transport.NATS,
@@ -54,13 +55,11 @@ describe('PaymentsController (e2e)', () => {
 
     await app.listen();
     client = moduleFixture.get('PAYMENT_SERVICE_CLIENT');
-    orderClient = moduleFixture.get('ORDER_SERVICE');
     prisma = moduleFixture.get<PrismaService>(PrismaService);
     await client.connect();
-    await orderClient.connect();
 
     // Setup mocks
-    jest.spyOn(orderClient, 'send').mockImplementation((pattern: string, payload: unknown) => {
+    mockOrderClient.send.mockImplementation((pattern: string, payload: unknown) => {
       if (pattern === EVENTS.ORDER.GET) {
         const requestPayload = payload as { id: string };
         if (requestPayload.id === testOrderId) {
@@ -88,7 +87,6 @@ describe('PaymentsController (e2e)', () => {
     // Clean up test data
     await prisma.payment.deleteMany({});
     await client.close();
-    await orderClient.close();
     await app.close();
   });
 

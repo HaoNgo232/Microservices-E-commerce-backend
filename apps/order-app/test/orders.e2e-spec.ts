@@ -17,12 +17,20 @@ describe('OrdersController (e2e)', () => {
   let app: INestMicroservice;
   let client: ClientProxy;
   let prisma: PrismaService;
-  let productClient: ClientProxy;
-  let cartClient: ClientProxy;
 
   // Test data
   const testUserId = 'user-123';
   const testProductId = 'product-123';
+
+  // Mock clients
+  const mockProductClient = {
+    send: jest.fn(),
+    emit: jest.fn(),
+  };
+  const mockCartClient = {
+    send: jest.fn(),
+    emit: jest.fn(),
+  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -36,23 +44,14 @@ describe('OrdersController (e2e)', () => {
               servers: [process.env.NATS_URL ?? 'nats://localhost:4223'],
             },
           },
-          {
-            name: 'PRODUCT_SERVICE',
-            transport: Transport.NATS,
-            options: {
-              servers: [process.env.NATS_URL ?? 'nats://localhost:4223'],
-            },
-          },
-          {
-            name: 'CART_SERVICE',
-            transport: Transport.NATS,
-            options: {
-              servers: [process.env.NATS_URL ?? 'nats://localhost:4223'],
-            },
-          },
         ]),
       ],
-    }).compile();
+    })
+      .overrideProvider('PRODUCT_SERVICE')
+      .useValue(mockProductClient)
+      .overrideProvider('CART_SERVICE')
+      .useValue(mockCartClient)
+      .compile();
 
     app = moduleFixture.createNestMicroservice({
       transport: Transport.NATS,
@@ -64,15 +63,11 @@ describe('OrdersController (e2e)', () => {
 
     await app.listen();
     client = moduleFixture.get('ORDER_SERVICE_CLIENT');
-    productClient = moduleFixture.get('PRODUCT_SERVICE');
-    cartClient = moduleFixture.get('CART_SERVICE');
     prisma = moduleFixture.get<PrismaService>(PrismaService);
     await client.connect();
-    await productClient.connect();
-    await cartClient.connect();
 
-    // Setup mocks
-    jest.spyOn(productClient, 'send').mockImplementation((pattern: string, payload: unknown) => {
+    // Setup mocks on injected clients
+    mockProductClient.send.mockImplementation((pattern: string, payload: unknown) => {
       if (pattern === EVENTS.PRODUCT.GET_BY_IDS) {
         const requestPayload = payload as { ids: string[] };
         if (
@@ -108,7 +103,7 @@ describe('OrdersController (e2e)', () => {
     });
 
     // Mock Cart Service (clearUserCart is fire-and-forget)
-    jest.spyOn(cartClient, 'send').mockImplementation(() => of({ success: true }));
+    mockCartClient.send.mockImplementation(() => of({ success: true }));
   });
 
   afterAll(async () => {
@@ -116,8 +111,6 @@ describe('OrdersController (e2e)', () => {
     await prisma.orderItem.deleteMany({});
     await prisma.order.deleteMany({});
     await client.close();
-    await productClient.close();
-    await cartClient.close();
     await app.close();
   });
 
