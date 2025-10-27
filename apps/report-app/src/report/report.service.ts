@@ -3,42 +3,11 @@ import { ClientProxy } from '@nestjs/microservices';
 import { SalesSummaryDto, ProductPerformanceDto, UserCohortDto } from '@shared/dto/report.dto';
 import { PrismaService } from '@report-app/prisma/prisma.service';
 import { ValidationRpcException } from '@shared/exceptions/rpc-exceptions';
-
-/**
- * Sales summary report response
- */
-type SalesSummaryResponse = {
-  fromAt: Date;
-  toAt: Date;
-  totalOrders: number;
-  totalRevenueInt: number;
-  averageOrderValueInt: number;
-};
-
-/**
- * Product performance report response
- */
-type ProductPerformanceResponse = {
-  fromAt: Date;
-  toAt: Date;
-  products: Array<{
-    productId: string;
-    productName: string;
-    totalQuantitySold: number;
-    totalRevenueInt: number;
-  }>;
-};
-
-/**
- * User cohort report response
- */
-type UserCohortResponse = {
-  fromAt: Date;
-  toAt: Date;
-  newUsers: number;
-  activeUsers: number;
-  returningCustomers: number;
-};
+import {
+  ProductPerformanceResponse,
+  SalesSummaryResponse,
+  UserCohortResponse,
+} from '@shared/types';
 
 @Injectable()
 export class ReportService {

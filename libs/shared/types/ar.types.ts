@@ -34,3 +34,39 @@ export type ARSnapshotCreateResponse = {
   imageUrl: string;
   createdAt: Date;
 };
+
+/**
+ * Sales summary report response
+ */
+export type SalesSummaryResponse = {
+  fromAt: Date;
+  toAt: Date;
+  totalOrders: number;
+  totalRevenueInt: number;
+  averageOrderValueInt: number;
+};
+
+/**
+ * Product performance report response
+ */
+export type ProductPerformanceResponse = {
+  fromAt: Date;
+  toAt: Date;
+  products: Array<{
+    productId: string;
+    productName: string;
+    totalQuantitySold: number;
+    totalRevenueInt: number;
+  }>;
+};
+
+/**
+ * User cohort report response
+ */
+export type UserCohortResponse = {
+  fromAt: Date;
+  toAt: Date;
+  newUsers: number;
+  activeUsers: number;
+  returningCustomers: number;
+};

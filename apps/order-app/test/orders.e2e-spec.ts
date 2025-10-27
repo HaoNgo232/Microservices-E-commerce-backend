@@ -1,0 +1,342 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestMicroservice } from '@nestjs/common';
+import { ClientsModule, Transport, ClientProxy } from '@nestjs/microservices';
+import { OrderAppModule } from '../src/order-app.module';
+import { PrismaService } from '@order-app/prisma/prisma.service';
+import { EVENTS } from '@shared/events';
+import {
+  OrderCreateDto,
+  OrderIdDto,
+  OrderListByUserDto,
+  OrderUpdateStatusDto,
+  OrderCancelDto,
+} from '@shared/dto/order.dto';
+import { firstValueFrom, of } from 'rxjs';
+
+describe('OrdersController (e2e)', () => {
+  let app: INestMicroservice;
+  let client: ClientProxy;
+  let prisma: PrismaService;
+  let productClient: ClientProxy;
+  let cartClient: ClientProxy;
+
+  // Test data
+  const testUserId = 'user-123';
+  const testProductId = 'product-123';
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [
+        OrderAppModule,
+        ClientsModule.register([
+          {
+            name: 'ORDER_SERVICE_CLIENT',
+            transport: Transport.NATS,
+            options: {
+              servers: [process.env.NATS_URL ?? 'nats://localhost:4223'],
+            },
+          },
+          {
+            name: 'PRODUCT_SERVICE',
+            transport: Transport.NATS,
+            options: {
+              servers: [process.env.NATS_URL ?? 'nats://localhost:4223'],
+            },
+          },
+          {
+            name: 'CART_SERVICE',
+            transport: Transport.NATS,
+            options: {
+              servers: [process.env.NATS_URL ?? 'nats://localhost:4223'],
+            },
+          },
+        ]),
+      ],
+    }).compile();
+
+    app = moduleFixture.createNestMicroservice({
+      transport: Transport.NATS,
+      options: {
+        servers: [process.env.NATS_URL ?? 'nats://localhost:4223'],
+        queue: 'order-app-test',
+      },
+    });
+
+    await app.listen();
+    client = moduleFixture.get('ORDER_SERVICE_CLIENT');
+    productClient = moduleFixture.get('PRODUCT_SERVICE');
+    cartClient = moduleFixture.get('CART_SERVICE');
+    prisma = moduleFixture.get<PrismaService>(PrismaService);
+    await client.connect();
+    await productClient.connect();
+    await cartClient.connect();
+
+    // Setup mocks
+    jest.spyOn(productClient, 'send').mockImplementation((pattern: string, payload: unknown) => {
+      if (pattern === EVENTS.PRODUCT.GET_BY_IDS) {
+        const requestPayload = payload as { ids: string[] };
+        if (
+          requestPayload.ids.includes(testProductId) ||
+          requestPayload.ids.includes('product-456')
+        ) {
+          return of(
+            [
+              {
+                id: testProductId,
+                name: 'Test Product',
+                priceInt: 10000,
+                imageUrls: ['https://example.com/image.jpg'],
+                stock: 100,
+              },
+              {
+                id: 'product-456',
+                name: 'Another Product',
+                priceInt: 20000,
+                imageUrls: ['https://example.com/image2.jpg'],
+                stock: 50,
+              },
+            ].filter(p => requestPayload.ids.includes(p.id)),
+          );
+        }
+        return of([]);
+      }
+      // Mock DEC_STOCK for fire-and-forget
+      if (pattern === EVENTS.PRODUCT.DEC_STOCK) {
+        return of({ success: true });
+      }
+      return of([]);
+    });
+
+    // Mock Cart Service (clearUserCart is fire-and-forget)
+    jest.spyOn(cartClient, 'send').mockImplementation(() => of({ success: true }));
+  });
+
+  afterAll(async () => {
+    // Clean up test data
+    await prisma.orderItem.deleteMany({});
+    await prisma.order.deleteMany({});
+    await client.close();
+    await productClient.close();
+    await cartClient.close();
+    await app.close();
+  });
+
+  beforeEach(async () => {
+    // Clean database trước mỗi test
+    await prisma.orderItem.deleteMany({});
+    await prisma.order.deleteMany({});
+  });
+
+  describe('ORDER.CREATE', () => {
+    it('should create order with items', async () => {
+      const dto: OrderCreateDto = {
+        userId: testUserId,
+        addressId: 'address-123',
+        items: [
+          {
+            productId: testProductId,
+            quantity: 2,
+            priceInt: 10000,
+          },
+        ],
+      };
+
+      const result = await firstValueFrom(client.send(EVENTS.ORDER.CREATE, dto));
+
+      expect(result).toBeDefined();
+      expect(result.id).toBeDefined();
+      expect(result.userId).toBe(testUserId);
+      expect(result.status).toBe('PENDING');
+      expect(result.items.length).toBe(1);
+      expect(result.items[0].productId).toBe(testProductId);
+      expect(result.items[0].quantity).toBe(2);
+      expect(result.totalInt).toBe(20000); // 2 * 10000
+    });
+
+    it('should create order with multiple items', async () => {
+      const dto: OrderCreateDto = {
+        userId: testUserId,
+        items: [
+          {
+            productId: testProductId,
+            quantity: 3,
+            priceInt: 10000,
+          },
+          {
+            productId: 'product-456',
+            quantity: 1,
+            priceInt: 20000,
+          },
+        ],
+      };
+
+      const result = await firstValueFrom(client.send(EVENTS.ORDER.CREATE, dto));
+
+      expect(result).toBeDefined();
+      expect(result.items.length).toBe(2);
+      expect(result.totalInt).toBe(50000); // 3 * 10000 + 1 * 20000
+    });
+
+    it('should throw error when creating order with empty items', async () => {
+      const dto: OrderCreateDto = {
+        userId: testUserId,
+        items: [],
+      };
+
+      await expect(firstValueFrom(client.send(EVENTS.ORDER.CREATE, dto))).rejects.toThrow();
+    });
+  });
+
+  describe('ORDER.GET', () => {
+    it('should get order by ID', async () => {
+      // First create an order
+      const createDto: OrderCreateDto = {
+        userId: testUserId,
+        items: [
+          {
+            productId: testProductId,
+            quantity: 2,
+            priceInt: 10000,
+          },
+        ],
+      };
+      const createdOrder = await firstValueFrom(client.send(EVENTS.ORDER.CREATE, createDto));
+
+      // Then get it
+      const dto: OrderIdDto = {
+        id: createdOrder.id,
+      };
+
+      const result = await firstValueFrom(client.send(EVENTS.ORDER.GET, dto));
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(createdOrder.id);
+      expect(result.userId).toBe(testUserId);
+      expect(result.items.length).toBe(1);
+    });
+
+    it('should throw error when getting non-existent order', async () => {
+      const dto: OrderIdDto = {
+        id: 'non-existent-order',
+      };
+
+      await expect(firstValueFrom(client.send(EVENTS.ORDER.GET, dto))).rejects.toThrow();
+    });
+  });
+
+  describe('ORDER.LIST_BY_USER', () => {
+    it('should list orders for user', async () => {
+      // Create a few orders
+      await firstValueFrom(
+        client.send(EVENTS.ORDER.CREATE, {
+          userId: testUserId,
+          items: [{ productId: testProductId, quantity: 1, priceInt: 10000 }],
+        }),
+      );
+      await firstValueFrom(
+        client.send(EVENTS.ORDER.CREATE, {
+          userId: testUserId,
+          items: [{ productId: 'product-456', quantity: 2, priceInt: 20000 }],
+        }),
+      );
+
+      const dto: OrderListByUserDto = {
+        userId: testUserId,
+        page: 1,
+        pageSize: 10,
+      };
+
+      const result = await firstValueFrom(client.send(EVENTS.ORDER.LIST_BY_USER, dto));
+
+      expect(result).toBeDefined();
+      expect(result.orders).toBeDefined();
+      expect(result.orders.length).toBeGreaterThanOrEqual(2);
+      expect(result.total).toBeGreaterThanOrEqual(2);
+      expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(10);
+    });
+
+    it('should support pagination', async () => {
+      const dto: OrderListByUserDto = {
+        userId: testUserId,
+        page: 1,
+        pageSize: 1,
+      };
+
+      const result = await firstValueFrom(client.send(EVENTS.ORDER.LIST_BY_USER, dto));
+
+      expect(result.pageSize).toBe(1);
+      expect(result.orders.length).toBe(1);
+    });
+  });
+
+  describe('ORDER.UPDATE_STATUS', () => {
+    it('should update order status', async () => {
+      // Create an order
+      const createResult = await firstValueFrom(
+        client.send(EVENTS.ORDER.CREATE, {
+          userId: testUserId,
+          items: [{ productId: testProductId, quantity: 1, priceInt: 10000 }],
+        }),
+      );
+
+      const dto: OrderUpdateStatusDto = {
+        id: createResult.id,
+        status: 'PAID',
+      };
+
+      const result = await firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, dto));
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe(createResult.id);
+      expect(result.status).toBe('PAID');
+    });
+
+    it('should throw error when updating non-existent order', async () => {
+      const dto: OrderUpdateStatusDto = {
+        id: 'non-existent-order',
+        status: 'PAID',
+      };
+
+      await expect(firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, dto))).rejects.toThrow();
+    });
+  });
+
+  describe('ORDER.CANCEL', () => {
+    it('should cancel pending order', async () => {
+      const createResult = await firstValueFrom(
+        client.send(EVENTS.ORDER.CREATE, {
+          userId: testUserId,
+          items: [{ productId: testProductId, quantity: 1, priceInt: 10000 }],
+        }),
+      );
+
+      const dto: OrderCancelDto = {
+        id: createResult.id,
+        reason: 'Test cancellation',
+      };
+
+      const result = await firstValueFrom(client.send(EVENTS.ORDER.CANCEL, dto));
+
+      expect(result).toBeDefined();
+      expect(result.status).toBe('CANCELLED');
+    });
+
+    it('should throw error when canceling already cancelled order', async () => {
+      const createResult = await firstValueFrom(
+        client.send(EVENTS.ORDER.CREATE, {
+          userId: testUserId,
+          items: [{ productId: testProductId, quantity: 1, priceInt: 10000 }],
+        }),
+      );
+
+      // First cancel
+      await firstValueFrom(client.send(EVENTS.ORDER.CANCEL, { id: createResult.id }));
+
+      // Try to cancel again
+      await expect(
+        firstValueFrom(client.send(EVENTS.ORDER.CANCEL, { id: createResult.id })),
+      ).rejects.toThrow();
+    });
+  });
+});
