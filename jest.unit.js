@@ -22,5 +22,7 @@ module.exports = {
     '!**/main.ts',
     '!**/*.interface.ts',
     '!**/*.dto.ts',
+    // Exclude Gateway controllers (covered by E2E tests)
+    '!apps/gateway/src/**/*.controller.ts',
   ],
 };

@@ -3,7 +3,6 @@ import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
 import { CartItemService } from '@cart-app/cart-item/cart-item.service';
-import { ClientProxy } from '@nestjs/microservices';
 
 describe('CartController', () => {
   let controller: CartController;
