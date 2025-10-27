@@ -6,60 +6,49 @@ import { ErrorParser } from './error-parser';
 import { ErrorResponseBuilder } from './error-response-builder';
 
 /**
- * Global RPC Exception Filter
- * Handles exceptions from NATS microservices and converts them to HTTP responses
+ * Bộ lọc ngoại lệ RPC toàn cục
+ * Xử lý các ngoại lệ từ microservices NATS và chuyển đổi chúng thành phản hồi HTTP
  *
- * REFACTORED: Reduced Cognitive Complexity from 18 to <10
- * - Extracted error parsing logic to ErrorParser
- * - Extracted response building logic to ErrorResponseBuilder
- * - Each method now has a single clear purpose (SRP)
- * - Easier to test and maintain
- *
- * ✅ UPDATED: Now catches ALL exceptions (RpcException + HttpException)
- * - Microservices can throw standard NestJS exceptions (NotFoundException, etc.)
- * - Filter automatically converts them to RPC format
- * - No need to manually wrap in RpcException
- *
- * Supported error cases:
- * - RpcException with custom statusCode
- * - HttpException (NotFoundException, BadRequestException, etc.)
- * - Service unavailable (empty response)
- * - Timeout errors
- * - Generic errors
+ * Các trường hợp lỗi được hỗ trợ:
+ * - RpcException với statusCode tùy chỉnh
+ * - HttpException (NotFoundException, BadRequestException, v.v.)
+ * - Dịch vụ không khả dụng (phản hồi trống)
+ * - Lỗi timeout
+ * - Lỗi chung
  */
 @Catch()
 export class AllRpcExceptionsFilter implements RpcExceptionFilter<RpcException> {
   catch(exception: RpcException, host: ArgumentsHost): Observable<never> {
     const contextType = host.getType();
 
-    // Handle HTTP context (Gateway)
+    // Xử lý context HTTP (Gateway)
     if (contextType === 'http') {
       this.handleHttpException(exception, host);
-      // Return Observable to satisfy interface contract
+      // Trả về Observable để thỏa mãn interface contract
       return throwError(() => ({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Exception handled',
       }));
     }
 
-    // Handle RPC context (Microservices)
+    // Xử lý context RPC (Microservices)
     return this.handleRpcException(exception);
   }
 
   /**
-   * Handle exception in HTTP context (Gateway)
-   * Complexity reduced by delegating to helper utilities
+   * Xử lý ngoại lệ trong context HTTP (Gateway)
+   * Độ phức tạp được giảm bớt bằng cách ủy quyền cho các tiện ích helper
    */
   private handleHttpException(exception: RpcException | Error, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
 
-    // Convert standard NestJS exceptions to RPC format
+    // Chuyển đổi các ngoại lệ NestJS tiêu chuẩn sang định dạng RPC
     const rawError = this.normalizeException(exception);
 
-    // Parse error into structured format
+    // Phân tích lỗi thành định dạng có cấu trúc
     const { statusCode, message, details } = ErrorParser.parse(rawError);
 
-    // Build and send HTTP response
+    // Xây dựng và gửi phản hồi HTTP
     const errorResponse = ErrorResponseBuilder.buildHttpResponse(statusCode, message, details);
 
     console.error('[RpcException]', errorResponse);
@@ -67,17 +56,17 @@ export class AllRpcExceptionsFilter implements RpcExceptionFilter<RpcException> 
   }
 
   /**
-   * Handle exception in RPC context (Microservices)
+   * Xử lý ngoại lệ trong context RPC (Microservices)
    */
   private handleRpcException(exception: RpcException | Error): Observable<never> {
-    // Convert standard NestJS exceptions to RPC format
+    // Chuyển đổi các ngoại lệ NestJS tiêu chuẩn sang định dạng RPC
     const rawError = this.normalizeException(exception);
 
-    // Extract error information
+    // Trích xuất thông tin lỗi
     const statusCode = ErrorParser.extractStatusCode(rawError);
     const message = ErrorParser.extractMessage(rawError);
 
-    // Build RPC response
+    // Xây dựng phản hồi RPC
     const errorResponse = ErrorResponseBuilder.buildRpcResponse(statusCode, message);
 
     console.error('[RpcException]', errorResponse);
@@ -85,18 +74,18 @@ export class AllRpcExceptionsFilter implements RpcExceptionFilter<RpcException> 
   }
 
   /**
-   * Normalize exception to RPC format
-   * Converts HttpException (NotFoundException, BadRequestException) to RPC-compatible format
+   * Chuẩn hóa ngoại lệ sang định dạng RPC
+   * Chuyển đổi HttpException (NotFoundException, BadRequestException) sang định dạng tương thích RPC
    */
   private normalizeException(exception: RpcException | Error): string | object {
-    // If already RpcException, return as-is
+    // Nếu đã là RpcException, trả về nguyên trạng
     if (exception instanceof RpcException) {
       return exception.getError();
     }
 
-    // Convert standard Error to structured format
+    // Chuyển đổi Error tiêu chuẩn sang định dạng có cấu trúc
     if (exception instanceof Error) {
-      // Check if it's a NestJS HttpException by duck-typing
+      // Kiểm tra xem có phải là HttpException của NestJS bằng duck-typing
       const httpException = exception as {
         getStatus?: () => number;
         getResponse?: () => string | object;
@@ -116,14 +105,14 @@ export class AllRpcExceptionsFilter implements RpcExceptionFilter<RpcException> 
         };
       }
 
-      // Generic error
+      // Lỗi chung
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message: exception.message || 'Internal server error',
       };
     }
 
-    // Unknown exception type
+    // Loại ngoại lệ không xác định
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',

@@ -158,7 +158,7 @@ export class AddressService implements IAddressService {
       if (!existingAddress) {
         throw new RpcException({
           statusCode: 404,
-          message: `Địa chỉ ${id} không tồn tại`,
+          message: `Địa chỉ ${id} vốn dĩ không tồn tại hoặc đã bị xóa`,
         });
       }
 
