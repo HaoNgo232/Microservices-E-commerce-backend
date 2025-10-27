@@ -12,6 +12,7 @@ import {
   OrderCancelDto,
 } from '@shared/dto/order.dto';
 import { firstValueFrom, of } from 'rxjs';
+import { expectRpcError } from '@shared/testing/rpc-test-helpers';
 
 describe('OrdersController (e2e)', () => {
   let app: INestMicroservice;
@@ -176,7 +177,10 @@ describe('OrdersController (e2e)', () => {
         items: [],
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.ORDER.CREATE, dto))).rejects.toThrow();
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.ORDER.CREATE, dto)),
+        'must contain at least one item',
+      );
     });
   });
 
@@ -213,7 +217,7 @@ describe('OrdersController (e2e)', () => {
         id: 'non-existent-order',
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.ORDER.GET, dto))).rejects.toThrow();
+      await expectRpcError(firstValueFrom(client.send(EVENTS.ORDER.GET, dto)), 'không tồn tại');
     });
   });
 
@@ -250,6 +254,20 @@ describe('OrdersController (e2e)', () => {
     });
 
     it('should support pagination', async () => {
+      // Create at least 2 orders for pagination test
+      await firstValueFrom(
+        client.send(EVENTS.ORDER.CREATE, {
+          userId: testUserId,
+          items: [{ productId: testProductId, quantity: 1, priceInt: 10000 }],
+        }),
+      );
+      await firstValueFrom(
+        client.send(EVENTS.ORDER.CREATE, {
+          userId: testUserId,
+          items: [{ productId: testProductId, quantity: 1, priceInt: 10000 }],
+        }),
+      );
+
       const dto: OrderListByUserDto = {
         userId: testUserId,
         page: 1,
@@ -260,6 +278,7 @@ describe('OrdersController (e2e)', () => {
 
       expect(result.pageSize).toBe(1);
       expect(result.orders.length).toBe(1);
+      expect(result.total).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -291,7 +310,10 @@ describe('OrdersController (e2e)', () => {
         status: 'PAID',
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, dto))).rejects.toThrow();
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, dto)),
+        'không tồn tại',
+      );
     });
   });
 
@@ -327,9 +349,10 @@ describe('OrdersController (e2e)', () => {
       await firstValueFrom(client.send(EVENTS.ORDER.CANCEL, { id: createResult.id }));
 
       // Try to cancel again
-      await expect(
+      await expectRpcError(
         firstValueFrom(client.send(EVENTS.ORDER.CANCEL, { id: createResult.id })),
-      ).rejects.toThrow();
+        'already cancelled',
+      );
     });
   });
 });

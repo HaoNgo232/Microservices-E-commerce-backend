@@ -11,6 +11,7 @@ import {
   SalesSummaryResponse,
   UserCohortResponse,
 } from '@shared/types';
+import { expectRpcError } from '@shared/testing/rpc-test-helpers';
 
 describe('ReportController (e2e)', () => {
   let app: INestMicroservice;
@@ -108,7 +109,8 @@ describe('ReportController (e2e)', () => {
         toAt: '2024-01-01T00:00:00Z',
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.REPORT.SALES_SUMMARY, dto))).rejects.toThrow(
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.REPORT.SALES_SUMMARY, dto)),
         'fromAt must be before toAt',
       );
     });
@@ -156,7 +158,8 @@ describe('ReportController (e2e)', () => {
         toAt: '2024-01-01T00:00:00Z',
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.REPORT.PRODUCT_PERF, dto))).rejects.toThrow(
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.REPORT.PRODUCT_PERF, dto)),
         'fromAt must be before toAt',
       );
     });
@@ -204,7 +207,8 @@ describe('ReportController (e2e)', () => {
         toAt: '2024-01-01T00:00:00Z',
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.REPORT.USER_COHORT, dto))).rejects.toThrow(
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.REPORT.USER_COHORT, dto)),
         'fromAt must be before toAt',
       );
     });

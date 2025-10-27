@@ -11,6 +11,7 @@ import {
   PaymentByOrderDto,
 } from '@shared/dto/payment.dto';
 import { firstValueFrom, of } from 'rxjs';
+import { expectRpcError } from '@shared/testing/rpc-test-helpers';
 
 describe('PaymentsController (e2e)', () => {
   let app: INestMicroservice;
@@ -134,7 +135,10 @@ describe('PaymentsController (e2e)', () => {
         amountInt: 50000,
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.PAYMENT.PROCESS, dto))).rejects.toThrow();
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.PAYMENT.PROCESS, dto)),
+        'Failed to validate order',
+      );
     });
   });
 
@@ -160,7 +164,8 @@ describe('PaymentsController (e2e)', () => {
       const result = await firstValueFrom(client.send(EVENTS.PAYMENT.VERIFY, dto));
 
       expect(result).toBeDefined();
-      expect(result.success).toBe(true);
+      expect(result.verified).toBe(true);
+      expect(result.status).toBe('SUCCESS');
     });
 
     it('should throw error when verifying non-existent payment', async () => {
@@ -169,7 +174,10 @@ describe('PaymentsController (e2e)', () => {
         payload: {},
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.PAYMENT.VERIFY, dto))).rejects.toThrow();
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.PAYMENT.VERIFY, dto)),
+        'không tồn tại',
+      );
     });
   });
 
@@ -199,7 +207,10 @@ describe('PaymentsController (e2e)', () => {
         id: 'non-existent-payment',
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.PAYMENT.GET_BY_ID, dto))).rejects.toThrow();
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.PAYMENT.GET_BY_ID, dto)),
+        'không tồn tại',
+      );
     });
   });
 
@@ -229,7 +240,10 @@ describe('PaymentsController (e2e)', () => {
         orderId: 'non-existent-order',
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.PAYMENT.GET_BY_ORDER, dto))).rejects.toThrow();
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.PAYMENT.GET_BY_ORDER, dto)),
+        'không tồn tại',
+      );
     });
   });
 });

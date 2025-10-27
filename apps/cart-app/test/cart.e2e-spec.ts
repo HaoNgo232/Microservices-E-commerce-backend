@@ -11,6 +11,7 @@ import {
   CartRemoveItemDto,
 } from '@shared/dto/cart.dto';
 import { firstValueFrom, of } from 'rxjs';
+import { expectRpcError } from '@shared/testing/rpc-test-helpers';
 
 describe('CartController (e2e)', () => {
   let app: INestMicroservice;
@@ -198,7 +199,10 @@ describe('CartController (e2e)', () => {
         quantity: 5,
       };
 
-      await expect(firstValueFrom(client.send(EVENTS.CART.UPDATE_ITEM, dto))).rejects.toThrow();
+      await expectRpcError(
+        firstValueFrom(client.send(EVENTS.CART.UPDATE_ITEM, dto)),
+        'không tồn tại',
+      );
     });
   });
 
