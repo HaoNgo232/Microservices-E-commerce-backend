@@ -71,7 +71,9 @@ Content-Type: application/json
 
 @adminToken = {{loginAdmin.response.body.accessToken}}
 @customerToken = {{loginCustomer.response.body.accessToken}}
+
 ###
+
 @adminId = {{loginAdmin.response.body.user.id}}
 @customerId = {{loginCustomer.response.body.user.id}}
 

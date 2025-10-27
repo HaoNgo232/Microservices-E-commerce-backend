@@ -112,6 +112,7 @@ describe('AddressService', () => {
 
   describe('create', () => {
     it('nên tạo địa chỉ mới thành công', async () => {
+      const userId = 'user123';
       const dto: AddressCreateDto = {
         fullName: 'Nguyễn Văn A',
         phone: '0123456789',
@@ -122,9 +123,10 @@ describe('AddressService', () => {
         isDefault: false,
       };
 
-      const mockUser = { id: 'user123' };
+      const mockUser = { id: userId };
       const mockCreatedAddress = {
         id: 'addr1',
+        userId,
         ...dto,
         isDefault: false, // Not first address
         createdAt: new Date(),
@@ -134,19 +136,19 @@ describe('AddressService', () => {
       mockPrismaService.address.count.mockResolvedValue(2); // ✅ User already has 2 addresses
       mockPrismaService.address.create.mockResolvedValue(mockCreatedAddress);
 
-      const result = await service.create(dto);
+      const result = await service.create({ userId, dto });
 
       expect(result).toEqual(mockCreatedAddress);
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: dto.userId },
+        where: { id: userId },
         select: { id: true },
       });
       expect(prisma.address.count).toHaveBeenCalledWith({
-        where: { userId: dto.userId },
+        where: { userId },
       });
       expect(prisma.address.create).toHaveBeenCalledWith({
         data: {
-          userId: dto.userId,
+          userId,
           fullName: dto.fullName,
           phone: dto.phone,
           street: dto.street,
@@ -159,8 +161,8 @@ describe('AddressService', () => {
     });
 
     it('nên set địa chỉ làm mặc định khi isDefault = true', async () => {
+      const userId = 'user123';
       const dto: AddressCreateDto = {
-        userId: 'user123',
         fullName: 'Nguyễn Văn A',
         phone: '0123456789',
         street: '123 Lê Lợi',
@@ -170,9 +172,10 @@ describe('AddressService', () => {
         isDefault: true,
       };
 
-      const mockUser = { id: 'user123' };
+      const mockUser = { id: userId };
       const mockCreatedAddress = {
         id: 'addr1',
+        userId,
         ...dto,
         createdAt: new Date(),
       };
@@ -182,21 +185,21 @@ describe('AddressService', () => {
       mockPrismaService.address.updateMany.mockResolvedValue({ count: 2 });
       mockPrismaService.address.create.mockResolvedValue(mockCreatedAddress);
 
-      const result = await service.create(dto);
+      const result = await service.create({ userId, dto });
 
       expect(result).toEqual(mockCreatedAddress);
       expect(prisma.address.count).toHaveBeenCalledWith({
-        where: { userId: dto.userId },
+        where: { userId },
       });
       expect(prisma.address.updateMany).toHaveBeenCalledWith({
-        where: { userId: dto.userId },
+        where: { userId },
         data: { isDefault: false },
       });
     });
 
     it('nên tự động set địa chỉ đầu tiên làm default dù client set false', async () => {
+      const userId = 'user123';
       const dto: AddressCreateDto = {
-        userId: 'user123',
         fullName: 'Nguyễn Văn A',
         phone: '0123456789',
         street: '123 Lê Lợi',
@@ -206,10 +209,16 @@ describe('AddressService', () => {
         isDefault: false, // Client set false
       };
 
-      const mockUser = { id: 'user123' };
+      const mockUser = { id: userId };
       const mockCreatedAddress = {
         id: 'addr1',
-        ...dto,
+        userId,
+        fullName: dto.fullName,
+        phone: dto.phone,
+        street: dto.street,
+        ward: dto.ward,
+        district: dto.district,
+        city: dto.city,
         isDefault: true, // But service auto-set to true for first address
         createdAt: new Date(),
       };
@@ -219,20 +228,20 @@ describe('AddressService', () => {
       mockPrismaService.address.updateMany.mockResolvedValue({ count: 0 });
       mockPrismaService.address.create.mockResolvedValue(mockCreatedAddress);
 
-      const result = await service.create(dto);
+      const result = await service.create({ userId, dto });
 
       expect(result).toEqual(mockCreatedAddress);
       expect(prisma.address.count).toHaveBeenCalledWith({
-        where: { userId: dto.userId },
+        where: { userId },
       });
       // Should call updateMany even for first address (to ensure consistency)
       expect(prisma.address.updateMany).toHaveBeenCalledWith({
-        where: { userId: dto.userId },
+        where: { userId },
         data: { isDefault: false },
       });
       expect(prisma.address.create).toHaveBeenCalledWith({
         data: {
-          userId: dto.userId,
+          userId,
           fullName: dto.fullName,
           phone: dto.phone,
           street: dto.street,
@@ -245,8 +254,8 @@ describe('AddressService', () => {
     });
 
     it('nên throw RpcException khi user không tồn tại', async () => {
+      const userId = 'nonexistent';
       const dto: AddressCreateDto = {
-        userId: 'nonexistent',
         fullName: 'Nguyễn Văn A',
         phone: '0123456789',
         street: '123 Lê Lợi',
@@ -257,12 +266,12 @@ describe('AddressService', () => {
 
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.create(dto)).rejects.toThrow(RpcException);
+      await expect(service.create({ userId, dto })).rejects.toThrow(RpcException);
     });
 
     it('nên throw RpcException khi có lỗi tạo địa chỉ', async () => {
+      const userId = 'user123';
       const dto: AddressCreateDto = {
-        userId: 'user123',
         fullName: 'Nguyễn Văn A',
         phone: '0123456789',
         street: '123 Lê Lợi',
@@ -271,10 +280,10 @@ describe('AddressService', () => {
         city: 'TP.HCM',
       };
 
-      mockPrismaService.user.findUnique.mockResolvedValue({ id: 'user123' });
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId });
       mockPrismaService.address.create.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.create(dto)).rejects.toThrow(RpcException);
+      await expect(service.create({ userId, dto })).rejects.toThrow(RpcException);
     });
   });
 

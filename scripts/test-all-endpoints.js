@@ -5,8 +5,8 @@
  * Tests all endpoints and logs results to JSON file for AI analysis
  */
 
-const https = require('https');
-const http = require('http');
+const https = require('node:https');
+const http = require('node:http');
 
 const GATEWAY_URL = 'http://localhost:3000';
 const OUTPUT_FILE = 'test-results.json';
@@ -54,7 +54,8 @@ async function request(method, path, data = null, headers = {}) {
             body: parsed,
             raw: body,
           });
-        } catch (e) {
+        } catch (parseError) {
+          console.warn('Failed to parse response body:', parseError.message);
           resolve({
             status: res.statusCode,
             headers: res.headers,
@@ -373,7 +374,7 @@ async function main() {
   });
 
   // Write results to file
-  const fs = require('fs');
+  const fs = require('node:fs');
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(results, null, 2));
 
   // Print summary
@@ -388,4 +389,4 @@ async function main() {
   console.log('='.repeat(60));
 }
 
-main().catch(console.error);
+await main();
