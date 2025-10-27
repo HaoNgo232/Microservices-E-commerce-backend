@@ -60,6 +60,7 @@ export const EVENTS = {
     REMOVE_ITEM: 'orderItem.removeItem',
   },
   PAYMENT: {
+    WEBHOOK_SEPAY: 'payment.webhook.sepay',
     PROCESS: 'payment.process',
     VERIFY: 'payment.verify',
     GET_BY_ID: 'payment.getById',

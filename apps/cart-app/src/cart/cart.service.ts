@@ -146,7 +146,7 @@ export class CartService implements ICartService {
   async removeItem(dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
     try {
       const cart = await this.getOrCreateCart(dto.userId);
-      return this.cartItemService.removeItem(cart.id, dto.productId);
+      return await this.cartItemService.removeItem(cart.id, dto.productId);
     } catch (error) {
       if (error instanceof InternalServerRpcException || error instanceof ValidationRpcException) {
         throw error;

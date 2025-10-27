@@ -7,16 +7,23 @@ import {
   PaymentVerifyDto,
   PaymentIdDto,
   PaymentByOrderDto,
+  SePayWebhookDto,
 } from '@shared/dto/payment.dto';
 import {
   PaymentResponse,
   PaymentProcessResponse,
   PaymentVerifyResponse,
 } from '@shared/types/payment.types';
+import { SePayWebhookResponse } from '@shared/types/payment.webhook.types';
 
 @Controller()
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
+
+  @MessagePattern(EVENTS.PAYMENT.WEBHOOK_SEPAY)
+  sepayWebhook(@Payload() dto: SePayWebhookDto): Promise<SePayWebhookResponse> {
+    return this.paymentsService.handleSePayWebhook(dto);
+  }
 
   @MessagePattern(EVENTS.PAYMENT.PROCESS)
   process(@Payload() dto: PaymentProcessDto): Promise<PaymentProcessResponse> {

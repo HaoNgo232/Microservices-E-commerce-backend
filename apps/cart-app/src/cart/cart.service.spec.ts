@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { CartService } from './cart.service';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
 import { CartItemService } from '@cart-app/cart-item/cart-item.service';
+import { CartGetDto } from '@shared/dto/cart.dto';
 import {
   ServiceUnavailableRpcException,
   InternalServerRpcException,
@@ -200,6 +201,40 @@ describe('CartService', () => {
       // Act & Assert
       await expect(service.get({ userId: 'user123' })).rejects.toThrow(InternalServerRpcException);
     });
+
+    it('should update cart with userId if cart exists without userId', async () => {
+      // Arrange
+      const cartWithoutUserId = { ...mockCart, userId: null };
+      const cartWithUserId = { ...mockCart, userId: 'user123' };
+
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(cartWithoutUserId);
+      (mockPrisma.cart.update as jest.Mock).mockResolvedValue(cartWithUserId);
+
+      // Act
+      const result = await service.get({ userId: 'user123' });
+
+      // Assert
+      expect(mockPrisma.cart.update).toHaveBeenCalledWith({
+        where: { id: 'cart-123' },
+        data: { userId: 'user123' },
+        include: { items: true },
+      });
+      expect(result.cart.userId).toBe('user123');
+    });
+
+    it('should throw ValidationRpcException when neither userId nor sessionId provided', async () => {
+      // Act & Assert
+      await expect(service.get({} as CartGetDto)).rejects.toThrow(InternalServerRpcException);
+    });
+
+    it('should handle non-array products response', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCartWithItems);
+      mockProductClient.send.mockReturnValue(of({ invalid: 'response' }));
+
+      // Act & Assert
+      await expect(service.get({ userId: 'user123' })).rejects.toThrow(InternalServerRpcException);
+    });
   });
 
   describe('addItem', () => {
@@ -272,6 +307,21 @@ describe('CartService', () => {
         }),
       ).rejects.toThrow(InternalServerRpcException);
     });
+
+    it('should handle generic error during addItem', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      mockCartItemService.addItem.mockRejectedValue(new Error('Generic error'));
+
+      // Act & Assert
+      await expect(
+        service.addItem({
+          userId: 'user123',
+          productId: 'product-1',
+          quantity: 2,
+        }),
+      ).rejects.toThrow(InternalServerRpcException);
+    });
   });
 
   describe('updateItem', () => {
@@ -316,6 +366,21 @@ describe('CartService', () => {
         }),
       ).rejects.toThrow(InternalServerRpcException);
     });
+
+    it('should handle generic error during updateItem', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      mockCartItemService.updateQuantity.mockRejectedValue(new Error('Generic error'));
+
+      // Act & Assert
+      await expect(
+        service.updateItem({
+          userId: 'user123',
+          productId: 'product-1',
+          quantity: 5,
+        }),
+      ).rejects.toThrow(InternalServerRpcException);
+    });
   });
 
   describe('removeItem', () => {
@@ -341,6 +406,20 @@ describe('CartService', () => {
       mockCartItemService.removeItem.mockRejectedValue(
         new InternalServerRpcException('Unexpected error'),
       );
+
+      // Act & Assert
+      await expect(
+        service.removeItem({
+          userId: 'user123',
+          productId: 'product-1',
+        }),
+      ).rejects.toThrow(InternalServerRpcException);
+    });
+
+    it('should handle generic error during removeItem', async () => {
+      // Arrange
+      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      mockCartItemService.removeItem.mockRejectedValue(new Error('Generic error'));
 
       // Act & Assert
       await expect(

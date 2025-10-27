@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { PaymentProcessDto, PaymentVerifyDto } from '@shared/dto/payment.dto';
+import { PaymentProcessDto, PaymentVerifyDto, SePayWebhookDto } from '@shared/dto/payment.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
@@ -9,6 +9,7 @@ import {
   PaymentProcessResponse,
   PaymentVerifyResponse,
 } from '@shared/types/payment.types';
+import { SePayWebhookResponse } from '@shared/types/payment.webhook.types';
 
 /**
  * Payments Controller
@@ -20,6 +21,15 @@ import {
 export class PaymentsController extends BaseGatewayController {
   constructor(@Inject('PAYMENT_SERVICE') protected readonly client: ClientProxy) {
     super(client);
+  }
+
+  /**
+   * POST /payments/webhook/sepay
+   * Endpoint nhận webhook từ Sepay
+   */
+  @Post('webhook/sepay')
+  sepayWebhook(@Body() dto: SePayWebhookDto): Promise<SePayWebhookResponse> {
+    return this.send<SePayWebhookDto, SePayWebhookResponse>(EVENTS.PAYMENT.WEBHOOK_SEPAY, dto);
   }
 
   /**
