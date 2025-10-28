@@ -7,6 +7,15 @@ import {
 } from '@shared/exceptions/rpc-exceptions';
 import { CartItemResponse } from '@shared/types/cart.types';
 
+/**
+ * ICartItemService - Interface định nghĩa contract cho CartItemService
+ *
+ * Các phương thức:
+ * - addItem: Thêm sản phẩm vào giỏ
+ * - updateQuantity: Cập nhật số lượng sản phẩm
+ * - removeItem: Xóa sản phẩm khỏi giỏ
+ * - findByCartAndProduct: Tìm cart item theo cartId và productId
+ */
 export interface ICartItemService {
   addItem(cartId: string, productId: string, quantity: number): Promise<CartItemResponse>;
   updateQuantity(
@@ -193,6 +202,13 @@ export class CartItemService implements ICartItemService {
     }
   }
 
+  /**
+   * Chuyển đổi Prisma CartItem object sang CartItemResponse DTO
+   *
+   * @param item - Prisma CartItem object
+   * @returns CartItemResponse DTO
+   * @private
+   */
   private toCartItemResponse(item: {
     id: string;
     cartId: string;

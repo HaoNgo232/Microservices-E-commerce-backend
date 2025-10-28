@@ -1,3 +1,14 @@
+/**
+ * AR Microservice Business Logic Layer
+ *
+ * Xử lý nghiệp vụ liên quan đến AR snapshots:
+ * - Lưu AR snapshots (ảnh AR của user)
+ * - Lấy danh sách AR snapshots với filter và pagination
+ *
+ * Database: ar_db (PostgreSQL, riêng biệt từ các service khác)
+ * ORM: Prisma
+ */
+
 import { Injectable } from '@nestjs/common';
 import { ARSnapshotCreateDto, ARSnapshotListDto } from '@shared/dto/ar.dto';
 import { PrismaService } from '@ar-app/prisma/prisma.service';
@@ -10,11 +21,22 @@ import { ValidationRpcException } from '@shared/exceptions/rpc-exceptions';
 
 @Injectable()
 export class ArService {
+  /**
+   * Inject PrismaService để truy cập database ar_db
+   */
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Create AR snapshot
-   * Saves user's AR photo with product
+   * Tạo AR snapshot mới
+   *
+   * Flow:
+   * 1. Validate input từ DTO
+   * 2. Lưu snapshot vào database (userId, productId, imageUrl, metadata)
+   * 3. Trả về response với id, imageUrl, createdAt
+   *
+   * @param dto - { userId, productId, imageUrl, metadata }
+   * @returns - { id, imageUrl, createdAt }
+   * @throws ValidationRpcException - Nếu tạo failed
    */
   async snapshotCreate(dto: ARSnapshotCreateDto): Promise<ARSnapshotCreateResponse> {
     try {
@@ -35,10 +57,12 @@ export class ArService {
         createdAt: snapshot.createdAt,
       };
     } catch (error) {
+      // Re-throw known RPC exceptions
       if (error instanceof ValidationRpcException) {
         throw error;
       }
 
+      // Log error với context
       console.error('[ArService] snapshotCreate error:', {
         userId: dto.userId,
         productId: dto.productId,
@@ -50,16 +74,27 @@ export class ArService {
   }
 
   /**
-   * List AR snapshots with pagination and filters
-   * Can filter by userId or productId
+   * Lấy danh sách AR snapshots với filter và pagination
+   *
+   * Flow:
+   * 1. Validate pagination parameters (page, pageSize)
+   * 2. Build where clause từ filters (userId, productId)
+   * 3. Query snapshots + count total (parallel)
+   * 4. Map Prisma objects to response DTOs
+   * 5. Trả về paginated response
+   *
+   * @param dto - { userId?, productId?, page?, pageSize? }
+   * @returns - { snapshots[], total, page, pageSize }
+   * @throws ValidationRpcException - Nếu query failed
    */
   async snapshotList(dto: ARSnapshotListDto): Promise<PaginatedARSnapshotsResponse> {
     try {
+      // Phân trang: mặc định page=1, pageSize=20
       const page = dto.page || 1;
       const pageSize = dto.pageSize || 20;
       const skip = (page - 1) * pageSize;
 
-      // Build where clause
+      // Build where clause từ filters
       const where: {
         userId?: string;
         productId?: string;
@@ -73,13 +108,13 @@ export class ArService {
         where.productId = dto.productId;
       }
 
-      // Execute queries in parallel
+      // Query song song: lấy dữ liệu + đếm total
       const [snapshots, total] = await Promise.all([
         this.prisma.aRSnapshot.findMany({
           where,
           skip,
           take: pageSize,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: 'desc' }, // Mới nhất trước
         }),
         this.prisma.aRSnapshot.count({ where }),
       ]);
@@ -91,10 +126,12 @@ export class ArService {
         pageSize,
       };
     } catch (error) {
+      // Re-throw known RPC exceptions
       if (error instanceof ValidationRpcException) {
         throw error;
       }
 
+      // Log error với context
       console.error('[ArService] snapshotList error:', {
         filters: { userId: dto.userId, productId: dto.productId },
         page: dto.page,
@@ -107,7 +144,14 @@ export class ArService {
   }
 
   /**
-   * Map Prisma AR snapshot to response
+   * Helper: Map Prisma ARSnapshot object to response DTO
+   *
+   * Chuyển đổi từ Prisma model sang response type
+   * - Giữ nguyên các field cần thiết
+   * - Cast metadata từ Json sang Record
+   *
+   * @param snapshot - Prisma ARSnapshot object
+   * @returns - ARSnapshotResponse DTO
    * @private
    */
   private mapToARSnapshotResponse(snapshot: {

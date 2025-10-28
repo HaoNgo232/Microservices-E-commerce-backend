@@ -26,6 +26,15 @@ import {
   CartItemResponse,
 } from '@shared/types/cart.types';
 
+/**
+ * ICartService - Interface định nghĩa contract cho CartService
+ *
+ * Các phương thức:
+ * - get: Lấy thông tin giỏ hàng với danh sách sản phẩm
+ * - addItem: Thêm sản phẩm vào giỏ
+ * - updateItem: Cập nhật số lượng sản phẩm
+ * - removeItem: Xóa sản phẩm khỏi giỏ
+ */
 export interface ICartService {
   get(dto: CartGetDto): Promise<CartWithProductsResponse>;
   addItem(dto: CartAddItemDto): Promise<CartItemOperationResponse>;
@@ -38,6 +47,13 @@ export interface ICartService {
  */
 @Injectable()
 export class CartService implements ICartService {
+  /**
+   * Constructor - Inject các dependencies cần thiết
+   *
+   * @param prisma - PrismaService để truy cập database
+   * @param cartItemService - CartItemService để quản lý items
+   * @param productClient - NATS client để gọi Product Service
+   */
   constructor(
     private readonly prisma: PrismaService,
     private readonly cartItemService: CartItemService,

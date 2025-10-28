@@ -3,7 +3,11 @@ import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
 
 /**
- * Options cho send method
+ * SendOptions - Tùy chọn cho việc gửi message qua NATS
+ *
+ * @property timeout - Thời gian timeout (ms)
+ * @property retryCount - Số lần retry khi thất bại
+ * @property retryDelay - Thời gian delay giữa các lần retry (ms)
  */
 export interface SendOptions {
   timeout?: number;
@@ -12,12 +16,18 @@ export interface SendOptions {
 }
 
 /**
- * BaseGatewayController
- * Cung cấp unified communication layer với NATS cho tất cả controllers
+ * BaseGatewayController - Lớp cơ sở cho tất cả Gateway Controllers
  *
- * Pattern: Template Method - định nghĩa skeleton của NATS communication
+ * Cung cấp unified communication layer với NATS cho tất cả controllers.
+ * Áp dụng Template Method Pattern để định nghĩa skeleton của NATS communication.
+ *
+ * **Chức năng chính:**
+ * - Gửi request-response messages với timeout và retry
+ * - Gửi fire-and-forget events
+ * - Xử lý lỗi tập trung và convert sang HTTP exceptions
  *
  * @example
+ * ```typescript
  * class UsersController extends BaseGatewayController {
  *   constructor(@Inject('USER_SERVICE') client: ClientProxy) {
  *     super(client);
@@ -27,9 +37,15 @@ export interface SendOptions {
  *     return this.send(EVENTS.USER.FIND_BY_ID, id);
  *   }
  * }
+ * ```
  */
 @Injectable()
 export abstract class BaseGatewayController {
+  /**
+   * Constructor - Inject NATS ClientProxy
+   *
+   * @param client - NATS client để giao tiếp với microservices
+   */
   constructor(protected readonly client: ClientProxy) {}
 
   /**
@@ -70,8 +86,12 @@ export abstract class BaseGatewayController {
   }
 
   /**
-   * Centralized error handling cho NATS communication
-   * Parse error từ microservice và convert thành HTTP exception
+   * Xử lý lỗi tập trung cho NATS communication
+   * Phân tích lỗi từ microservice và chuyển đổi thành HTTP exception
+   *
+   * @param error - Lỗi từ microservice
+   * @param pattern - NATS event pattern
+   * @returns HttpException với status code phù hợp
    */
   private createHttpError(error: unknown, pattern: string): HttpException {
     console.error(`[Gateway] Error calling ${pattern}:`, error);
@@ -81,7 +101,7 @@ export abstract class BaseGatewayController {
       return new HttpException('Service request timeout', HttpStatus.REQUEST_TIMEOUT);
     }
 
-    // Parse error từ microservice (RPC error)
+    // Phân tích lỗi từ microservice (RPC error)
     if (this.isRpcError(error)) {
       return new HttpException(
         error.message || 'Service communication failed',
@@ -94,7 +114,10 @@ export abstract class BaseGatewayController {
   }
 
   /**
-   * Type guard để check timeout error
+   * Type guard để kiểm tra timeout error
+   *
+   * @param error - Đối tượng lỗi cần kiểm tra
+   * @returns true nếu là timeout error
    */
   private isTimeoutError(error: unknown): boolean {
     return (
@@ -107,7 +130,10 @@ export abstract class BaseGatewayController {
   }
 
   /**
-   * Type guard để check RPC error format
+   * Type guard để kiểm tra RPC error format
+   *
+   * @param error - Đối tượng lỗi cần kiểm tra
+   * @returns true nếu có cấu trúc RPC error (message + statusCode)
    */
   private isRpcError(error: unknown): error is { message: string; statusCode: number } {
     return (

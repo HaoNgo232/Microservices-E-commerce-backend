@@ -4,6 +4,14 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe } from '@nestjs/common';
 import { AllRpcExceptionsFilter } from '@shared/filters/rpc-exception.filter';
 
+/**
+ * Bootstrap AR Microservice
+ *
+ * Khởi tạo và cấu hình AR microservice với:
+ * - NATS transport để giao tiếp với các service khác
+ * - Global validation pipe để validate DTO
+ * - Global exception filter để xử lý lỗi RPC
+ */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(ArAppModule, {
     transport: Transport.NATS,

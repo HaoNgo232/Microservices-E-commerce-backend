@@ -2,6 +2,19 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@gateway/app.module';
 import { ValidationPipe } from '@nestjs/common';
 
+/**
+ * Bootstrap API Gateway Application
+ *
+ * Khởi tạo và cấu hình API Gateway với:
+ * - Global validation pipe để validate DTOs
+ * - CORS configuration cho cross-origin requests
+ * - HTTP server listening trên port được cấu hình
+ *
+ * **Security Features:**
+ * - Request validation với class-validator
+ * - CORS whitelist configuration
+ * - Rate limiting và audit logging (via middleware)
+ */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 

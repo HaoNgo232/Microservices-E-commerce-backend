@@ -18,8 +18,70 @@ import { EVENTS } from '@shared/events';
 import { firstValueFrom, timeout, catchError, of, throwError } from 'rxjs';
 import { ProductResponse } from '@shared/types/product.types';
 
+/**
+ * Interface cho Orders Service
+ * Định nghĩa các phương thức quản lý orders
+ */
+export interface IOrdersService {
+  /**
+   * Tạo order mới với items
+   * @param dto - DTO chứa thông tin order
+   * @returns Order đã tạo
+   */
+  create(dto: OrderCreateDto): Promise<OrderResponse>;
+
+  /**
+   * Lấy chi tiết order theo ID
+   * @param dto - DTO chứa orderId
+   * @returns Order với đầy đủ items
+   */
+  get(dto: OrderIdDto): Promise<OrderResponse>;
+
+  /**
+   * Lấy danh sách orders của user với phân trang
+   * @param dto - DTO chứa userId và thông tin phân trang
+   * @returns Danh sách orders có phân trang
+   */
+  listByUser(dto: OrderListByUserDto): Promise<PaginatedOrdersResponse>;
+
+  /**
+   * Cập nhật trạng thái order
+   * @param dto - DTO chứa orderId và status mới
+   * @returns Order đã cập nhật
+   */
+  updateStatus(dto: OrderUpdateStatusDto): Promise<OrderResponse>;
+
+  /**
+   * Hủy order
+   * @param dto - DTO chứa orderId
+   * @returns Order đã hủy
+   */
+  cancel(dto: OrderCancelDto): Promise<OrderResponse>;
+}
+
+/**
+ * OrdersService - Service quản lý orders
+ *
+ * Xử lý business logic liên quan đến:
+ * - Tạo order mới (validate sản phẩm, kiểm tra tồn kho, tạo items)
+ * - Lấy thông tin order
+ * - Liệt kê orders của user với phân trang
+ * - Cập nhật trạng thái order (validate chuyển trạng thái hợp lệ)
+ * - Hủy order (hoàn trả tồn kho)
+ *
+ * **Tích hợp microservices:**
+ * - Product Service: Validate sản phẩm, kiểm tra tồn kho, cập nhật tồn kho
+ * - Cart Service: Xóa giỏ hàng sau khi tạo order thành công
+ */
 @Injectable()
-export class OrdersService {
+export class OrdersService implements IOrdersService {
+  /**
+   * Constructor - Inject dependencies
+   *
+   * @param prisma - Prisma client để truy cập database
+   * @param productClient - NATS client gọi Product Service
+   * @param cartClient - NATS client gọi Cart Service
+   */
   constructor(
     private readonly prisma: PrismaService,
     @Inject('PRODUCT_SERVICE') private readonly productClient: ClientProxy,
@@ -27,8 +89,19 @@ export class OrdersService {
   ) {}
 
   /**
-   * Create new order with items
-   * Validates items, checks stock availability, and clears cart
+   * Tạo order mới với items
+   *
+   * Quy trình:
+   * 1. Validate mảng items không rỗng
+   * 2. Kiểm tra sản phẩm tồn tại và đủ tồn kho
+   * 3. Tính tổng tiền từ items
+   * 4. Tạo order và items trong transaction
+   * 5. Giảm tồn kho sản phẩm (fire-and-forget)
+   * 6. Xóa giỏ hàng của user (fire-and-forget)
+   *
+   * @param dto - DTO chứa userId, addressId, items
+   * @returns Order đã tạo với đầy đủ items
+   * @throws ValidationRpcException nếu items rỗng hoặc sản phẩm không hợp lệ
    */
   async create(dto: OrderCreateDto): Promise<OrderResponse> {
     // Step 1: Validate items array
@@ -73,8 +146,11 @@ export class OrdersService {
   }
 
   /**
-   * Get order by ID
-   * Returns order with items
+   * Lấy chi tiết order theo ID
+   *
+   * @param dto - DTO chứa orderId
+   * @returns Order với đầy đủ items
+   * @throws EntityNotFoundRpcException nếu order không tồn tại
    */
   async get(dto: OrderIdDto): Promise<OrderResponse> {
     const order = await this.prisma.order.findUnique({
@@ -92,8 +168,10 @@ export class OrdersService {
   }
 
   /**
-   * List orders by user with pagination
-   * Returns paginated list of orders
+   * Lấy danh sách orders của user với phân trang
+   *
+   * @param dto - DTO chứa userId, page, pageSize
+   * @returns Danh sách orders có phân trang, sắp xếp theo thời gian tạo mới nhất
    */
   async listByUser(dto: OrderListByUserDto): Promise<PaginatedOrdersResponse> {
     const page = dto.page || 1;
@@ -126,8 +204,18 @@ export class OrdersService {
   }
 
   /**
-   * Update order status
-   * Validates status transitions and handles stock restoration on cancellation
+   * Cập nhật trạng thái order
+   *
+   * Quy trình:
+   * 1. Kiểm tra order tồn tại
+   * 2. Validate chuyển trạng thái hợp lệ (PENDING → PAID/CANCELLED, PAID → SHIPPED/CANCELLED)
+   * 3. Cập nhật status trong database
+   * 4. Nếu chuyển sang CANCELLED: hoàn trả tồn kho (fire-and-forget)
+   *
+   * @param dto - DTO chứa orderId và status mới
+   * @returns Order đã cập nhật
+   * @throws EntityNotFoundRpcException nếu order không tồn tại
+   * @throws ValidationRpcException nếu chuyển trạng thái không hợp lệ
    */
   async updateStatus(dto: OrderUpdateStatusDto): Promise<OrderResponse> {
     // Check if order exists
@@ -165,8 +253,18 @@ export class OrdersService {
   }
 
   /**
-   * Cancel order
-   * Only allows cancellation of PENDING orders
+   * Hủy order
+   *
+   * Quy tắc hủy:
+   * - Chỉ cho phép hủy order PENDING hoặc PAID
+   * - Không cho phép hủy order SHIPPED hoặc đã CANCELLED
+   * - Tự động hoàn trả tồn kho khi hủy (fire-and-forget)
+   *
+   * @param dto - DTO chứa orderId và lý do hủy (optional)
+   * @returns Order đã hủy
+   * @throws EntityNotFoundRpcException nếu order không tồn tại
+   * @throws ConflictRpcException nếu order đã bị hủy
+   * @throws ValidationRpcException nếu không thể hủy (đã ship)
    */
   async cancel(dto: OrderCancelDto): Promise<OrderResponse> {
     // Check if order exists
@@ -208,8 +306,16 @@ export class OrdersService {
   }
 
   /**
-   * Validate products exist and have sufficient stock
-   * @throws ValidationRpcException if any product is invalid or out of stock
+   * Kiểm tra sản phẩm tồn tại và đủ tồn kho
+   *
+   * Quy trình:
+   * 1. Lấy danh sách productIds từ items
+   * 2. Gọi Product Service để lấy thông tin sản phẩm (timeout 5s)
+   * 3. Kiểm tra tất cả sản phẩm đều tồn tại
+   * 4. Kiểm tra từng sản phẩm có đủ tồn kho
+   *
+   * @param items - Danh sách items cần validate
+   * @throws ValidationRpcException nếu sản phẩm không tồn tại hoặc không đủ tồn kho
    * @private
    */
   private async validateProductsAndStock(
@@ -269,8 +375,12 @@ export class OrdersService {
   }
 
   /**
-   * Decrement product stock after order creation
-   * Fire-and-forget operation
+   * Giảm tồn kho sản phẩm sau khi tạo order
+   *
+   * Fire-and-forget operation: Gửi message qua NATS không chờ response
+   * Timeout: 5s, bỏ qua lỗi nếu có
+   *
+   * @param items - Danh sách items cần giảm tồn kho
    * @private
    */
   private decrementProductStock(items: Array<{ productId: string; quantity: number }>): void {
@@ -298,8 +408,12 @@ export class OrdersService {
   }
 
   /**
-   * Restore product stock after order cancellation
-   * Fire-and-forget operation
+   * Hoàn trả tồn kho sản phẩm sau khi hủy order
+   *
+   * Fire-and-forget operation: Gửi message qua NATS không chờ response
+   * Timeout: 5s, bỏ qua lỗi nếu có
+   *
+   * @param items - Danh sách items cần hoàn trả tồn kho
    * @private
    */
   private restoreProductStock(items: Array<{ productId: string; quantity: number }>): void {
@@ -327,8 +441,12 @@ export class OrdersService {
   }
 
   /**
-   * Clear user's cart after successful order
-   * Fire-and-forget operation
+   * Xóa giỏ hàng của user sau khi tạo order thành công
+   *
+   * Fire-and-forget operation: Gửi message qua NATS không chờ response
+   * Timeout: 5s, bỏ qua lỗi nếu có
+   *
+   * @param userId - ID của user cần xóa giỏ hàng
    * @private
    */
   private clearUserCart(userId: string): void {
@@ -346,8 +464,17 @@ export class OrdersService {
   }
 
   /**
-   * Validate status transition
-   * Prevents invalid status changes
+   * Kiểm tra tính hợp lệ của chuyển trạng thái order
+   *
+   * Quy tắc chuyển trạng thái:
+   * - PENDING → PAID, CANCELLED
+   * - PAID → SHIPPED, CANCELLED
+   * - SHIPPED → (không thể chuyển)
+   * - CANCELLED → (không thể chuyển)
+   *
+   * @param currentStatus - Trạng thái hiện tại
+   * @param newStatus - Trạng thái mới muốn chuyển
+   * @throws ValidationRpcException nếu chuyển trạng thái không hợp lệ
    * @private
    */
   private validateStatusTransition(currentStatus: string, newStatus: string): void {
@@ -368,7 +495,10 @@ export class OrdersService {
   }
 
   /**
-   * Map Prisma order to OrderResponse
+   * Chuyển đổi Prisma order sang OrderResponse DTO
+   *
+   * @param order - Order từ Prisma với items
+   * @returns OrderResponse DTO
    * @private
    */
   private mapToOrderResponse(order: {

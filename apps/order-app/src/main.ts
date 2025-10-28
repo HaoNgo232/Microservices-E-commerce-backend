@@ -4,6 +4,20 @@ import { OrderAppModule } from '@order-app/order-app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { AllRpcExceptionsFilter } from '@shared/filters/rpc-exception.filter';
 
+/**
+ * Bootstrap Order Microservice
+ *
+ * Khởi tạo và cấu hình Order microservice với:
+ * - NATS transport để giao tiếp với các service khác
+ * - Global validation pipe để validate DTO
+ * - Global exception filter để xử lý lỗi RPC
+ * - Queue-based message handling
+ *
+ * **Business Domain:**
+ * - Order management (create, update, cancel)
+ * - Order items management
+ * - Stock validation và integration với Product Service
+ */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(OrderAppModule, {
     transport: Transport.NATS,

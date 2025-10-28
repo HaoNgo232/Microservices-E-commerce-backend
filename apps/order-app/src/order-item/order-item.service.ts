@@ -12,10 +12,58 @@ import {
 } from '@shared/exceptions/rpc-exceptions';
 import { OrderItemResponse } from '@shared/types/order.types';
 
+/**
+ * Interface cho OrderItem Service
+ * Định nghĩa các phương thức quản lý order items
+ */
+export interface IOderItemService {
+  /**
+   * Lấy danh sách items của order
+   * @param dto - DTO chứa orderId
+   * @returns Danh sách order items
+   */
+  listByOrder(dto: OrderItemListByOrderDto): Promise<OrderItemResponse[]>;
+
+  /**
+   * Thêm item vào order
+   * @param dto - DTO chứa thông tin item
+   * @returns Order item đã tạo
+   */
+  addItem(dto: OrderItemAddDto): Promise<OrderItemResponse>;
+
+  /**
+   * Xóa item khỏi order
+   * @param dto - DTO chứa ID của item
+   */
+  removeItem(dto: OrderItemRemoveDto): Promise<void>;
+}
+
+/**
+ * OrderItemService - Service quản lý order items
+ *
+ * Xử lý business logic liên quan đến:
+ * - Lấy danh sách items của order
+ * - Thêm item vào order và cập nhật tổng tiền
+ * - Xóa item khỏi order và điều chỉnh tổng tiền
+ *
+ * **Lưu ý:** Mọi thao tác thêm/xóa item đều cập nhật totalInt của order
+ */
 @Injectable()
-export class OrderItemService {
+export class OrderItemService implements IOderItemService {
+  /**
+   * Constructor - Inject PrismaService
+   *
+   * @param prisma - Prisma client để truy cập database
+   */
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Lấy danh sách items của order
+   *
+   * @param dto - DTO chứa orderId
+   * @returns Danh sách order items được sắp xếp theo thời gian tạo
+   * @throws EntityNotFoundRpcException nếu order không tồn tại
+   */
   async listByOrder(dto: OrderItemListByOrderDto): Promise<OrderItemResponse[]> {
     const orderExists = await this.prisma.order.findUnique({
       where: { id: dto.orderId },
@@ -34,6 +82,20 @@ export class OrderItemService {
     return items.map(item => this.toOrderItemResponse(item));
   }
 
+  /**
+   * Thêm item vào order
+   *
+   * Thực hiện các bước:
+   * 1. Validate số lượng và đơn giá
+   * 2. Kiểm tra order tồn tại
+   * 3. Tạo order item và cập nhật tổng tiền order (transaction)
+   *
+   * @param dto - DTO chứa thông tin item (orderId, productId, quantity, priceInt)
+   * @returns Order item đã tạo
+   * @throws ValidationRpcException nếu quantity hoặc priceInt không hợp lệ
+   * @throws EntityNotFoundRpcException nếu order không tồn tại
+   * @throws InternalServerRpcException nếu có lỗi database
+   */
   async addItem(dto: OrderItemAddDto): Promise<OrderItemResponse> {
     const { orderId, productId, quantity, priceInt } = dto;
 
@@ -95,6 +157,19 @@ export class OrderItemService {
     }
   }
 
+  /**
+   * Xóa item khỏi order
+   *
+   * Thực hiện các bước:
+   * 1. Kiểm tra order item tồn tại
+   * 2. Tính toán số tiền cần giảm từ order total
+   * 3. Xóa item và cập nhật tổng tiền order (transaction)
+   * 4. Đảm bảo order total không âm (dùng Math.min)
+   *
+   * @param dto - DTO chứa ID của item cần xóa
+   * @throws EntityNotFoundRpcException nếu order item không tồn tại
+   * @throws InternalServerRpcException nếu có lỗi database
+   */
   async removeItem(dto: OrderItemRemoveDto): Promise<void> {
     let context: {
       orderId: string;
@@ -156,6 +231,13 @@ export class OrderItemService {
     }
   }
 
+  /**
+   * Chuyển đổi Prisma order item sang OrderItemResponse DTO
+   *
+   * @param item - Order item từ Prisma
+   * @returns OrderItemResponse DTO
+   * @private
+   */
   private toOrderItemResponse(item: {
     id: string;
     orderId: string;
