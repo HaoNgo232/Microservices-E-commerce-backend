@@ -6,7 +6,10 @@
 ###  - Thanh toán COD và SePay, verify, truy vấn payment
 ### ==========================================
 
-@gateway = {{gatewayUrl}}
+# Base variables (fallback nếu chưa chọn environment trong http-client.env.json)
+@hostname = localhost
+@port = 3000
+@gateway = http://{{hostname}}:{{port}}
 
 ### 0) REGISTER + LOGIN user
 @payEmail = pay-{{$timestamp}}@example.com
@@ -37,7 +40,7 @@ Content-Type: application/json
 @payToken = {{loginPayUser.response.body.accessToken}}
 
 ### 1) CREATE ADDRESS
-# @name createPayAddress
+### @name createPayAddress
 POST {{gateway}}/addresses
 Authorization: Bearer {{payToken}}
 Content-Type: application/json
@@ -60,7 +63,7 @@ Content-Type: application/json
 @skuPay = SKU-PAY-{{$timestamp}}
 @slugPay = product-pay-{{$timestamp}}
 
-# @name createPayProduct
+### @name createPayProduct
 POST {{gateway}}/products
 Authorization: Bearer {{payToken}}
 Content-Type: application/json
@@ -79,7 +82,7 @@ Content-Type: application/json
 @payPriceInt = {{createPayProduct.response.body.priceInt}}
 
 ### 3) CREATE ORDER
-# @name createPayOrder
+### @name createPayOrder
 POST {{gateway}}/orders
 Authorization: Bearer {{payToken}}
 Content-Type: application/json
@@ -100,7 +103,7 @@ Content-Type: application/json
 @payOrderId = {{createPayOrder.response.body.id}}
 
 ### 4) PAYMENTS - Process COD
-# @name processCOD
+### @name processCOD
 POST {{gateway}}/payments/process
 Authorization: Bearer {{payToken}}
 Content-Type: application/json
@@ -128,7 +131,7 @@ Authorization: Bearer {{payToken}}
 ###
 
 ### 7) PAYMENTS - Process SePay (trả về paymentUrl)
-# @name processSePay
+### @name processSePay
 POST {{gateway}}/payments/process
 Authorization: Bearer {{payToken}}
 Content-Type: application/json

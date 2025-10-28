@@ -5,12 +5,15 @@
 ### Sử dụng http-client.env.json (chọn môi trường 'local' trong VS Code)
 ### ==========================================
 
-@gateway = {{gatewayUrl}}
+# Base variables (fallback nếu chưa chọn environment trong http-client.env.json)
+@hostname = localhost
+@port = 3000
+@gateway = http://{{hostname}}:{{port}}
 @userEmail = user-{{$timestamp}}@example.com
 @userPassword = Test@123456
 
 ### 1) REGISTER - Đăng ký tài khoản mới (role mặc định: CUSTOMER)
-# @name registerUser
+### @name registerUser
 POST {{gateway}}/auth/register
 Content-Type: application/json
 
@@ -23,7 +26,7 @@ Content-Type: application/json
 ###
 
 ### 2) LOGIN - Lấy accessToken/refreshToken
-# @name loginUser
+### @name loginUser
 POST {{gateway}}/auth/login
 Content-Type: application/json
 
@@ -37,7 +40,7 @@ Content-Type: application/json
 @userToken = {{loginUser.response.body.accessToken}}
 
 ### 3) ME - Lấy thông tin user hiện tại
-# @name me
+### @name me
 GET {{gateway}}/auth/me
 Authorization: Bearer {{userToken}}
 
@@ -76,7 +79,7 @@ Authorization: Bearer {{userToken}}
 ###
 
 ### 8) ADDRESSES - Create (auth-only, Gateway tự gán userId từ JWT)
-# @name createAddress
+### @name createAddress
 POST {{gateway}}/addresses
 Authorization: Bearer {{userToken}}
 Content-Type: application/json

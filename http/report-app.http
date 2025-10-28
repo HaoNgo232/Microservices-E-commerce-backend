@@ -5,7 +5,10 @@
 ### Khi bổ sung routes cho báo cáo, có thể dùng các mẫu bên dưới.
 ### ==========================================
 
-@gateway = {{gatewayUrl}}
+# Base variables (fallback nếu chưa chọn environment trong http-client.env.json)
+@hostname = localhost
+@port = 3000
+@gateway = http://{{hostname}}:{{port}}
 
 ### 1) HEALTH - Tổng quan NATS connection
 GET {{gateway}}/health

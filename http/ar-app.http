@@ -4,7 +4,10 @@
 ### POST /ar/snapshots yêu cầu AuthGuard, GET là public
 ### ==========================================
 
-@gateway = {{gatewayUrl}}
+# Base variables (fallback nếu chưa chọn environment trong http-client.env.json)
+@hostname = localhost
+@port = 3000
+@gateway = http://{{hostname}}:{{port}}
 
 ### 0) REGISTER + LOGIN user
 @arEmail = ar-{{$timestamp}}@example.com
@@ -38,7 +41,7 @@ Content-Type: application/json
 @skuAR = SKU-AR-{{$timestamp}}
 @slugAR = product-ar-{{$timestamp}}
 
-# @name createArProduct
+### @name createArProduct
 POST {{gateway}}/products
 Authorization: Bearer {{arToken}}
 Content-Type: application/json

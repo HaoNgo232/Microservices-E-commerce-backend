@@ -4,7 +4,10 @@
 ### - POST /orders: Gateway tự gắn userId từ JWT
 ### ==========================================
 
-@gateway = {{gatewayUrl}}
+# Base variables (fallback nếu chưa chọn environment trong http-client.env.json)
+@hostname = localhost
+@port = 3000
+@gateway = http://{{hostname}}:{{port}}
 
 ### Tạo user đăng nhập
 @orderEmail = order-{{$timestamp}}@example.com
@@ -23,7 +26,7 @@ Content-Type: application/json
 ###
 
 ### 1) LOGIN
-# @name loginOrderUser
+### @name loginOrderUser
 POST {{gateway}}/auth/login
 Content-Type: application/json
 
@@ -37,7 +40,7 @@ Content-Type: application/json
 @orderToken = {{loginOrderUser.response.body.accessToken}}
 
 ### 2) CREATE ADDRESS (để gắn vào order)
-# @name createOrderAddress
+### @name createOrderAddress
 POST {{gateway}}/addresses
 Authorization: Bearer {{orderToken}}
 Content-Type: application/json
@@ -80,7 +83,7 @@ Content-Type: application/json
 @orderPriceInt = {{createOrderProduct.response.body.priceInt}}
 
 ### 4) ORDERS - Create
-# @name createOrder
+### @name createOrder
 POST {{gateway}}/orders
 Authorization: Bearer {{orderToken}}
 Content-Type: application/json

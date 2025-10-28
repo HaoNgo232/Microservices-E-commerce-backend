@@ -4,7 +4,10 @@
 ### Lưu ý: Gateway chưa chặn theo role, chỉ yêu cầu AuthGuard (bất kỳ user đăng nhập)
 ### ==========================================
 
-@gateway = {{gatewayUrl}}
+# Base variables (fallback nếu chưa chọn environment trong http-client.env.json)
+@hostname = localhost
+@port = 3000
+@gateway = http://{{hostname}}:{{port}}
 
 ### Chuẩn bị user đăng nhập để tạo category/product
 @prodEmail = prod-{{$timestamp}}@example.com
@@ -23,7 +26,7 @@ Content-Type: application/json
 ###
 
 ### 1) LOGIN
-# @name loginProductUser
+### @name loginProductUser
 POST {{gateway}}/auth/login
 Content-Type: application/json
 
@@ -39,7 +42,7 @@ Content-Type: application/json
 ### 2) CATEGORIES - Create
 @categorySlug = cat-{{$timestamp}}
 
-# @name createCategory
+### @name createCategory
 POST {{gateway}}/categories
 Authorization: Bearer {{prodToken}}
 Content-Type: application/json
@@ -85,7 +88,7 @@ Content-Type: application/json
 @sku = SKU-{{$timestamp}}
 @productSlug = product-{{$timestamp}}
 
-# @name createProduct
+### @name createProduct
 POST {{gateway}}/products
 Authorization: Bearer {{prodToken}}
 Content-Type: application/json

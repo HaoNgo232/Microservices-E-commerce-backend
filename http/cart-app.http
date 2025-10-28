@@ -5,7 +5,10 @@
 ### nhưng file này vẫn đăng nhập để lấy userId cho rõ ràng.
 ### ==========================================
 
-@gateway = {{gatewayUrl}}
+# Base variables (fallback nếu chưa chọn environment trong http-client.env.json)
+@hostname = localhost
+@port = 3000
+@gateway = http://{{hostname}}:{{port}}
 
 ### Chuẩn bị user và product để test
 @cartEmail = cart-{{$timestamp}}@example.com
@@ -24,7 +27,7 @@ Content-Type: application/json
 ###
 
 ### 1) LOGIN
-# @name loginCartUser
+### @name loginCartUser
 POST {{gateway}}/auth/login
 Content-Type: application/json
 
@@ -38,7 +41,7 @@ Content-Type: application/json
 @cartToken = {{loginCartUser.response.body.accessToken}}
 
 ### 2) ME - lấy userId
-# @name meCart
+### @name meCart
 GET {{gateway}}/auth/me
 Authorization: Bearer {{cartToken}}
 
@@ -50,7 +53,7 @@ Authorization: Bearer {{cartToken}}
 @skuCart = SKU-CART-{{$timestamp}}
 @slugCart = product-cart-{{$timestamp}}
 
-# @name createCartProduct
+### @name createCartProduct
 POST {{gateway}}/products
 Authorization: Bearer {{cartToken}}
 Content-Type: application/json
