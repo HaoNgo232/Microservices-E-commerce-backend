@@ -1,13 +1,12 @@
 /**
- * RPC Test Helpers
- * Reusable utilities for E2E testing with NATS microservices
+ * Bộ trợ giúp (Helpers) cho kiểm thử RPC qua NATS
+ * Cung cấp các hàm assert lỗi do microservice trả về qua Observable error stream.
  */
 
 /**
- * Assert NATS RpcException errors
+ * Khẳng định lời hứa (Promise) bị lỗi RPC
  *
- * NATS errors are emitted through Observable error stream,
- * not thrown as regular exceptions.
+ * NATS gửi lỗi qua Observable error stream, không phải throw như exception thông thường.
  *
  * @example
  * await expectRpcError(
@@ -37,7 +36,7 @@ export const expectRpcError = async (
 };
 
 /**
- * Assert RPC error with status code
+ * Khẳng định lỗi RPC kèm mã trạng thái
  *
  * @example
  * await expectRpcErrorWithStatus(
@@ -59,12 +58,12 @@ export const expectRpcErrorWithStatus = async (
 
     const err = error as Record<string, unknown>;
 
-    // Check status code
+    // Kiểm tra status code
     if (typeof err.statusCode === 'number') {
       expect(err.statusCode).toBe(expectedStatusCode);
     }
 
-    // Check message if provided
+    // Kiểm tra thông điệp (nếu cung cấp)
     if (expectedMessage) {
       const msg =
         (typeof err.message === 'string' ? err.message : '') ||
@@ -76,22 +75,20 @@ export const expectRpcErrorWithStatus = async (
 };
 
 /**
- * Create unique test email
+ * Tạo email test duy nhất theo thời gian
  *
  * @example
- * const email = createTestEmail('user');
- * // Returns: user-1234567890@test.com
+ * const email = createTestEmail('user'); // user-1234567890@test.com
  */
 export const createTestEmail = (prefix: string = 'test'): string => {
   return `${prefix}-${Date.now()}@test.com`;
 };
 
 /**
- * Create unique test identifier
+ * Tạo mã định danh test duy nhất theo thời gian
  *
  * @example
- * const id = createTestId('user');
- * // Returns: user-1234567890
+ * const id = createTestId('user'); // user-1234567890
  */
 export const createTestId = (prefix: string = 'test'): string => {
   return `${prefix}-${Date.now()}`;

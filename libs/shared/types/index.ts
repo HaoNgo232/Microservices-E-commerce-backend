@@ -1,7 +1,7 @@
 /**
- * Shared Types Index
- * Export tất cả types để dễ dàng import
+ * Chỉ mục (index) cho toàn bộ kiểu dữ liệu (types) dùng chung.
  *
+ * Mục đích: Dễ dàng import từ một điểm duy nhất.
  * @example
  * import { UserResponse, ProductResponse, CartResponse } from '@shared/types';
  */

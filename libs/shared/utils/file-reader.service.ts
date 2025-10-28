@@ -2,35 +2,25 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'node:fs/promises';
 
 /**
- * File Reader Service - Abstraction for File System Operations
+ * FileReaderService - Trừu tượng hoá thao tác hệ thống tệp (FS)
  *
- * This service provides an abstraction layer for file system operations,
- * making it easier to mock in unit tests and following Dependency Inversion Principle.
+ * Mục tiêu:
+ * - Dễ mock trong unit test (Dependency Inversion Principle)
+ * - Đảm nhiệm một việc duy nhất: đọc/kiểm tra sự tồn tại file
+ * - Có thể thay thế bởi nguồn lưu trữ khác (cloud storage) nếu cần
  *
- * Benefits:
- * - Easy to mock in unit tests
- * - Single Responsibility: Only handles file reading
- * - Follows SOLID principles (Dependency Inversion)
- * - Can be easily replaced with different implementations (e.g., cloud storage)
- *
- * @example
- * // In service constructor
+ * Ví dụ:
  * constructor(private readonly fileReader: FileReaderService) {}
- *
- * // Usage
- * const content = await this.fileReader.readFile('./config.json');
+ * const content = await this.fileReader.readFile('./keys/public-key.pem');
  */
 @Injectable()
 export class FileReaderService {
   /**
-   * Read file content as UTF-8 string
+   * Đọc nội dung file dưới dạng chuỗi UTF-8
    *
-   * @param path Absolute or relative path to the file
-   * @returns File content as string
-   * @throws Error if file cannot be read
-   *
-   * @example
-   * const publicKey = await fileReader.readFile('./keys/public-key.pem');
+   * @param path Đường dẫn tuyệt đối hoặc tương đối tới file
+   * @returns Nội dung file (string)
+   * @throws Error nếu không thể đọc file
    */
   async readFile(path: string): Promise<string> {
     try {
@@ -43,13 +33,10 @@ export class FileReaderService {
   }
 
   /**
-   * Check if file exists
+   * Kiểm tra file có tồn tại hay không
    *
-   * @param path Path to check
-   * @returns True if file exists, false otherwise
-   *
-   * @example
-   * const exists = await fileReader.fileExists('./keys/private-key.pem');
+   * @param path Đường dẫn cần kiểm tra
+   * @returns true nếu file tồn tại, ngược lại false
    */
   async fileExists(path: string): Promise<boolean> {
     try {

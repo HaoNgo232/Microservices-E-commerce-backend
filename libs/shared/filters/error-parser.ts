@@ -1,12 +1,12 @@
 import { HttpStatus } from '@nestjs/common';
 
 /**
- * Error Parser Utility
- * Extracts structured information from RpcException errors
+ * Trình phân tích lỗi (Error Parser)
+ * Chuyển đổi lỗi (string/object) sang cấu trúc thống nhất: { statusCode, message, details }
  */
 export class ErrorParser {
   /**
-   * Parse error to extract statusCode, message, and details
+   * Phân tích lỗi và trích xuất statusCode, message, details
    */
   static parse(error: string | object): {
     statusCode: number;
@@ -29,7 +29,7 @@ export class ErrorParser {
   }
 
   /**
-   * Parse structured error object
+   * Phân tích lỗi dạng object (đã có cấu trúc)
    */
   private static parseObjectError(error: object): {
     statusCode: number;
@@ -51,7 +51,7 @@ export class ErrorParser {
   }
 
   /**
-   * Parse string error
+   * Phân tích lỗi dạng string (dò pattern cơ bản)
    */
   private static parseStringError(error: string): {
     statusCode: number;
@@ -60,7 +60,6 @@ export class ErrorParser {
   } {
     const lowerError = error.toLowerCase();
 
-    // Detect error type from message
     if (lowerError.includes('empty response')) {
       return {
         statusCode: HttpStatus.SERVICE_UNAVAILABLE,
@@ -109,7 +108,7 @@ export class ErrorParser {
   }
 
   /**
-   * Extract message from error for RPC context
+   * Lấy nội dung message từ lỗi cho ngữ cảnh RPC
    */
   static extractMessage(error: string | object): string {
     if (typeof error === 'string') {
@@ -124,7 +123,7 @@ export class ErrorParser {
   }
 
   /**
-   * Extract status code from error for RPC context
+   * Lấy statusCode từ lỗi cho ngữ cảnh RPC
    */
   static extractStatusCode(error: string | object): number {
     if (typeof error === 'object' && error !== null && 'statusCode' in error) {

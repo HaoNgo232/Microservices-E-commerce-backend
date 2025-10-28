@@ -1,10 +1,14 @@
 /**
- * Error Response Builder
- * Constructs standardized error response objects
+ * Bộ dựng (Builder) phản hồi lỗi chuẩn hoá
+ * Tạo ra cấu trúc response đồng nhất cho HTTP và RPC
  */
 export class ErrorResponseBuilder {
   /**
-   * Build HTTP error response
+   * Tạo response lỗi cho HTTP
+   *
+   * @param statusCode Mã trạng thái HTTP
+   * @param message Thông điệp lỗi cho người dùng
+   * @param details Thông tin chi tiết (nếu có)
    */
   static buildHttpResponse(
     statusCode: number,
@@ -41,7 +45,10 @@ export class ErrorResponseBuilder {
   }
 
   /**
-   * Build RPC error response
+   * Tạo response lỗi cho RPC (object đơn giản)
+   *
+   * @param statusCode Mã trạng thái
+   * @param message Thông điệp lỗi
    */
   static buildRpcResponse(
     statusCode: number,

@@ -1,8 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 
 /**
- * Parsed Error Structure
- * Standard format for all parsed errors
+ * Cấu trúc lỗi đã được phân tích/chuẩn hoá
  */
 export interface ParsedError {
   statusCode: number;
@@ -11,8 +10,8 @@ export interface ParsedError {
 }
 
 /**
- * Error Detection Rule
- * Maps keywords to HTTP status codes
+ * Quy tắc phát hiện lỗi
+ * Ánh xạ tập từ khoá → mã trạng thái HTTP và (tuỳ chọn) thông điệp thay thế
  */
 interface ErrorPattern {
   keywords: string[];
@@ -22,16 +21,16 @@ interface ErrorPattern {
 
 /**
  * ErrorDetector
- * Responsibility: Detect error types based on message patterns
+ * Nhiệm vụ: Nhận diện loại lỗi dựa trên mẫu câu (pattern) trong thông điệp
  *
- * THESIS NOTE: Demonstrates Strategy Pattern
- * - Each error pattern is a strategy
- * - Easy to add new patterns without modifying existing code (Open/Closed Principle)
+ * Ghi chú học thuật (Thesis):
+ * - Minh hoạ Strategy Pattern: mỗi pattern hoạt động như một “chiến lược”
+ * - Dễ mở rộng bằng cách bổ sung pattern mà không cần sửa logic lõi (Open/Closed)
  */
 export class ErrorDetector {
   /**
-   * Predefined error patterns
-   * Can be extended without modifying detector logic
+   * Tập pattern dựng sẵn.
+   * Có thể mở rộng thêm bằng addPattern() mà không sửa logic enhance().
    */
   private readonly patterns: ErrorPattern[] = [
     {
@@ -67,11 +66,13 @@ export class ErrorDetector {
   ];
 
   /**
-   * Enhance parsed error with pattern detection
-   * Only applies to string errors that need detection
+   * Nâng cao (enhance) thông tin lỗi bằng cách áp dụng nhận diện pattern.
+   * Chỉ áp dụng khi statusCode hiện tại là 500 (lỗi tổng quát).
+   *
+   * @param parsedError Lỗi đã được chuẩn hoá
+   * @returns Lỗi đã được cập nhật statusCode/message nếu khớp pattern
    */
   enhance(parsedError: ParsedError): ParsedError {
-    // Only detect patterns if status code is generic 500
     if (parsedError.statusCode !== Number(HttpStatus.INTERNAL_SERVER_ERROR)) {
       return parsedError;
     }
@@ -91,7 +92,7 @@ export class ErrorDetector {
   }
 
   /**
-   * Find first matching pattern for the error message
+   * Tìm pattern đầu tiên khớp với thông điệp lỗi (không phân biệt hoa/thường).
    */
   private findMatchingPattern(message: string): ErrorPattern | null {
     for (const pattern of this.patterns) {
@@ -103,15 +104,14 @@ export class ErrorDetector {
   }
 
   /**
-   * Check if message matches any keyword in the pattern
+   * Kiểm tra xem thông điệp có chứa bất kỳ từ khoá nào trong pattern hay không.
    */
   private matchesPattern(message: string, keywords: string[]): boolean {
     return keywords.some(keyword => message.includes(keyword));
   }
 
   /**
-   * Add custom error pattern dynamically (for extensibility)
-   * THESIS NOTE: Demonstrates Open/Closed Principle
+   * Bổ sung pattern tuỳ biến trong runtime (tăng tính mở rộng).
    */
   addPattern(pattern: ErrorPattern): void {
     this.patterns.push(pattern);

@@ -3,29 +3,19 @@ import { JwtService } from './jwt.service';
 import { FileReaderService } from '../utils/file-reader.service';
 
 /**
- * JWT Module - Global JWT Service Provider
+ * JWT Module (Global)
  *
- * Marked as @Global() to make JwtService available across all modules
- * without explicit imports. This ensures consistent JWT handling
- * throughout the microservices architecture.
+ * Cung cấp JwtService dùng chung trên toàn bộ ứng dụng (được đánh dấu @Global()).
+ * - Dùng FileReaderService để đọc key RSA từ ổ đĩa
  *
- * Dependencies:
- * - FileReaderService: For reading RSA key files from disk
+ * Cách dùng:
+ * 1) Import JwtModule ở root module của app
+ * 2) Inject JwtService ở bất kỳ service/controller nào cần
  *
- * Usage:
- * 1. Import JwtModule in your app's root module
- * 2. Inject JwtService anywhere in your application
- *
- * @example
- * // In app.module.ts
- * @Module({
- *   imports: [JwtModule],
- *   // ...
- * })
+ * Ví dụ:
+ * @Module({ imports: [JwtModule] })
  * export class AppModule {}
  *
- * @example
- * // In any service/controller
  * constructor(private readonly jwtService: JwtService) {}
  */
 @Global()

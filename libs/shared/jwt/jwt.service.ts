@@ -4,20 +4,18 @@ import * as path from 'node:path';
 import { FileReaderService } from '../utils/file-reader.service';
 
 /**
- * JWT Service - RSA-based Token Signing and Verification
+ * JwtService - Ký và xác thực JWT dựa trên RSA (bất đối xứng)
  *
- * This service handles JWT token operations using RSA asymmetric cryptography:
- * - User-app: Has private key for signing tokens
- * - Other services: Have public key for verifying tokens
+ * Chức năng:
+ * - user-app: có private key để ký token
+ * - các service khác: có public key để verify token
  *
- * Keys are loaded from PEM files in the keys/ directory.
+ * Key được nạp từ thư mục keys/ dưới dạng PEM.
  *
- * @example
- * // User-app signs tokens
- * const token = await jwtService.signToken({ userId, email, role }, 900);
+ * Ví dụ ký (ở user-app):
+ * const token = await jwtService.signToken({ sub, email, role }, 900);
  *
- * @example
- * // Other services verify tokens
+ * Ví dụ verify (ở các service khác):
  * const payload = await jwtService.verifyToken(token);
  */
 @Injectable()
@@ -31,34 +29,33 @@ export class JwtService implements OnModuleInit {
   constructor(private readonly fileReader: FileReaderService) {}
 
   /**
-   * Initialize service and load RSA keys from environment variables
-   * Called automatically by NestJS on module initialization
+   * Lifecycle hook: Tự động nạp key khi module khởi tạo
    */
   async onModuleInit(): Promise<void> {
     await this.loadKeys();
   }
 
   /**
-   * Load RSA keys from PEM files in keys/ directory
+   * Nạp RSA keys từ thư mục keys/ (định dạng PEM)
    *
-   * Expected files:
-   * - keys/public-key.pem: Public key PEM (required for all services)
-   * - keys/private-key.pem: Private key PEM (optional - only for user-app)
+   * Yêu cầu:
+   * - keys/public-key.pem: bắt buộc (mọi service đều cần để verify)
+   * - keys/private-key.pem: tuỳ chọn (chỉ cần ở service ký token)
    *
-   * @throws Error if public key file is missing or keys cannot be imported
+   * @throws Error nếu thiếu public key hoặc không thể import key
    */
   private async loadKeys(): Promise<void> {
     try {
       const keysDir = path.join(process.cwd(), 'keys');
 
-      // Load public key (required for all services)
+      // Public key: bắt buộc
       const publicKeyPath = path.join(keysDir, 'public-key.pem');
       const publicKeyPEM = await this.fileReader.readFile(publicKeyPath);
       this.publicKey = await jose.importSPKI(publicKeyPEM, this.algorithm);
 
       console.log('[JwtService] ✅ Public key loaded successfully from file');
 
-      // Load private key (optional - only for user-app)
+      // Private key: tuỳ chọn (ở user-app)
       const privateKeyPath = path.join(keysDir, 'private-key.pem');
       const privateKeyExists = await this.fileReader.fileExists(privateKeyPath);
 
@@ -67,7 +64,6 @@ export class JwtService implements OnModuleInit {
         this.privateKey = await jose.importPKCS8(privateKeyPEM, this.algorithm);
         console.log('[JwtService] ✅ Private key loaded successfully (signing enabled)');
       } else {
-        // Private key is optional - service can still verify tokens without it
         console.log('[JwtService] ℹ️  Private key not found (verification-only mode)');
       }
     } catch (error) {
@@ -79,20 +75,14 @@ export class JwtService implements OnModuleInit {
   }
 
   /**
-   * Sign JWT token with private key (RS256 algorithm)
+   * Ký JWT bằng private key (thuật toán RS256)
    *
-   * Only user-app should call this method (requires private key).
+   * Chỉ nên gọi ở service có private key (ví dụ user-app).
    *
-   * @param payload Token payload
-   * @param expiresInSeconds Expiration time in seconds
-   * @returns Signed JWT token string
-   * @throws Error if private key is not loaded
-   *
-   * @example
-   * const token = await jwtService.signToken(
-   *   { userId: '123', email: 'user@example.com', role: 'CUSTOMER' },
-   *   900 // 15 minutes
-   * );
+   * @param payload Dữ liệu JWT (bắt buộc có sub)
+   * @param expiresInSeconds Thời hạn (giây)
+   * @returns Chuỗi JWT đã ký
+   * @throws UnauthorizedException nếu chưa nạp private key hoặc payload thiếu sub
    */
   async signToken(payload: jose.JWTPayload, expiresInSeconds: number): Promise<string> {
     if (!this.privateKey) {
@@ -124,22 +114,13 @@ export class JwtService implements OnModuleInit {
   }
 
   /**
-   * Verify JWT token with public key (RS256 algorithm)
+   * Xác thực JWT bằng public key (RS256)
    *
-   * All services can call this method (requires only public key).
-   * Validates signature, expiration, and issuer claims.
+   * - Hợp lệ: trả về payload đã verify (đúng chữ ký, chưa hết hạn, đúng issuer)
+   * - Không hợp lệ: ném UnauthorizedException với thông điệp phù hợp
    *
-   * @param token JWT token string
-   * @returns Decoded and verified JWT payload
-   * @throws UnauthorizedException if token is invalid, expired, or verification fails
-   *
-   * @example
-   * try {
-   *   const payload = await jwtService.verifyToken(token);
-   *   console.log('User ID:', payload.userId);
-   * } catch (error) {
-   *   console.error('Invalid token:', error.message);
-   * }
+   * @param token JWT cần verify
+   * @returns Payload đã xác thực
    */
   async verifyToken(token: string): Promise<jose.JWTPayload> {
     if (!this.publicKey) {
@@ -155,7 +136,7 @@ export class JwtService implements OnModuleInit {
 
       return payload;
     } catch (error) {
-      // Handle specific jose errors
+      // Phân loại một số lỗi jose phổ biến
       if (error instanceof jose.errors.JWTExpired) {
         throw new UnauthorizedException('Token has expired');
       }
@@ -172,26 +153,18 @@ export class JwtService implements OnModuleInit {
         throw new UnauthorizedException('Token format is invalid');
       }
 
-      // Generic error
       console.error('[JwtService] Token verification error:', error);
       throw new UnauthorizedException('Invalid token');
     }
   }
 
   /**
-   * Decode JWT token without verification (for debugging only)
+   * Giải mã JWT KHÔNG kèm xác thực (chỉ phục vụ debug/log)
    *
-   * ⚠️  WARNING: Does not validate signature or expiration!
-   * Only use for logging, debugging, or inspecting token structure.
+   * Cảnh báo: Không kiểm tra chữ ký/expiry!
    *
-   * @param token JWT token string
-   * @returns Decoded token payload and header
-   * @throws UnauthorizedException if token format is invalid
-   *
-   * @example
-   * const { payload, header } = jwtService.decodeToken(token);
-   * console.log('Algorithm:', header.alg);
-   * console.log('User ID:', payload.userId);
+   * @param token JWT cần decode
+   * @returns payload và header đã giải mã
    */
   decodeToken(token: string): { payload: jose.JWTPayload; header: jose.JWSHeaderParameters } {
     try {
@@ -209,18 +182,14 @@ export class JwtService implements OnModuleInit {
   }
 
   /**
-   * Check if service can sign tokens (has private key loaded)
-   *
-   * @returns True if private key is loaded, false otherwise
+   * Kiểm tra khả năng ký token (đã nạp private key hay chưa)
    */
   canSignTokens(): boolean {
     return this.privateKey !== null;
   }
 
   /**
-   * Check if service can verify tokens (has public key loaded)
-   *
-   * @returns True if public key is loaded, false otherwise
+   * Kiểm tra khả năng verify token (đã nạp public key hay chưa)
    */
   canVerifyTokens(): boolean {
     return this.publicKey !== null;
