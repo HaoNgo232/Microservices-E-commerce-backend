@@ -81,10 +81,10 @@ export class CategoriesController extends BaseGatewayController {
   @Put(':id')
   @UseGuards(AuthGuard)
   update(@Param('id') id: string, @Body() dto: CategoryUpdateDto): Promise<CategoryResponse> {
-    return this.send<CategoryUpdateDto & { id: string }, CategoryResponse>(EVENTS.CATEGORY.UPDATE, {
-      id,
-      ...dto,
-    });
+    return this.send<{ id: string; dto: CategoryUpdateDto }, CategoryResponse>(
+      EVENTS.CATEGORY.UPDATE,
+      { id, dto },
+    );
   }
 
   /**

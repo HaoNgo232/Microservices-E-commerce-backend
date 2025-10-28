@@ -72,10 +72,13 @@ export class ProductsController extends BaseGatewayController {
   @Put(':id')
   @UseGuards(AuthGuard)
   update(@Param('id') id: string, @Body() dto: ProductUpdateDto): Promise<ProductResponse> {
-    return this.send<ProductUpdateDto & { id: string }, ProductResponse>(EVENTS.PRODUCT.UPDATE, {
-      id,
-      ...dto,
-    });
+    return this.send<{ id: string; dto: ProductUpdateDto }, ProductResponse>(
+      EVENTS.PRODUCT.UPDATE,
+      {
+        id,
+        dto,
+      },
+    );
   }
 
   /**

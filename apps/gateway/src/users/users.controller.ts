@@ -57,9 +57,9 @@ export class UsersController extends BaseGatewayController {
   @Put(':id')
   @UseGuards(AuthGuard)
   update(@Param('id') id: string, @Body() dto: UpdateUserDto): Promise<UserResponse> {
-    return this.send<UpdateUserDto & { id: string }, UserResponse>(EVENTS.USER.UPDATE, {
+    return this.send<{ id: string; dto: UpdateUserDto }, UserResponse>(EVENTS.USER.UPDATE, {
       id,
-      ...dto,
+      dto,
     });
   }
 
