@@ -1,0 +1,121 @@
+### ==========================================
+### user-app.http
+### Test Auth + Users + Addresses qua API Gateway
+### Yêu cầu: chạy gateway + user-app, đã cấu hình keys/ cho JWT
+### Sử dụng http-client.env.json (chọn môi trường 'local' trong VS Code)
+### ==========================================
+
+@gateway = {{gatewayUrl}}
+@userEmail = user-{{$timestamp}}@example.com
+@userPassword = Test@123456
+
+### 1) REGISTER - Đăng ký tài khoản mới (role mặc định: CUSTOMER)
+# @name registerUser
+POST {{gateway}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}",
+  "fullName": "HTTP Test User"
+}
+
+###
+
+### 2) LOGIN - Lấy accessToken/refreshToken
+# @name loginUser
+POST {{gateway}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}"
+}
+
+###
+
+@userToken = {{loginUser.response.body.accessToken}}
+
+### 3) ME - Lấy thông tin user hiện tại
+# @name me
+GET {{gateway}}/auth/me
+Authorization: Bearer {{userToken}}
+
+###
+
+@userId = {{me.response.body.id}}
+
+### 4) USERS - Get by ID (auth-only)
+GET {{gateway}}/users/{{userId}}
+Authorization: Bearer {{userToken}}
+
+###
+
+### 5) USERS - List all (ADMIN only) - với token CUSTOMER sẽ 403 (minh họa)
+GET {{gateway}}/users?page=1&pageSize=10
+Authorization: Bearer {{userToken}}
+
+###
+
+### 6) USERS - Update profile (auth-only)
+PUT {{gateway}}/users/{{userId}}
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "fullName": "HTTP Test User - Updated",
+  "phone": "0912345678"
+}
+
+###
+
+### 7) ADDRESSES - List của user (auth-only, userId lấy từ token bởi Gateway)
+GET {{gateway}}/addresses
+Authorization: Bearer {{userToken}}
+
+###
+
+### 8) ADDRESSES - Create (auth-only, Gateway tự gán userId từ JWT)
+# @name createAddress
+POST {{gateway}}/addresses
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Nguyễn Văn A",
+  "phone": "0912345678",
+  "street": "123 Lê Lợi",
+  "ward": "Bến Nghé",
+  "district": "Quận 1",
+  "city": "TP.HCM",
+  "isDefault": true
+}
+
+###
+
+@addressId = {{createAddress.response.body.id}}
+
+### 9) ADDRESSES - Update
+PUT {{gateway}}/addresses/{{addressId}}
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Nguyễn Văn A - Đổi tên",
+  "phone": "0987654321",
+  "street": "456 Nguyễn Huệ"
+}
+
+###
+
+### 10) ADDRESSES - Set Default
+PUT {{gateway}}/addresses/{{addressId}}/set-default
+Authorization: Bearer {{userToken}}
+
+###
+
+### 11) ADDRESSES - Delete (tuỳ chọn)
+# DELETE {{gateway}}/addresses/{{addressId}}
+# Authorization: Bearer {{userToken}}
+
+###

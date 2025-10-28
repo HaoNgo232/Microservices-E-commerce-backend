@@ -1,0 +1,182 @@
+### ==========================================
+### payment-app.http
+### Test Payments qua API Gateway
+### Quy trình:
+###  - Tạo user -> tạo product -> tạo order
+###  - Thanh toán COD và SePay, verify, truy vấn payment
+### ==========================================
+
+@gateway = {{gatewayUrl}}
+
+### 0) REGISTER + LOGIN user
+@payEmail = pay-{{$timestamp}}@example.com
+@payPassword = Test@123456
+
+POST {{gateway}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{payEmail}}",
+  "password": "{{payPassword}}",
+  "fullName": "Payment Tester"
+}
+
+###
+
+# @name loginPayUser
+POST {{gateway}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{payEmail}}",
+  "password": "{{payPassword}}"
+}
+
+###
+
+@payToken = {{loginPayUser.response.body.accessToken}}
+
+### 1) CREATE ADDRESS
+# @name createPayAddress
+POST {{gateway}}/addresses
+Authorization: Bearer {{payToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Người Nhận Thanh Toán",
+  "phone": "0900000000",
+  "street": "1 Payment St",
+  "ward": "Ward A",
+  "district": "District B",
+  "city": "HCM",
+  "isDefault": true
+}
+
+###
+
+@payAddressId = {{createPayAddress.response.body.id}}
+
+### 2) CREATE PRODUCT
+@skuPay = SKU-PAY-{{$timestamp}}
+@slugPay = product-pay-{{$timestamp}}
+
+# @name createPayProduct
+POST {{gateway}}/products
+Authorization: Bearer {{payToken}}
+Content-Type: application/json
+
+{
+  "sku": "{{skuPay}}",
+  "name": "Payment Test Product",
+  "slug": "{{slugPay}}",
+  "priceInt": 150000,
+  "stock": 20
+}
+
+###
+
+@payProductId = {{createPayProduct.response.body.id}}
+@payPriceInt = {{createPayProduct.response.body.priceInt}}
+
+### 3) CREATE ORDER
+# @name createPayOrder
+POST {{gateway}}/orders
+Authorization: Bearer {{payToken}}
+Content-Type: application/json
+
+{
+  "addressId": "{{payAddressId}}",
+  "items": [
+    {
+      "productId": "{{payProductId}}",
+      "quantity": 1,
+      "priceInt": {{payPriceInt}}
+    }
+  ]
+}
+
+###
+
+@payOrderId = {{createPayOrder.response.body.id}}
+
+### 4) PAYMENTS - Process COD
+# @name processCOD
+POST {{gateway}}/payments/process
+Authorization: Bearer {{payToken}}
+Content-Type: application/json
+
+{
+  "orderId": "{{payOrderId}}",
+  "method": "COD",
+  "amountInt": {{payPriceInt}}
+}
+
+###
+
+@paymentCodId = {{processCOD.response.body.paymentId}}
+
+### 5) PAYMENTS - Get by ID
+GET {{gateway}}/payments/{{paymentCodId}}
+Authorization: Bearer {{payToken}}
+
+###
+
+### 6) PAYMENTS - Get by Order
+GET {{gateway}}/payments/order/{{payOrderId}}
+Authorization: Bearer {{payToken}}
+
+###
+
+### 7) PAYMENTS - Process SePay (trả về paymentUrl)
+# @name processSePay
+POST {{gateway}}/payments/process
+Authorization: Bearer {{payToken}}
+Content-Type: application/json
+
+{
+  "orderId": "{{payOrderId}}",
+  "method": "SePay",
+  "amountInt": {{payPriceInt}}
+}
+
+###
+
+@paymentSePayId = {{processSePay.response.body.paymentId}}
+
+### 8) PAYMENTS - Verify (giả lập callback gateway)
+POST {{gateway}}/payments/verify
+Authorization: Bearer {{payToken}}
+Content-Type: application/json
+
+{
+  "orderId": "{{payOrderId}}",
+  "payload": {
+    "status": "success",
+    "transactionId": "TX-{{$timestamp}}",
+    "verified": true
+  }
+}
+
+###
+
+### 9) PAYMENTS - Webhook SePay (yêu cầu AuthGuard trong gateway hiện tại)
+POST {{gateway}}/payments/webhook/sepay
+Authorization: Bearer {{payToken}}
+Content-Type: application/json
+
+{
+  "id": {{$randomInt 10000 99999}},
+  "gateway": "MBBank",
+  "transactionDate": "2024-01-01 10:00:00",
+  "accountNumber": "0123456789",
+  "subAccount": null,
+  "transferType": "in",
+  "transferAmount": {{payPriceInt}},
+  "accumulated": 10000000,
+  "code": "CODE-{{$timestamp}}",
+  "content": "Thanh toan DH{{$randomInt 1000 9999}}",
+  "referenceCode": "REF-{{$timestamp}}",
+  "description": "Webhook test"
+}
+
+###

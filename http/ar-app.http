@@ -1,0 +1,84 @@
+### ==========================================
+### ar-app.http
+### Test AR Snapshots qua API Gateway
+### POST /ar/snapshots yêu cầu AuthGuard, GET là public
+### ==========================================
+
+@gateway = {{gatewayUrl}}
+
+### 0) REGISTER + LOGIN user
+@arEmail = ar-{{$timestamp}}@example.com
+@arPassword = Test@123456
+
+POST {{gateway}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{arEmail}}",
+  "password": "{{arPassword}}",
+  "fullName": "AR Tester"
+}
+
+###
+
+# @name loginArUser
+POST {{gateway}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{arEmail}}",
+  "password": "{{arPassword}}"
+}
+
+###
+
+@arToken = {{loginArUser.response.body.accessToken}}
+
+### 1) Tạo nhanh 1 product để gắn snapshot
+@skuAR = SKU-AR-{{$timestamp}}
+@slugAR = product-ar-{{$timestamp}}
+
+# @name createArProduct
+POST {{gateway}}/products
+Authorization: Bearer {{arToken}}
+Content-Type: application/json
+
+{
+  "sku": "{{skuAR}}",
+  "name": "AR Test Product",
+  "slug": "{{slugAR}}",
+  "priceInt": 129900,
+  "stock": 10
+}
+
+###
+
+@arProductId = {{createArProduct.response.body.id}}
+
+### 2) AR - Create snapshot (userId có thể bỏ trống, service hỗ trợ anonymous)
+# @name createSnapshot
+POST {{gateway}}/ar/snapshots
+Authorization: Bearer {{arToken}}
+Content-Type: application/json
+
+{
+  "productId": "{{arProductId}}",
+  "imageUrl": "https://example.com/ar/snap-{{$timestamp}}.jpg",
+  "metadata": {
+    "cameraPosition": { "x": 0, "y": 1.5, "z": 2.0 },
+    "lighting": "natural",
+    "deviceModel": "iPhone 14 Pro"
+  }
+}
+
+###
+
+### 3) AR - List all snapshots (public)
+GET {{gateway}}/ar/snapshots?page=1&pageSize=10
+
+###
+
+### 4) AR - Filter by productId
+GET {{gateway}}/ar/snapshots?productId={{arProductId}}&page=1&pageSize=10
+
+###

@@ -1,0 +1,141 @@
+### ==========================================
+### product-app.http
+### Test Categories + Products qua API Gateway
+### Lưu ý: Gateway chưa chặn theo role, chỉ yêu cầu AuthGuard (bất kỳ user đăng nhập)
+### ==========================================
+
+@gateway = {{gatewayUrl}}
+
+### Chuẩn bị user đăng nhập để tạo category/product
+@prodEmail = prod-{{$timestamp}}@example.com
+@prodPassword = Test@123456
+
+### 0) REGISTER
+POST {{gateway}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{prodEmail}}",
+  "password": "{{prodPassword}}",
+  "fullName": "Product Tester"
+}
+
+###
+
+### 1) LOGIN
+# @name loginProductUser
+POST {{gateway}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{prodEmail}}",
+  "password": "{{prodPassword}}"
+}
+
+###
+
+@prodToken = {{loginProductUser.response.body.accessToken}}
+
+### 2) CATEGORIES - Create
+@categorySlug = cat-{{$timestamp}}
+
+# @name createCategory
+POST {{gateway}}/categories
+Authorization: Bearer {{prodToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Category",
+  "slug": "{{categorySlug}}",
+  "description": "Category created via .http"
+}
+
+###
+
+@categoryId = {{createCategory.response.body.id}}
+
+### 3) CATEGORIES - List
+GET {{gateway}}/categories?page=1&pageSize=10
+
+###
+
+### 4) CATEGORIES - Get by ID
+GET {{gateway}}/categories/{{categoryId}}
+
+###
+
+### 5) CATEGORIES - Get by Slug
+GET {{gateway}}/categories/slug/{{categorySlug}}
+
+###
+
+### 6) CATEGORIES - Update
+PUT {{gateway}}/categories/{{categoryId}}
+Authorization: Bearer {{prodToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Category - Updated",
+  "description": "Updated by HTTP test"
+}
+
+###
+
+### 7) PRODUCTS - Create (priceInt là cents)
+@sku = SKU-{{$timestamp}}
+@productSlug = product-{{$timestamp}}
+
+# @name createProduct
+POST {{gateway}}/products
+Authorization: Bearer {{prodToken}}
+Content-Type: application/json
+
+{
+  "sku": "{{sku}}",
+  "name": "Test Product",
+  "slug": "{{productSlug}}",
+  "priceInt": 199900,
+  "stock": 25,
+  "description": "Product created via .http",
+  "imageUrls": ["https://example.com/image.jpg"],
+  "categoryId": "{{categoryId}}",
+  "attributes": { "color": "red", "size": "M" }
+}
+
+###
+
+@productId = {{createProduct.response.body.id}}
+
+### 8) PRODUCTS - List + Filters
+GET {{gateway}}/products?page=1&pageSize=10&search=Test
+
+###
+
+### 9) PRODUCTS - Get by ID
+GET {{gateway}}/products/{{productId}}
+
+###
+
+### 10) PRODUCTS - Get by Slug
+GET {{gateway}}/products/slug/{{productSlug}}
+
+###
+
+### 11) PRODUCTS - Update
+PUT {{gateway}}/products/{{productId}}
+Authorization: Bearer {{prodToken}}
+Content-Type: application/json
+
+{
+  "priceInt": 179900,
+  "stock": 30,
+  "description": "Updated via .http"
+}
+
+###
+
+### 12) PRODUCTS - Delete (tuỳ chọn)
+# DELETE {{gateway}}/products/{{productId}}
+# Authorization: Bearer {{prodToken}}
+
+###
