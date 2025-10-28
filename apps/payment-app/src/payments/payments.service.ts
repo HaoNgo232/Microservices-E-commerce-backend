@@ -76,7 +76,7 @@ export class PaymentsService {
           orderId: dto.orderId,
           method: dto.method,
           amountInt: dto.amountInt,
-          status: dto.method === 'COD' ? 'PENDING' : 'PENDING',
+          status: 'PENDING',
           payload: false,
         },
       });

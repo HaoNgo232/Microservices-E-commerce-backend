@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout, retry, catchError, throwError } from 'rxjs';
 
@@ -39,7 +39,6 @@ export interface SendOptions {
  * }
  * ```
  */
-@Injectable()
 export abstract class BaseGatewayController {
   /**
    * Constructor - Inject NATS ClientProxy
