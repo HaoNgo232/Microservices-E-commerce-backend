@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class AddressCreateDto {
@@ -63,6 +64,7 @@ export class AddressUpdateDto {
 export class AddressListByUserDto {
   @IsNotEmpty()
   @IsString()
+  @Type(() => String)
   userId: string;
 }
 

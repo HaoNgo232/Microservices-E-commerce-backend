@@ -190,25 +190,27 @@ export class AddressService implements IAddressService {
       }
 
       // Nếu cập nhật thành địa chỉ mặc định, bỏ mặc định của các địa chỉ khác
-      if (dto.isDefault) {
+      if (dto?.isDefault) {
         await this.prisma.address.updateMany({
           where: { userId: existingAddress.userId, id: { not: id } },
           data: { isDefault: false },
         });
       }
 
+      // Build update data - chỉ include fields được cung cấp
+      const updateData: Partial<AddressUpdateDto> = {};
+      if (dto.fullName !== undefined) updateData.fullName = dto.fullName;
+      if (dto.phone !== undefined) updateData.phone = dto.phone;
+      if (dto.street !== undefined) updateData.street = dto.street;
+      if (dto.ward !== undefined) updateData.ward = dto.ward;
+      if (dto.district !== undefined) updateData.district = dto.district;
+      if (dto.city !== undefined) updateData.city = dto.city;
+      if (dto.isDefault !== undefined) updateData.isDefault = dto.isDefault;
+
       // Cập nhật địa chỉ
       const updatedAddress = await this.prisma.address.update({
         where: { id },
-        data: {
-          fullName: dto.fullName,
-          phone: dto.phone,
-          street: dto.street,
-          ward: dto.ward,
-          district: dto.district,
-          city: dto.city,
-          isDefault: dto.isDefault,
-        },
+        data: updateData,
       });
 
       return updatedAddress;

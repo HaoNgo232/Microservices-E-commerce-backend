@@ -10,8 +10,8 @@ import {
   Req,
   Inject,
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
-import { AddressCreateDto, AddressUpdateDto } from '@shared/dto/address.dto';
+import { ClientProxy, Payload } from '@nestjs/microservices';
+import { AddressCreateDto, AddressListByUserDto, AddressUpdateDto } from '@shared/dto/address.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
@@ -35,8 +35,9 @@ export class AddressesController extends BaseGatewayController {
    * Lấy danh sách addresses của user hiện tại
    */
   @Get()
-  list(@Req() req: Request & { user: { userId: string } }): Promise<AddressResponse[]> {
-    return this.send<string, AddressResponse[]>(EVENTS.ADDRESS.LIST_BY_USER, req.user.userId);
+  list(@Payload() dto: AddressListByUserDto): Promise<AddressResponse[]> {
+    console.log('AddressesController.list called with dto:', dto.userId);
+    return this.send<AddressListByUserDto, AddressResponse[]>(EVENTS.ADDRESS.LIST_BY_USER, dto);
   }
 
   /**
@@ -62,10 +63,11 @@ export class AddressesController extends BaseGatewayController {
    */
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: AddressUpdateDto): Promise<AddressResponse> {
-    return this.send<AddressUpdateDto & { id: string }, AddressResponse>(EVENTS.ADDRESS.UPDATE, {
-      id,
-      ...dto,
-    });
+    console.log('AddressesController.update called with id:', id, 'dto:', dto);
+    return this.send<{ id: string; dto: AddressUpdateDto }, AddressResponse>(
+      EVENTS.ADDRESS.UPDATE,
+      { id, dto },
+    );
   }
 
   /**

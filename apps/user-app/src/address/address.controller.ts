@@ -61,11 +61,12 @@ export class AddressController implements IAddressController {
    * NATS Handler: Lấy danh sách addresses của user
    *
    * Pattern: address.listByUser
-   * @param dto - { userId }
+   * @param dto - AddressListByUserDto
    * @returns Danh sách addresses (default lên đầu, sau đó sắp xếp theo createdAt desc)
    */
   @MessagePattern(EVENTS.ADDRESS.LIST_BY_USER)
   listByUser(@Payload() dto: AddressListByUserDto): Promise<AddressResponse[]> {
+    console.log('AddressController.listByUser called with dto:', dto);
     return this.addressService.listByUser(dto);
   }
 
@@ -90,6 +91,7 @@ export class AddressController implements IAddressController {
    */
   @MessagePattern(EVENTS.ADDRESS.UPDATE)
   update(@Payload() payload: { id: string; dto: AddressUpdateDto }): Promise<AddressResponse> {
+    console.log('AddressController.update called with payload:', payload);
     return this.addressService.update(payload.id, payload.dto);
   }
 
