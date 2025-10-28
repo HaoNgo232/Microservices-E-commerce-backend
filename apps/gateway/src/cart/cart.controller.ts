@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Patch, Delete, Body, Query, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Inject, UseGuards, Req } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { AuthGuard } from '@gateway/auth/auth.guard';
 import {
   CartGetDto,
   CartAddItemDto,
@@ -17,8 +18,12 @@ import {
 /**
  * Cart Controller - Gateway endpoint cho shopping cart
  * Forward requests đến cart-service qua NATS messaging
+ *
+ * **Security**: Tất cả endpoints require authentication
+ * userId được extract từ JWT token để đảm bảo users chỉ access được cart của mình
  */
 @Controller('cart')
+@UseGuards(AuthGuard)
 export class CartController extends BaseGatewayController {
   constructor(@Inject('CART_SERVICE') protected readonly client: ClientProxy) {
     super(client);
@@ -27,40 +32,86 @@ export class CartController extends BaseGatewayController {
   /**
    * GET /cart
    * Lấy giỏ hàng của user với thông tin chi tiết sản phẩm
-   * Event: cart.get
+   *
+   * Pattern: Extract userId từ JWT token (SECURITY: không tin query params)
+   * Gateway gửi: CartGetDto (với userId từ JWT)
+   * Microservice nhận: CartGetDto
    */
   @Get()
-  get(@Query() dto: CartGetDto): Promise<CartWithProductsResponse> {
-    return this.send<CartGetDto, CartWithProductsResponse>(EVENTS.CART.GET, dto);
+  get(@Req() req: Request & { user: { userId: string } }): Promise<CartWithProductsResponse> {
+    const payload: CartGetDto = {
+      userId: req.user.userId,
+    };
+
+    return this.send<CartGetDto, CartWithProductsResponse>(EVENTS.CART.GET, payload);
   }
 
   /**
    * POST /cart/items
    * Thêm sản phẩm vào giỏ hàng
-   * Event: cart.addItem
+   *
+   * Pattern: Extract userId từ JWT token
+   * Gateway gửi: CartAddItemDto (với userId từ JWT)
+   * Microservice nhận: CartAddItemDto
    */
   @Post('items')
-  addItem(@Body() dto: CartAddItemDto): Promise<CartItemOperationResponse> {
-    return this.send<CartAddItemDto, CartItemOperationResponse>(EVENTS.CART.ADD_ITEM, dto);
+  addItem(
+    @Req() req: Request & { user: { userId: string } },
+    @Body() dto: Omit<CartAddItemDto, 'userId'>,
+  ): Promise<CartItemOperationResponse> {
+    const payload: CartAddItemDto = {
+      ...dto,
+      userId: req.user.userId,
+    };
+
+    return this.send<CartAddItemDto, CartItemOperationResponse>(EVENTS.CART.ADD_ITEM, payload);
   }
 
   /**
    * PATCH /cart/items
    * Cập nhật số lượng sản phẩm trong giỏ hàng
-   * Event: cart.updateItem
+   *
+   * Pattern: Extract userId từ JWT token
+   * Gateway gửi: CartUpdateItemDto (với userId từ JWT)
+   * Microservice nhận: CartUpdateItemDto
    */
   @Patch('items')
-  updateItem(@Body() dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
-    return this.send<CartUpdateItemDto, CartItemOperationResponse>(EVENTS.CART.UPDATE_ITEM, dto);
+  updateItem(
+    @Req() req: Request & { user: { userId: string } },
+    @Body() dto: Omit<CartUpdateItemDto, 'userId'>,
+  ): Promise<CartItemOperationResponse> {
+    const payload: CartUpdateItemDto = {
+      ...dto,
+      userId: req.user.userId,
+    };
+
+    return this.send<CartUpdateItemDto, CartItemOperationResponse>(
+      EVENTS.CART.UPDATE_ITEM,
+      payload,
+    );
   }
 
   /**
    * DELETE /cart/items
    * Xóa sản phẩm khỏi giỏ hàng
-   * Event: cart.removeItem
+   *
+   * Pattern: Extract userId từ JWT token
+   * Gateway gửi: CartRemoveItemDto (với userId từ JWT)
+   * Microservice nhận: CartRemoveItemDto
    */
   @Delete('items')
-  removeItem(@Body() dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
-    return this.send<CartRemoveItemDto, CartOperationSuccessResponse>(EVENTS.CART.REMOVE_ITEM, dto);
+  removeItem(
+    @Req() req: Request & { user: { userId: string } },
+    @Body() dto: Omit<CartRemoveItemDto, 'userId'>,
+  ): Promise<CartOperationSuccessResponse> {
+    const payload: CartRemoveItemDto = {
+      ...dto,
+      userId: req.user.userId,
+    };
+
+    return this.send<CartRemoveItemDto, CartOperationSuccessResponse>(
+      EVENTS.CART.REMOVE_ITEM,
+      payload,
+    );
   }
 }

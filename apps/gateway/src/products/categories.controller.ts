@@ -21,6 +21,8 @@ import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
 import { CategoryResponse, PaginatedCategoriesResponse } from '@shared/types/product.types';
 import { SuccessResponse } from '@shared/types/response.types';
+import { Roles, RolesGuard } from '@gateway/auth';
+import { UserRole } from '@shared/main';
 
 /**
  * Categories Controller
@@ -69,7 +71,8 @@ export class CategoriesController extends BaseGatewayController {
    * Tạo category mới (admin only)
    */
   @Post()
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   create(@Body() dto: CategoryCreateDto): Promise<CategoryResponse> {
     return this.send<CategoryCreateDto, CategoryResponse>(EVENTS.CATEGORY.CREATE, dto);
   }
@@ -83,7 +86,8 @@ export class CategoriesController extends BaseGatewayController {
    * Microservice nhận: { id: string; dto: CategoryUpdateDto }
    */
   @Put(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   update(@Param('id') id: string, @Body() dto: CategoryUpdateDto): Promise<CategoryResponse> {
     const payload = { id, dto };
 
@@ -95,7 +99,8 @@ export class CategoriesController extends BaseGatewayController {
    * Xóa category (admin only)
    */
   @Delete(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   delete(@Param('id') id: string): Promise<SuccessResponse> {
     return this.send<string, SuccessResponse>(EVENTS.CATEGORY.DELETE, id);
   }
