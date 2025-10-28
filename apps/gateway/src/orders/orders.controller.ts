@@ -36,33 +36,47 @@ export class OrdersController extends BaseGatewayController {
   /**
    * POST /orders
    * Tạo order mới từ cart
+   *
+   * Pattern: Enrich DTO với userId từ JWT context
+   * Gateway gửi: OrderCreateDto (đã có userId)
+   * Microservice nhận: OrderCreateDto (đã có userId)
    */
   @Post()
   create(
     @Req() req: Request & { user: { userId: string } },
     @Body() dto: OrderCreateDto,
   ): Promise<OrderResponse> {
-    return this.send<OrderCreateDto & { userId: string }, OrderResponse>(EVENTS.ORDER.CREATE, {
+    // Merge userId from JWT into DTO
+    const payload: OrderCreateDto = {
       ...dto,
       userId: req.user.userId,
-    });
+    };
+
+    return this.send<OrderCreateDto, OrderResponse>(EVENTS.ORDER.CREATE, payload);
   }
 
   /**
    * GET /orders
    * Lấy danh sách orders của user hiện tại
+   *
+   * Pattern: Enrich query params với userId từ JWT context
+   * Gateway gửi: OrderListByUserDto (đã có userId)
+   * Microservice nhận: OrderListByUserDto (đã có userId)
    */
   @Get()
   list(
     @Req() req: Request & { user: { userId: string } },
     @Query() query: OrderListByUserDto,
   ): Promise<PaginatedOrdersResponse> {
-    return this.send<OrderListByUserDto & { userId: string }, PaginatedOrdersResponse>(
+    // Merge userId from JWT into query DTO
+    const payload: OrderListByUserDto = {
+      ...query,
+      userId: req.user.userId,
+    };
+
+    return this.send<OrderListByUserDto, PaginatedOrdersResponse>(
       EVENTS.ORDER.LIST_BY_USER,
-      {
-        ...query,
-        userId: req.user.userId,
-      },
+      payload,
     );
   }
 
@@ -78,15 +92,25 @@ export class OrdersController extends BaseGatewayController {
   /**
    * PUT /orders/:id/status
    * Cập nhật trạng thái order (admin only)
+   *
+   * Pattern: Merge path param vào DTO
+   * Gateway gửi: OrderUpdateStatusDto (đã có id)
+   * Microservice nhận: OrderUpdateStatusDto (đã có id)
    */
   @Put(':id/status')
   updateStatus(
     @Param('id') id: string,
     @Body() dto: OrderUpdateStatusDto,
   ): Promise<OrderStatusUpdateResponse> {
-    return this.send<OrderUpdateStatusDto & { id: string }, OrderStatusUpdateResponse>(
+    // Merge id from path param into DTO
+    const payload: OrderUpdateStatusDto = {
+      ...dto,
+      id,
+    };
+
+    return this.send<OrderUpdateStatusDto, OrderStatusUpdateResponse>(
       EVENTS.ORDER.UPDATE_STATUS,
-      { ...dto, id },
+      payload,
     );
   }
 

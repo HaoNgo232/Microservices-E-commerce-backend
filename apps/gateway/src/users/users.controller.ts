@@ -53,14 +53,17 @@ export class UsersController extends BaseGatewayController {
   /**
    * PUT /users/:id
    * Cập nhật user
+   *
+   * Pattern: Combine path param + body DTO
+   * Gateway gửi: { id: string; dto: UpdateUserDto }
+   * Microservice nhận: { id: string; dto: UpdateUserDto }
    */
   @Put(':id')
   @UseGuards(AuthGuard)
   update(@Param('id') id: string, @Body() dto: UpdateUserDto): Promise<UserResponse> {
-    return this.send<{ id: string; dto: UpdateUserDto }, UserResponse>(EVENTS.USER.UPDATE, {
-      id,
-      dto,
-    });
+    const payload = { id, dto };
+
+    return this.send<typeof payload, UserResponse>(EVENTS.USER.UPDATE, payload);
   }
 
   /**

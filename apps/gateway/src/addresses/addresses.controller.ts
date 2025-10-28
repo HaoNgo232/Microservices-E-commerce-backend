@@ -11,7 +11,12 @@ import {
   Inject,
 } from '@nestjs/common';
 import { ClientProxy, Payload } from '@nestjs/microservices';
-import { AddressCreateDto, AddressListByUserDto, AddressUpdateDto } from '@shared/dto/address.dto';
+import {
+  AddressCreateDto,
+  AddressListByUserDto,
+  AddressSetDefaultDto,
+  AddressUpdateDto,
+} from '@shared/dto/address.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
@@ -33,16 +38,27 @@ export class AddressesController extends BaseGatewayController {
   /**
    * GET /addresses
    * Lấy danh sách addresses của user hiện tại
+   *
+   * Pattern: Build DTO từ JWT context
+   * Gateway gửi: AddressListByUserDto
+   * Microservice nhận: AddressListByUserDto
    */
   @Get()
-  list(@Payload() dto: AddressListByUserDto): Promise<AddressResponse[]> {
-    console.log('AddressesController.list called with dto:', dto.userId);
-    return this.send<AddressListByUserDto, AddressResponse[]>(EVENTS.ADDRESS.LIST_BY_USER, dto);
+  list(@Req() req: Request & { user: { userId: string } }): Promise<AddressResponse[]> {
+    const payload: AddressListByUserDto = {
+      userId: req.user.userId,
+    };
+
+    return this.send<AddressListByUserDto, AddressResponse[]>(EVENTS.ADDRESS.LIST_BY_USER, payload);
   }
 
   /**
    * POST /addresses
    * Tạo address mới
+   *
+   * Pattern: Extract userId từ JWT token và gán vào DTO
+   * Gateway gửi: AddressCreateDto + userId context
+   * Microservice nhận: { userId: string; dto: AddressCreateDto }
    */
   @Post()
   create(
@@ -51,23 +67,27 @@ export class AddressesController extends BaseGatewayController {
   ): Promise<AddressResponse> {
     // IMPORTANT: Extract userId from JWT token, NOT from request body
     // This prevents security vulnerability where users could create addresses for other users
-    return this.send<{ userId: string; dto: AddressCreateDto }, AddressResponse>(
-      EVENTS.ADDRESS.CREATE,
-      { userId: req.user.userId, dto },
-    );
+    const payload = {
+      userId: req.user.userId,
+      dto,
+    };
+
+    return this.send<typeof payload, AddressResponse>(EVENTS.ADDRESS.CREATE, payload);
   }
 
   /**
    * PUT /addresses/:id
    * Cập nhật address
+   *
+   * Pattern: Combine path param + body DTO into single payload
+   * Gateway gửi: { id: string; dto: AddressUpdateDto }
+   * Microservice nhận: { id: string; dto: AddressUpdateDto }
    */
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: AddressUpdateDto): Promise<AddressResponse> {
-    console.log('AddressesController.update called with id:', id, 'dto:', dto);
-    return this.send<{ id: string; dto: AddressUpdateDto }, AddressResponse>(
-      EVENTS.ADDRESS.UPDATE,
-      { id, dto },
-    );
+    const payload = { id, dto };
+
+    return this.send<typeof payload, AddressResponse>(EVENTS.ADDRESS.UPDATE, payload);
   }
 
   /**
@@ -82,18 +102,21 @@ export class AddressesController extends BaseGatewayController {
   /**
    * PUT /addresses/:id/set-default
    * Đặt address làm default shipping address
+   *
+   * Pattern: Build DTO từ JWT context + path param
+   * Gateway gửi: AddressSetDefaultDto
+   * Microservice nhận: AddressSetDefaultDto
    */
   @Put(':id/set-default')
   setDefault(
     @Req() req: Request & { user: { userId: string } },
     @Param('id') id: string,
   ): Promise<AddressResponse> {
-    return this.send<{ userId: string; addressId: string }, AddressResponse>(
-      EVENTS.ADDRESS.SET_DEFAULT,
-      {
-        userId: req.user.userId,
-        addressId: id,
-      },
-    );
+    const payload: AddressSetDefaultDto = {
+      userId: req.user.userId,
+      addressId: id,
+    };
+
+    return this.send<AddressSetDefaultDto, AddressResponse>(EVENTS.ADDRESS.SET_DEFAULT, payload);
   }
 }

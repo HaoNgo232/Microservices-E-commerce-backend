@@ -77,14 +77,17 @@ export class CategoriesController extends BaseGatewayController {
   /**
    * PUT /categories/:id
    * Cập nhật category (admin only)
+   *
+   * Pattern: Combine path param + body DTO
+   * Gateway gửi: { id: string; dto: CategoryUpdateDto }
+   * Microservice nhận: { id: string; dto: CategoryUpdateDto }
    */
   @Put(':id')
   @UseGuards(AuthGuard)
   update(@Param('id') id: string, @Body() dto: CategoryUpdateDto): Promise<CategoryResponse> {
-    return this.send<{ id: string; dto: CategoryUpdateDto }, CategoryResponse>(
-      EVENTS.CATEGORY.UPDATE,
-      { id, dto },
-    );
+    const payload = { id, dto };
+
+    return this.send<typeof payload, CategoryResponse>(EVENTS.CATEGORY.UPDATE, payload);
   }
 
   /**

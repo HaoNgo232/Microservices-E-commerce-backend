@@ -68,17 +68,17 @@ export class ProductsController extends BaseGatewayController {
   /**
    * PUT /products/:id
    * Cập nhật product (admin only)
+   *
+   * Pattern: Combine path param + body DTO
+   * Gateway gửi: { id: string; dto: ProductUpdateDto }
+   * Microservice nhận: { id: string; dto: ProductUpdateDto }
    */
   @Put(':id')
   @UseGuards(AuthGuard)
   update(@Param('id') id: string, @Body() dto: ProductUpdateDto): Promise<ProductResponse> {
-    return this.send<{ id: string; dto: ProductUpdateDto }, ProductResponse>(
-      EVENTS.PRODUCT.UPDATE,
-      {
-        id,
-        dto,
-      },
-    );
+    const payload = { id, dto };
+
+    return this.send<typeof payload, ProductResponse>(EVENTS.PRODUCT.UPDATE, payload);
   }
 
   /**
