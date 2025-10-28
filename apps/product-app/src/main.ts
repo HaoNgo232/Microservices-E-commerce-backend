@@ -4,6 +4,20 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ValidationPipe } from '@nestjs/common';
 import { AllRpcExceptionsFilter } from '@shared/filters/rpc-exception.filter';
 
+/**
+ * Bootstrap Product Microservice
+ *
+ * Khởi tạo và cấu hình Product microservice với:
+ * - NATS transport để giao tiếp với các service khác
+ * - Global validation pipe để validate DTO
+ * - Global exception filter để xử lý lỗi RPC
+ * - Queue-based message handling
+ *
+ * **Business Domain:**
+ * - Product management (CRUD)
+ * - Category management (hierarchical structure)
+ * - Stock management
+ */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(ProductAppModule, {
     transport: Transport.NATS,

@@ -5,12 +5,21 @@ import { PrismaService } from '@user-app/prisma/prisma.service';
 
 /**
  * Test Database Helper
- * Provides utilities for E2E testing with test database
+ *
+ * Cung cấp utilities cho E2E testing với test database:
+ * - Setup test application
+ * - Clean database giữa các tests
+ * - Access Prisma service và app instance
  */
 export class TestDatabaseHelper {
   private app: INestApplication;
   private prisma: PrismaService;
 
+  /**
+   * Setup test application
+   *
+   * @returns NestJS application instance
+   */
   async setupTestApp(): Promise<INestApplication> {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [UserAppModule],
@@ -23,6 +32,13 @@ export class TestDatabaseHelper {
     return this.app;
   }
 
+  /**
+   * Clean database - Xóa tất cả test data
+   *
+   * Xóa theo thứ tự để tránh foreign key constraint:
+   * 1. Address (foreign key to User)
+   * 2. User
+   */
   async cleanDatabase(): Promise<void> {
     if (!this.prisma) {
       throw new Error('Prisma service not initialized. Call setupTestApp first.');
@@ -33,16 +49,25 @@ export class TestDatabaseHelper {
     await this.prisma.user.deleteMany({});
   }
 
+  /**
+   * Đóng test application
+   */
   async closeApp(): Promise<void> {
     if (this.app) {
       await this.app.close();
     }
   }
 
+  /**
+   * Lấy Prisma service instance
+   */
   getPrisma(): PrismaService {
     return this.prisma;
   }
 
+  /**
+   * Lấy NestJS application instance
+   */
   getApp(): INestApplication {
     return this.app;
   }
@@ -50,9 +75,19 @@ export class TestDatabaseHelper {
 
 /**
  * Test Data Factory
- * Tạo dữ liệu test có tính nhất quán
+ *
+ * Tạo dữ liệu test có tính nhất quán với:
+ * - Unique identifiers (timestamp-based)
+ * - Default values hợp lệ
+ * - Override support cho customization
  */
 export class TestDataFactory {
+  /**
+   * Tạo dữ liệu user cho testing
+   *
+   * @param override - Override default values
+   * @returns User data với email unique (timestamp-based)
+   */
   static createUserData(
     override: Partial<{
       email: string;
@@ -78,6 +113,13 @@ export class TestDataFactory {
     };
   }
 
+  /**
+   * Tạo dữ liệu address cho testing
+   *
+   * @param userId - ID của user sở hữu address
+   * @param override - Override default values
+   * @returns Address data với default values hợp lệ
+   */
   static createAddressData(
     userId: string,
     override: Partial<{
@@ -112,6 +154,12 @@ export class TestDataFactory {
     };
   }
 
+  /**
+   * Tạo dữ liệu login cho testing
+   *
+   * @param override - Override default values
+   * @returns Login credentials
+   */
   static createLoginData(
     override: Partial<{
       email: string;

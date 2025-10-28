@@ -6,18 +6,65 @@ import { PrismaService } from '@user-app/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as jose from 'jose';
 
+/**
+ * Interface cho Auth Service
+ * Định nghĩa các phương thức authentication
+ */
 export interface IAuthService {
+  /**
+   * Đăng nhập với email và password
+   */
   login(dto: LoginDto): Promise<AuthResponse>;
+
+  /**
+   * Đăng ký tài khoản mới
+   */
   register(dto: RegisterDto): Promise<AuthResponse>;
+
+  /**
+   * Xác thực JWT token
+   */
   verify(dto: VerifyDto): Promise<jose.JWTPayload>;
+
+  /**
+   * Làm mới access token
+   */
   refresh(dto: RefreshDto): Promise<AuthResponse>;
 }
 
+/**
+ * AuthService - Service xử lý authentication
+ *
+ * Xử lý business logic liên quan đến:
+ * - Đăng nhập: Validate credentials, generate JWT tokens
+ * - Đăng ký: Hash password, tạo user mới, auto-login
+ * - Verify token: Validate JWT signature và expiry
+ * - Refresh token: Generate new tokens từ refresh token
+ *
+ * **Security Implementation:**
+ * - Password hashing: bcrypt với salt rounds = 10
+ * - JWT signing: RSA private key (asymmetric)
+ * - JWT verification: RSA public key
+ * - Token expiry: accessToken (15m), refreshToken (7d)
+ *
+ * **JWT Payload Structure:**
+ * - sub: userId (JOSE standard claim)
+ * - email: user email
+ * - role: user role (ADMIN/CUSTOMER)
+ * - iat: issued at timestamp
+ * - exp: expiration timestamp
+ */
 @Injectable()
 export class AuthService implements IAuthService {
   private readonly jwtExpiresIn: string;
   private readonly jwtRefreshExpiresIn: string;
 
+  /**
+   * Constructor - Inject dependencies và load JWT config
+   *
+   * @param jwtService - Service để sign và verify JWT tokens
+   * @param prisma - Prisma client để truy cập database
+   */
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
@@ -26,6 +73,18 @@ export class AuthService implements IAuthService {
     this.jwtRefreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
   }
 
+  /**
+   * Đăng nhập với email và password
+   *
+   * Flow:
+   * 1. Validate user credentials (email, password, isActive)
+   * 2. Generate JWT tokens (access + refresh)
+   * 3. Trả về tokens (user info có trong JWT payload)
+   *
+   * @param dto - { email, password }
+   * @returns JWT tokens
+   * @throws RpcException nếu credentials không hợp lệ hoặc user inactive
+   */
   async login(dto: LoginDto): Promise<AuthResponse> {
     try {
       // Find and validate user
@@ -52,6 +111,23 @@ export class AuthService implements IAuthService {
     }
   }
 
+  /**
+   * Đăng ký tài khoản mới
+   *
+   * Flow:
+   * 1. Validate email chưa tồn tại
+   * 2. Hash password bằng bcrypt
+   * 3. Tạo user mới với role CUSTOMER (hardcoded)
+   * 4. Auto-login: Generate JWT tokens
+   *
+   * **Security Note:**
+   * - Register chỉ tạo CUSTOMER, không cho phép tự đăng ký ADMIN
+   * - ADMIN phải được tạo từ admin panel hoặc script
+   *
+   * @param dto - { email, password, fullName }
+   * @returns JWT tokens
+   * @throws RpcException nếu email đã tồn tại hoặc có lỗi tạo user
+   */
   async register(dto: RegisterDto): Promise<AuthResponse> {
     try {
       // Check email có ton tại chưa
@@ -99,6 +175,18 @@ export class AuthService implements IAuthService {
     }
   }
 
+  /**
+   * Xác thực JWT token
+   *
+   * Flow:
+   * 1. Verify token signature và expiry bằng RSA public key
+   * 2. Validate payload chứa sub claim (userId)
+   * 3. Kiểm tra user vẫn tồn tại và active
+   *
+   * @param dto - { token }
+   * @returns JWT payload nếu hợp lệ
+   * @throws RpcException nếu token không hợp lệ, expired, hoặc user inactive
+   */
   async verify(dto: VerifyDto): Promise<jose.JWTPayload> {
     try {
       // Use JwtService for RSA-based verification
@@ -140,6 +228,19 @@ export class AuthService implements IAuthService {
     }
   }
 
+  /**
+   * Làm mới access token bằng refresh token
+   *
+   * Flow:
+   * 1. Verify refresh token (signature + expiry)
+   * 2. Extract userId từ sub claim
+   * 3. Validate user vẫn tồn tại và active
+   * 4. Generate new tokens (cả access và refresh đều mới)
+   *
+   * @param dto - { refreshToken }
+   * @returns JWT tokens mới
+   * @throws RpcException nếu refresh token không hợp lệ hoặc user inactive
+   */
   async refresh(dto: RefreshDto): Promise<AuthResponse> {
     try {
       // Verify refresh token with JwtService
@@ -193,6 +294,19 @@ export class AuthService implements IAuthService {
     }
   }
 
+  /**
+   * Generate JWT tokens (access + refresh)
+   *
+   * Tạo 2 loại token song song để tối ưu performance:
+   * - accessToken: thời gian sống ngắn (15m) - dùng cho API calls
+   * - refreshToken: thời gian sống dài (7d) - dùng để lấy accessToken mới
+   *
+   * **QUAN TRỌNG:** Cả 2 đều dùng RSA private key để sign
+   *
+   * @param payload - JWT payload (sub, email, role)
+   * @returns { accessToken, refreshToken }
+   * @private
+   */
   private async generateTokens(
     payload: jose.JWTPayload,
   ): Promise<{ accessToken: string; refreshToken: string }> {
@@ -214,6 +328,19 @@ export class AuthService implements IAuthService {
     };
   }
 
+  /**
+   * Parse JWT expiry string sang seconds
+   *
+   * Hỗ trợ formats:
+   * - 15s: 15 seconds
+   * - 15m: 15 minutes
+   * - 2h: 2 hours
+   * - 7d: 7 days
+   *
+   * @param expiresIn - Expiry string (e.g., "15m", "7d")
+   * @returns Số giây
+   * @private
+   */
   private parseExpiresIn(expiresIn: string): number {
     const match = new RegExp(/^(\d+)([smhd])$/).exec(expiresIn);
     if (!match) return 900; // default 15 minutes
@@ -233,7 +360,12 @@ export class AuthService implements IAuthService {
 
   /**
    * Validate user credentials (email & password)
-   * @throws UnauthorizedException if credentials are invalid or user is inactive
+   *
+   * @param email - Email của user
+   * @param password - Password chưa hash
+   * @returns User info nếu credentials hợp lệ
+   * @throws RpcException nếu credentials không hợp lệ hoặc user inactive
+   * @private
    */
   private async validateUserCredentials(
     email: string,
@@ -262,8 +394,12 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * Find user by email
-   * @throws UnauthorizedException if user not found
+   * Tìm user theo email
+   *
+   * @param email - Email cần tìm
+   * @returns User với passwordHash (để verify password)
+   * @throws RpcException nếu user không tồn tại
+   * @private
    */
   private async findUserByEmail(email: string): Promise<UserResponse & { passwordHash: string }> {
     const user = await this.prisma.user.findUnique({
@@ -291,8 +427,11 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * Check if user account is active
-   * @throws RpcException if user is deactivated
+   * Kiểm tra user account có active không
+   *
+   * @param user - User object với isActive flag
+   * @throws RpcException nếu user bị deactivated
+   * @private
    */
   private checkUserActive(user: { isActive: boolean }): void {
     if (!user.isActive) {
@@ -304,8 +443,14 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * Verify password against hash
-   * @throws RpcException if password is invalid
+   * Verify password với hash từ database
+   *
+   * Sử dụng bcrypt.compare để so sánh password với hash
+   *
+   * @param password - Password chưa hash từ client
+   * @param passwordHash - Password hash từ database
+   * @throws RpcException nếu password không khớp
+   * @private
    */
   private async verifyPassword(password: string, passwordHash: string): Promise<void> {
     const isPasswordValid = await bcrypt.compare(password, passwordHash);

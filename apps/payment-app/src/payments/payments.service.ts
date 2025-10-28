@@ -22,16 +22,48 @@ import { EVENTS } from '@shared/events';
 import { catchError, timeout, throwError, firstValueFrom } from 'rxjs';
 import { OrderResponse } from '@shared/types';
 
+/**
+ * PaymentsService - Service xử lý thanh toán
+ *
+ * Xử lý business logic liên quan đến:
+ * - Xử lý thanh toán COD (hoàn thành ngay lập tức)
+ * - Xử lý thanh toán SePay (tạo payment URL, chờ webhook)
+ * - Xác thực thanh toán từ gateway callback
+ * - Nhận và xử lý webhook từ SePay khi có giao dịch
+ * - Lưu trữ transaction history
+ *
+ * **Tích hợp microservices:**
+ * - Order Service: Validate order, cập nhật trạng thái order sang PAID
+ *
+ * **Payment Methods:**
+ * - COD (Cash on Delivery): Thanh toán khi nhận hàng
+ * - SePay: Chuyển khoản ngân hàng qua SePay gateway
+ */
 @Injectable()
 export class PaymentsService {
+  /**
+   * Constructor - Inject dependencies
+   *
+   * @param prisma - Prisma client để truy cập database
+   * @param orderClient - NATS client gọi Order Service
+   */
   constructor(
     private readonly prisma: PrismaService,
     @Inject('ORDER_SERVICE') private readonly orderClient: ClientProxy,
   ) {}
 
   /**
-   * Process payment for an order
-   * Supports COD and SePay methods
+   * Xử lý thanh toán cho order
+   *
+   * Flow:
+   * 1. Validate order tồn tại và ở trạng thái PENDING
+   * 2. Tạo payment record
+   * 3. COD: Hoàn thành thanh toán ngay, cập nhật order sang PAID
+   * 4. SePay: Tạo payment URL, trả về cho client để redirect
+   *
+   * @param dto - Thông tin thanh toán (orderId, method, amountInt)
+   * @returns Payment URL (SePay) hoặc success status (COD)
+   * @throws ValidationRpcException nếu order không hợp lệ
    */
   async process(dto: PaymentProcessDto): Promise<PaymentProcessResponse> {
     try {
@@ -80,8 +112,18 @@ export class PaymentsService {
   }
 
   /**
-   * Verify payment from gateway callback
-   * Updates payment and order status
+   * Xác thực thanh toán từ gateway callback
+   *
+   * Flow:
+   * 1. Tìm payment theo orderId
+   * 2. Verify payload từ gateway (mock verification)
+   * 3. Nếu hợp lệ: Cập nhật payment và order sang SUCCESS/PAID
+   * 4. Nếu không hợp lệ: Cập nhật payment sang FAILED
+   *
+   * @param dto - Payload từ payment gateway
+   * @returns Kết quả xác thực với verified flag
+   * @throws EntityNotFoundRpcException nếu payment không tồn tại
+   * @throws ValidationRpcException nếu có lỗi xử lý
    */
   async verify(dto: PaymentVerifyDto): Promise<PaymentVerifyResponse> {
     try {
@@ -137,7 +179,11 @@ export class PaymentsService {
   }
 
   /**
-   * Get payment by ID
+   * Lấy thông tin payment theo ID
+   *
+   * @param dto - { id }
+   * @returns Thông tin payment
+   * @throws EntityNotFoundRpcException nếu payment không tồn tại
    */
   async getById(dto: PaymentIdDto): Promise<PaymentResponse> {
     const payment = await this.prisma.payment.findUnique({
@@ -152,7 +198,11 @@ export class PaymentsService {
   }
 
   /**
-   * Get payment by order ID
+   * Lấy thông tin payment theo order ID
+   *
+   * @param dto - { orderId }
+   * @returns Payment mới nhất của order (sắp xếp theo createdAt desc)
+   * @throws EntityNotFoundRpcException nếu payment không tồn tại
    */
   async getByOrder(dto: PaymentByOrderDto): Promise<PaymentResponse> {
     const payment = await this.prisma.payment.findFirst({
@@ -168,7 +218,15 @@ export class PaymentsService {
   }
 
   /**
-   * Validate order exists and is in correct status for payment
+   * Kiểm tra order tồn tại và có trạng thái hợp lệ để thanh toán
+   *
+   * Quy tắc:
+   * - Order phải tồn tại
+   * - Order phải ở trạng thái PENDING (chưa thanh toán)
+   *
+   * @param orderId - ID của order cần validate
+   * @throws EntityNotFoundRpcException nếu order không tồn tại
+   * @throws ValidationRpcException nếu order không ở trạng thái PENDING
    * @private
    */
   private async validateOrderForPayment(orderId: string): Promise<void> {
@@ -203,7 +261,14 @@ export class PaymentsService {
   }
 
   /**
-   * Complete payment and update order status
+   * Hoàn thành thanh toán và cập nhật trạng thái order
+   *
+   * Flow:
+   * 1. Cập nhật payment status sang SUCCESS
+   * 2. Cập nhật order status sang PAID (fire-and-forget)
+   *
+   * @param paymentId - ID của payment cần cập nhật
+   * @param orderId - ID của order cần cập nhật
    * @private
    */
   private async completePayment(paymentId: string, orderId: string): Promise<void> {
@@ -233,8 +298,13 @@ export class PaymentsService {
   }
 
   /**
-   * Mock payment gateway verification
-   * In production, this would call actual payment gateway API
+   * Mock xác thực payment gateway
+   *
+   * Trong production, method này sẽ gọi API thực tế của payment gateway
+   * để verify signature, check transaction status, etc.
+   *
+   * @param payload - Payload từ payment gateway
+   * @returns true nếu hợp lệ, false nếu không hợp lệ
    * @private
    */
   private mockVerifyPaymentGateway(payload: Record<string, unknown>): boolean {
@@ -244,7 +314,10 @@ export class PaymentsService {
   }
 
   /**
-   * Map Prisma payment to PaymentResponse
+   * Chuyển đổi Prisma payment sang PaymentResponse DTO
+   *
+   * @param payment - Payment từ Prisma
+   * @returns PaymentResponse DTO
    * @private
    */
   private mapToPaymentResponse(payment: {
@@ -270,9 +343,23 @@ export class PaymentsService {
   }
 
   /**
-   * Handle SePay Webhook
-   * Called when bank transaction occurs
-   * Process: Save transaction -> Extract orderId -> Validate -> Update payment & order
+   * Xử lý SePay Webhook
+   *
+   * Được gọi khi có giao dịch ngân hàng qua SePay gateway.
+   *
+   * Quy trình xử lý:
+   * 1. Kiểm tra duplicate transaction (idempotency) theo sePayId
+   * 2. Lưu transaction vào database
+   * 3. Chỉ xử lý giao dịch incoming (transferType = 'in')
+   * 4. Extract order ID từ transaction content (pattern: DH123, DH-123)
+   * 5. Tìm payment matching (orderId + amount + status PENDING)
+   * 6. Cập nhật payment status sang SUCCESS
+   * 7. Cập nhật order status sang PAID (fire-and-forget)
+   *
+   * **Idempotency:** Webhook có thể được gọi nhiều lần, service phải handle duplicate
+   *
+   * @param dto - Dữ liệu giao dịch từ SePay webhook
+   * @returns Kết quả xử lý webhook
    */
   async handleSePayWebhook(dto: SePayWebhookDto): Promise<SePayWebhookResponse> {
     try {

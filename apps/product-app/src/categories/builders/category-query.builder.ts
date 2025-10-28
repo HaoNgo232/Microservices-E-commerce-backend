@@ -3,15 +3,26 @@ import { CategoryListQueryDto } from '@shared/dto/category.dto';
 import { PrismaService } from '@product-app/prisma/prisma.service';
 
 /**
- * Query builder for category list operations
- * Centralizes filter and query construction logic
+ * Query builder cho category list operations
+ *
+ * Tập trung logic xây dựng filter và query để:
+ * - Giảm complexity trong service
+ * - Tái sử dụng logic query
+ * - Dễ dàng test và maintain
  */
 @Injectable()
 export class CategoryQueryBuilder {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Build where clause from query parameters
+   * Xây dựng where clause từ query parameters
+   *
+   * Hỗ trợ filters:
+   * - q: Tìm kiếm theo tên hoặc mô tả (case-insensitive)
+   * - parentSlug: Lọc theo parent category slug
+   *
+   * @param query - Query parameters từ request
+   * @returns Prisma where clause object
    */
   async buildWhereClause(query: CategoryListQueryDto): Promise<Record<string, unknown>> {
     const where: Record<string, unknown> = {};
@@ -43,7 +54,10 @@ export class CategoryQueryBuilder {
   }
 
   /**
-   * Get pagination parameters from query
+   * Lấy pagination parameters từ query
+   *
+   * @param query - Query với page và pageSize
+   * @returns { skip, take } cho Prisma query
    */
   getPaginationParams(query: CategoryListQueryDto): { skip: number; take: number } {
     const page = query.page ?? 1;
@@ -54,7 +68,12 @@ export class CategoryQueryBuilder {
   }
 
   /**
-   * Get pagination metadata
+   * Tính toán pagination metadata
+   *
+   * @param page - Trang hiện tại
+   * @param pageSize - Số items per page
+   * @param total - Tổng số items
+   * @returns Metadata với page, pageSize, totalPages
    */
   getPaginationMetadata(
     page: number,

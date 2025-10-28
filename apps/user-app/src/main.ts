@@ -4,6 +4,20 @@ import { UserAppModule } from '@user-app/user-app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { AllRpcExceptionsFilter } from '@shared/filters/rpc-exception.filter';
 
+/**
+ * Bootstrap User Microservice
+ *
+ * Khởi tạo và cấu hình User microservice với:
+ * - NATS transport để giao tiếp với các service khác
+ * - Global validation pipe để validate DTO
+ * - Global exception filter để xử lý lỗi RPC
+ * - Queue-based message handling
+ *
+ * **Business Domain:**
+ * - User management (CRUD)
+ * - Authentication (login, register, JWT)
+ * - Address management (shipping addresses)
+ */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(UserAppModule, {
     transport: Transport.NATS,
