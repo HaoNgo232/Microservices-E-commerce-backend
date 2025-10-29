@@ -294,12 +294,28 @@ describe('OrdersController (e2e)', () => {
         }),
       );
 
-      const dto: OrderUpdateStatusDto = {
+      // PENDING -> PROCESSING
+      let updateDto: OrderUpdateStatusDto = {
+        id: createResult.id,
+        status: OrderStatus.PROCESSING,
+      };
+      let result = await firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, updateDto));
+      expect(result.status).toBe(OrderStatus.PROCESSING);
+
+      // PROCESSING -> SHIPPED
+      updateDto = {
+        id: createResult.id,
+        status: OrderStatus.SHIPPED,
+      };
+      result = await firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, updateDto));
+      expect(result.status).toBe(OrderStatus.SHIPPED);
+
+      // SHIPPED -> DELIVERED
+      updateDto = {
         id: createResult.id,
         status: OrderStatus.DELIVERED,
       };
-
-      const result = await firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, dto));
+      result = await firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, updateDto));
 
       expect(result).toBeDefined();
       expect(result.id).toBe(createResult.id);
@@ -309,7 +325,7 @@ describe('OrdersController (e2e)', () => {
     it('should throw error when updating non-existent order', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'non-existent-order',
-        status: 'PAID',
+        status: OrderStatus.PROCESSING,
       };
 
       await expectRpcError(

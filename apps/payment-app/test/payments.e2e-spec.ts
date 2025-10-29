@@ -148,7 +148,7 @@ describe('PaymentsController (e2e)', () => {
       await firstValueFrom(
         client.send(EVENTS.PAYMENT.PROCESS, {
           orderId: testOrderId,
-          method: 'SePay',
+          method: 'SEPAY',
           amountInt: 50000,
         }),
       );

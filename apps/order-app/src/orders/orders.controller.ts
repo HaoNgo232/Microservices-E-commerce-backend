@@ -1,4 +1,4 @@
-import { Controller, Query } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { OrdersService } from '@order-app/orders/orders.service';
 import { EVENTS } from '@shared/events';
@@ -64,7 +64,7 @@ export class OrdersController {
    * @returns Danh sách orders với pagination
    */
   @MessagePattern(EVENTS.ORDER.LIST)
-  list(@Query() query: OrderListDto): Promise<PaginatedOrdersResponse> {
+  list(@Payload() query: OrderListDto): Promise<PaginatedOrdersResponse> {
     return this.ordersService.listByUser(query);
   }
 
