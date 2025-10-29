@@ -58,7 +58,7 @@ export class OrderIdDto {
   id: string;
 }
 
-export class OrderListByUserDto {
+export class OrderListDto {
   @IsNotEmpty()
   @IsString()
   userId: string;
@@ -83,7 +83,7 @@ export class OrderUpdateStatusDto {
 
   @IsNotEmpty()
   @IsEnum(OrderStatus)
-  status: 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELLED';
+  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 }
 
 export class OrderCancelDto {

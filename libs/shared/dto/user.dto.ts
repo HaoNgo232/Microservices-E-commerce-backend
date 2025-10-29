@@ -27,17 +27,17 @@ export class CreateUserDto {
   @MinLength(8)
   password: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  fullName?: string;
+  fullName: string;
 
   @IsOptional()
   @IsString()
   phone?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(UserRole)
-  role: UserRole;
+  role: UserRole = UserRole.CUSTOMER;
 }
 
 export class UpdateUserDto {
@@ -62,6 +62,7 @@ export class ListUsersDto {
   @IsOptional()
   @IsNumber()
   @Min(1)
+  @Type(() => Number)
   page?: number;
 
   @IsOptional()

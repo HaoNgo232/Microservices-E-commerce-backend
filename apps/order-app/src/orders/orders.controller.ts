@@ -1,11 +1,11 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Query } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { OrdersService } from '@order-app/orders/orders.service';
 import { EVENTS } from '@shared/events';
 import {
   OrderCreateDto,
   OrderIdDto,
-  OrderListByUserDto,
+  OrderListDto,
   OrderUpdateStatusDto,
   OrderCancelDto,
 } from '@shared/dto/order.dto';
@@ -59,13 +59,13 @@ export class OrdersController {
   /**
    * NATS Handler: Lấy danh sách orders của user
    *
-   * Pattern: order.listByUser
+   * Pattern: order.list
    * @param dto - { userId, page?, pageSize? }
    * @returns Danh sách orders với pagination
    */
-  @MessagePattern(EVENTS.ORDER.LIST_BY_USER)
-  listByUser(@Payload() dto: OrderListByUserDto): Promise<PaginatedOrdersResponse> {
-    return this.ordersService.listByUser(dto);
+  @MessagePattern(EVENTS.ORDER.LIST)
+  list(@Query() query: OrderListDto): Promise<PaginatedOrdersResponse> {
+    return this.ordersService.listByUser(query);
   }
 
   /**

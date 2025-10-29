@@ -9,7 +9,7 @@ import {
 import {
   OrderCreateDto,
   OrderIdDto,
-  OrderListByUserDto,
+  OrderListDto,
   OrderUpdateStatusDto,
   OrderCancelDto,
 } from '@shared/dto/order.dto';
@@ -201,8 +201,24 @@ describe('OrdersService', () => {
             })),
           },
         },
-        include: {
-          items: true,
+        select: {
+          id: true,
+          userId: true,
+          addressId: true,
+          status: true,
+          totalInt: true,
+          createdAt: true,
+          updatedAt: true,
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              quantity: true,
+              priceInt: true,
+              orderId: true,
+              createdAt: true,
+            },
+          },
         },
       });
     });
@@ -338,7 +354,25 @@ describe('OrdersService', () => {
 
       expect(prisma.order.findUnique).toHaveBeenCalledWith({
         where: { id: 'order-123' },
-        include: { items: true },
+        select: {
+          id: true,
+          userId: true,
+          addressId: true,
+          status: true,
+          totalInt: true,
+          createdAt: true,
+          updatedAt: true,
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              quantity: true,
+              priceInt: true,
+              orderId: true,
+              createdAt: true,
+            },
+          },
+        },
       });
     });
 
@@ -362,7 +396,7 @@ describe('OrdersService', () => {
     ];
 
     it('should return paginated orders for user', async () => {
-      const dto: OrderListByUserDto = {
+      const dto: OrderListDto = {
         userId: 'user-123',
         page: 1,
         pageSize: 10,
@@ -410,7 +444,7 @@ describe('OrdersService', () => {
     });
 
     it('should use default pagination values', async () => {
-      const dto: OrderListByUserDto = {
+      const dto: OrderListDto = {
         userId: 'user-123',
       };
 
@@ -428,7 +462,7 @@ describe('OrdersService', () => {
     });
 
     it('should calculate correct skip value for pagination', async () => {
-      const dto: OrderListByUserDto = {
+      const dto: OrderListDto = {
         userId: 'user-123',
         page: 3,
         pageSize: 5,
@@ -448,7 +482,7 @@ describe('OrdersService', () => {
     });
 
     it('should return empty array when user has no orders', async () => {
-      const dto: OrderListByUserDto = {
+      const dto: OrderListDto = {
         userId: 'user-no-orders',
         page: 1,
         pageSize: 10,
@@ -466,26 +500,26 @@ describe('OrdersService', () => {
   });
 
   describe('updateStatus', () => {
-    it('should update order status from PENDING to PAID', async () => {
+    it('should update order status from PENDING to PROCESSING', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'order-123',
-        status: 'PAID',
+        status: 'PROCESSING',
       };
 
       prisma.order.findUnique.mockResolvedValue(mockOrder);
       prisma.order.update.mockResolvedValue({
         ...mockOrder,
-        status: 'PAID',
+        status: 'PROCESSING',
         updatedAt: new Date('2024-01-02'),
       });
 
       const result = await service.updateStatus(dto);
 
-      expect(result.status).toBe('PAID');
+      expect(result.status).toBe('PROCESSING');
       expect(prisma.order.update).toHaveBeenCalledWith({
         where: { id: 'order-123' },
         data: {
-          status: 'PAID',
+          status: 'PROCESSING',
           updatedAt: expect.any(Date),
         },
         include: { items: true },
@@ -495,7 +529,7 @@ describe('OrdersService', () => {
     it('should throw EntityNotFoundRpcException when order not found', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'non-existent',
-        status: 'PAID',
+        status: 'PROCESSING',
       };
 
       prisma.order.findUnique.mockResolvedValue(null);
@@ -565,7 +599,7 @@ describe('OrdersService', () => {
       expect(result.status).toBe('CANCELLED');
     });
 
-    it('should allow PAID to SHIPPED transition', async () => {
+    it('should allow PROCESSING to SHIPPED transition', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'order-123',
         status: 'SHIPPED',
@@ -573,7 +607,7 @@ describe('OrdersService', () => {
 
       prisma.order.findUnique.mockResolvedValue({
         ...mockOrder,
-        status: 'PAID',
+        status: 'PROCESSING',
       });
       prisma.order.update.mockResolvedValue({
         ...mockOrder,
@@ -677,14 +711,14 @@ describe('OrdersService', () => {
       });
     });
 
-    it('should cancel PAID order', async () => {
+    it('should cancel PROCESSING order', async () => {
       const dto: OrderCancelDto = {
         id: 'order-123',
       };
 
       prisma.order.findUnique.mockResolvedValue({
         ...mockOrder,
-        status: 'PAID',
+        status: 'PROCESSING',
       });
       prisma.order.update.mockResolvedValue({
         ...mockOrder,
@@ -772,7 +806,7 @@ describe('OrdersService', () => {
   describe('validateStatusTransition (private method)', () => {
     it('should allow valid PENDING transitions', async () => {
       const validTransitions = [
-        { from: 'PENDING', to: 'PAID' },
+        { from: 'PENDING', to: 'PROCESSING' },
         { from: 'PENDING', to: 'CANCELLED' },
       ];
 
@@ -789,16 +823,16 @@ describe('OrdersService', () => {
         await expect(
           service.updateStatus({
             id: 'order-123',
-            status: transition.to as 'PAID' | 'CANCELLED',
+            status: transition.to as 'PROCESSING' | 'CANCELLED',
           }),
         ).resolves.toBeDefined();
       }
     });
 
-    it('should allow valid PAID transitions', async () => {
+    it('should allow valid PROCESSING transitions', async () => {
       const validTransitions = [
-        { from: 'PAID', to: 'SHIPPED' },
-        { from: 'PAID', to: 'CANCELLED' },
+        { from: 'PROCESSING', to: 'SHIPPED' },
+        { from: 'PROCESSING', to: 'CANCELLED' },
       ];
 
       for (const transition of validTransitions) {
@@ -821,7 +855,7 @@ describe('OrdersService', () => {
     });
 
     it('should reject invalid transitions from SHIPPED', async () => {
-      const invalidTransitions = ['PENDING', 'PAID', 'CANCELLED'];
+      const invalidTransitions = ['PENDING', 'PROCESSING', 'CANCELLED'];
 
       for (const toStatus of invalidTransitions) {
         prisma.order.findUnique.mockResolvedValue({
@@ -832,14 +866,14 @@ describe('OrdersService', () => {
         await expect(
           service.updateStatus({
             id: 'order-123',
-            status: toStatus as 'PENDING' | 'PAID' | 'CANCELLED',
+            status: toStatus as 'PENDING' | 'PROCESSING' | 'CANCELLED',
           }),
         ).rejects.toThrow(ValidationRpcException);
       }
     });
 
     it('should reject invalid transitions from CANCELLED', async () => {
-      const invalidTransitions = ['PENDING', 'PAID', 'SHIPPED'];
+      const invalidTransitions = ['PENDING', 'PROCESSING', 'SHIPPED'];
 
       for (const toStatus of invalidTransitions) {
         prisma.order.findUnique.mockResolvedValue({
@@ -850,7 +884,7 @@ describe('OrdersService', () => {
         await expect(
           service.updateStatus({
             id: 'order-123',
-            status: toStatus as 'PENDING' | 'PAID' | 'SHIPPED',
+            status: toStatus as 'PENDING' | 'PROCESSING' | 'SHIPPED',
           }),
         ).rejects.toThrow(ValidationRpcException);
       }

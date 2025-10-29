@@ -115,7 +115,7 @@ describe('PaymentsController (e2e)', () => {
     it('should process SePay payment', async () => {
       const dto: PaymentProcessDto = {
         orderId: testOrderId,
-        method: 'SePay',
+        method: 'SEPAY',
         amountInt: 50000,
       };
 

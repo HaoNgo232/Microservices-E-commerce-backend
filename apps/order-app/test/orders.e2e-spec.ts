@@ -7,7 +7,7 @@ import { EVENTS } from '@shared/events';
 import {
   OrderCreateDto,
   OrderIdDto,
-  OrderListByUserDto,
+  OrderListDto,
   OrderUpdateStatusDto,
   OrderCancelDto,
 } from '@shared/dto/order.dto';
@@ -237,13 +237,13 @@ describe('OrdersController (e2e)', () => {
         }),
       );
 
-      const dto: OrderListByUserDto = {
+      const dto: OrderListDto = {
         userId: testUserId,
         page: 1,
         pageSize: 10,
       };
 
-      const result = await firstValueFrom(client.send(EVENTS.ORDER.LIST_BY_USER, dto));
+      const result = await firstValueFrom(client.send(EVENTS.ORDER.LIST, dto));
 
       expect(result).toBeDefined();
       expect(result.orders).toBeDefined();
@@ -268,13 +268,13 @@ describe('OrdersController (e2e)', () => {
         }),
       );
 
-      const dto: OrderListByUserDto = {
+      const dto: OrderListDto = {
         userId: testUserId,
         page: 1,
         pageSize: 1,
       };
 
-      const result = await firstValueFrom(client.send(EVENTS.ORDER.LIST_BY_USER, dto));
+      const result = await firstValueFrom(client.send(EVENTS.ORDER.LIST, dto));
 
       expect(result.pageSize).toBe(1);
       expect(result.orders.length).toBe(1);

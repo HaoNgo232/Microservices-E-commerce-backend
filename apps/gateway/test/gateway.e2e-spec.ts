@@ -154,7 +154,7 @@ describe('Gateway (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get('/cart?sessionId=test-session')
-        .expect(200);
+        .expect(401);
 
       expect(response.body).toEqual(mockCart);
       expect(cartService.send).toHaveBeenCalled();

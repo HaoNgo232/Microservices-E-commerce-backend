@@ -3,9 +3,9 @@ import { ClientProxy } from '@nestjs/microservices';
 import {
   OrderCreateDto,
   OrderIdDto,
-  OrderListByUserDto,
   OrderUpdateStatusDto,
   OrderCancelDto,
+  OrderListDto,
 } from '@shared/dto/order.dto';
 import { PrismaService } from '@order-app/prisma/prisma.service';
 import {
@@ -13,7 +13,7 @@ import {
   ValidationRpcException,
   ConflictRpcException,
 } from '@shared/exceptions/rpc-exceptions';
-import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
+import { OrderResponse, OrderStatus, PaginatedOrdersResponse } from '@shared/types/order.types';
 import { EVENTS } from '@shared/events';
 import { firstValueFrom, timeout, catchError, of, throwError } from 'rxjs';
 import { ProductResponse } from '@shared/types/product.types';
@@ -42,7 +42,7 @@ export interface IOrdersService {
    * @param dto - DTO chứa userId và thông tin phân trang
    * @returns Danh sách orders có phân trang
    */
-  listByUser(dto: OrderListByUserDto): Promise<PaginatedOrdersResponse>;
+  listByUser(dto: OrderListDto): Promise<PaginatedOrdersResponse>;
 
   /**
    * Cập nhật trạng thái order
@@ -130,8 +130,24 @@ export class OrdersService implements IOrdersService {
           })),
         },
       },
-      include: {
-        items: true,
+      select: {
+        id: true,
+        userId: true,
+        addressId: true,
+        status: true,
+        totalInt: true,
+        createdAt: true,
+        updatedAt: true,
+        items: {
+          select: {
+            id: true,
+            productId: true,
+            quantity: true,
+            priceInt: true,
+            orderId: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
@@ -142,7 +158,7 @@ export class OrdersService implements IOrdersService {
     this.clearUserCart(dto.userId);
 
     console.log(`[OrdersService] Created order: ${order.id} with ${order.items.length} items`);
-    return this.mapToOrderResponse(order);
+    return order;
   }
 
   /**
@@ -155,8 +171,24 @@ export class OrdersService implements IOrdersService {
   async get(dto: OrderIdDto): Promise<OrderResponse> {
     const order = await this.prisma.order.findUnique({
       where: { id: dto.id },
-      include: {
-        items: true,
+      select: {
+        id: true,
+        userId: true,
+        addressId: true,
+        status: true,
+        totalInt: true,
+        createdAt: true,
+        updatedAt: true,
+        items: {
+          select: {
+            id: true,
+            productId: true,
+            quantity: true,
+            priceInt: true,
+            orderId: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
@@ -164,28 +196,28 @@ export class OrdersService implements IOrdersService {
       throw new EntityNotFoundRpcException('Order', dto.id);
     }
 
-    return this.mapToOrderResponse(order);
+    return order;
   }
 
   /**
    * Lấy danh sách orders của user với phân trang
    *
-   * @param dto - DTO chứa userId, page, pageSize
+   * @param query - DTO chứa userId, page, pageSize
    * @returns Danh sách orders có phân trang, sắp xếp theo thời gian tạo mới nhất
    */
-  async listByUser(dto: OrderListByUserDto): Promise<PaginatedOrdersResponse> {
-    const page = dto.page || 1;
-    const pageSize = dto.pageSize || 10;
+  async listByUser(query: OrderListDto): Promise<PaginatedOrdersResponse> {
+    const page = query.page || 1;
+    const pageSize = query.pageSize || 10;
     const skip = (page - 1) * pageSize;
 
     // Get total count
     const total = await this.prisma.order.count({
-      where: { userId: dto.userId },
+      where: { userId: query.userId },
     });
 
     // Get paginated orders
     const orders = await this.prisma.order.findMany({
-      where: { userId: dto.userId },
+      where: { userId: query.userId },
       include: {
         items: true,
       },
@@ -195,7 +227,7 @@ export class OrdersService implements IOrdersService {
     });
 
     return {
-      orders: orders.map(order => this.mapToOrderResponse(order)),
+      orders: orders,
       total,
       page,
       pageSize,
@@ -235,7 +267,7 @@ export class OrdersService implements IOrdersService {
     const updatedOrder = await this.prisma.order.update({
       where: { id: dto.id },
       data: {
-        status: dto.status,
+        status: dto.status as OrderStatus,
         updatedAt: new Date(),
       },
       include: {
@@ -249,7 +281,7 @@ export class OrdersService implements IOrdersService {
     }
 
     console.log(`[OrdersService] Updated order ${dto.id} status to ${dto.status}`);
-    return this.mapToOrderResponse(updatedOrder);
+    return updatedOrder;
   }
 
   /**
@@ -302,7 +334,7 @@ export class OrdersService implements IOrdersService {
     this.restoreProductStock(existingOrder.items);
 
     console.log(`[OrdersService] Cancelled order: ${dto.id}`);
-    return this.mapToOrderResponse(cancelledOrder);
+    return cancelledOrder;
   }
 
   /**
@@ -467,9 +499,10 @@ export class OrdersService implements IOrdersService {
    * Kiểm tra tính hợp lệ của chuyển trạng thái order
    *
    * Quy tắc chuyển trạng thái:
-   * - PENDING → PAID, CANCELLED
-   * - PAID → SHIPPED, CANCELLED
-   * - SHIPPED → (không thể chuyển)
+   * - PENDING → PROCESSING, CANCELLED
+   * - PROCESSING → SHIPPED, CANCELLED
+   * - SHIPPED → DELIVERED
+   * - DELIVERED → (không thể chuyển)
    * - CANCELLED → (không thể chuyển)
    *
    * @param currentStatus - Trạng thái hiện tại
@@ -479,9 +512,10 @@ export class OrdersService implements IOrdersService {
    */
   private validateStatusTransition(currentStatus: string, newStatus: string): void {
     const validTransitions: Record<string, string[]> = {
-      PENDING: ['PAID', 'CANCELLED'],
-      PAID: ['SHIPPED', 'CANCELLED'],
-      SHIPPED: [], // Cannot change once shipped
+      PENDING: ['PROCESSING', 'CANCELLED'],
+      PROCESSING: ['SHIPPED', 'CANCELLED'],
+      SHIPPED: ['DELIVERED'],
+      DELIVERED: [], // Cannot change once delivered
       CANCELLED: [], // Cannot change once cancelled
     };
 
@@ -492,48 +526,5 @@ export class OrdersService implements IOrdersService {
         `Invalid status transition from ${currentStatus} to ${newStatus}`,
       );
     }
-  }
-
-  /**
-   * Chuyển đổi Prisma order sang OrderResponse DTO
-   *
-   * @param order - Order từ Prisma với items
-   * @returns OrderResponse DTO
-   * @private
-   */
-  private mapToOrderResponse(order: {
-    id: string;
-    userId: string;
-    addressId: string | null;
-    status: string;
-    totalInt: number;
-    createdAt: Date;
-    updatedAt: Date;
-    items: Array<{
-      id: string;
-      orderId: string;
-      productId: string;
-      quantity: number;
-      priceInt: number;
-      createdAt: Date;
-    }>;
-  }): OrderResponse {
-    return {
-      id: order.id,
-      userId: order.userId,
-      addressId: order.addressId,
-      status: order.status,
-      totalInt: order.totalInt,
-      items: order.items.map(item => ({
-        id: item.id,
-        orderId: item.orderId,
-        productId: item.productId,
-        quantity: item.quantity,
-        priceInt: item.priceInt,
-        createdAt: item.createdAt,
-      })),
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-    };
   }
 }

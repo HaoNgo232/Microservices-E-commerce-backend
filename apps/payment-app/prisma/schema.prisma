@@ -8,15 +8,26 @@ generator client {
   output   = "./generated/client"
 }
 
+enum PaymentMethod {
+  COD
+  SEPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model Payment {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   orderId   String
-  method    String
+  method    PaymentMethod
   amountInt Int
-  status    String   @default("PENDING")
+  status    PaymentStatus   @default(PENDING)
   payload   Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 }
 
 // Lưu data giao dịch từ SEPAY

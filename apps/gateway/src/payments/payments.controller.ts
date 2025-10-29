@@ -1,7 +1,6 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { PaymentProcessDto, PaymentVerifyDto, SePayWebhookDto } from '@shared/dto/payment.dto';
-import { AuthGuard } from '../auth/auth.guard';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
 import {
@@ -17,7 +16,6 @@ import { SePayWebhookResponse } from '@shared/types/payment.webhook.types';
  * Tất cả endpoints require authentication
  */
 @Controller('payments')
-@UseGuards(AuthGuard)
 export class PaymentsController extends BaseGatewayController {
   constructor(@Inject('PAYMENT_SERVICE') protected readonly client: ClientProxy) {
     super(client);
@@ -29,6 +27,7 @@ export class PaymentsController extends BaseGatewayController {
    */
   @Post('webhook/sepay')
   sepayWebhook(@Body() dto: SePayWebhookDto): Promise<SePayWebhookResponse> {
+    console.log('Received SEPAY webhook:', dto);
     return this.send<SePayWebhookDto, SePayWebhookResponse>(EVENTS.PAYMENT.WEBHOOK_SEPAY, dto);
   }
 
@@ -56,8 +55,10 @@ export class PaymentsController extends BaseGatewayController {
    * Lấy chi tiết payment theo ID
    */
   @Get(':id')
-  findById(@Param('id') id: string): Promise<PaymentResponse> {
-    return this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ID, id);
+  findById(@Param('id') paymentId: string): Promise<PaymentResponse> {
+    return this.send<{ paymentId: string }, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ID, {
+      paymentId,
+    });
   }
 
   /**
@@ -66,6 +67,8 @@ export class PaymentsController extends BaseGatewayController {
    */
   @Get('order/:orderId')
   findByOrder(@Param('orderId') orderId: string): Promise<PaymentResponse> {
-    return this.send<string, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ORDER, orderId);
+    return this.send<{ orderId: string }, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ORDER, {
+      orderId,
+    });
   }
 }

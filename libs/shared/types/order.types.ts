@@ -14,14 +14,6 @@ export type OrderItemResponse = {
   quantity: number;
   priceInt: number; // Giá tại thời điểm đặt hàng (cents) - match Prisma field name
   createdAt: Date;
-  product?: {
-    // Populated từ product-service
-    id: string;
-    sku: string;
-    name: string;
-    slug: string;
-    imageUrls: string[];
-  };
 };
 
 /**
@@ -31,7 +23,7 @@ export type OrderResponse = {
   id: string;
   userId: string;
   addressId: string | null; // Match Prisma field name
-  status: string; // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  status: OrderStatus; // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
   totalInt: number; // Tổng tiền (cents)
   items: OrderItemResponse[];
   createdAt: Date;
@@ -49,11 +41,4 @@ export type PaginatedOrdersResponse = {
   totalPages?: number;
 };
 
-/**
- * Order status update result
- */
-export type OrderStatusUpdateResponse = {
-  id: string;
-  status: string;
-  updatedAt: Date;
-};
+export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';

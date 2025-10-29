@@ -10,7 +10,7 @@ import {
   Req,
   Inject,
 } from '@nestjs/common';
-import { ClientProxy, Payload } from '@nestjs/microservices';
+import { ClientProxy } from '@nestjs/microservices';
 import {
   AddressCreateDto,
   AddressListByUserDto,

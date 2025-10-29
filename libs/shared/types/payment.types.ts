@@ -9,10 +9,10 @@
  */
 export type PaymentResponse = {
   id: string;
-  orderId: string;
-  method: string; // CREDIT_CARD, BANK_TRANSFER, COD, E_WALLET
+  orderId: 'COD' | 'SEPAY';
+  method: string;
   amountInt: number; // Số tiền thanh toán (cents)
-  status: string; // PENDING, PROCESSING, COMPLETED, FAILED, REFUNDED
+  status: 'PENDING' | 'SUCCESS' | 'FAILED';
   payload?: Record<string, unknown> | null; // Payment gateway response data
   createdAt: Date;
   updatedAt: Date;

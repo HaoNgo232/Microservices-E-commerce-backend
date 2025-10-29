@@ -194,7 +194,7 @@ export class PaymentsService {
       throw new EntityNotFoundRpcException('Payment', dto.id);
     }
 
-    return this.mapToPaymentResponse(payment);
+    return payment as PaymentResponse;
   }
 
   /**
@@ -214,7 +214,7 @@ export class PaymentsService {
       throw new EntityNotFoundRpcException('Payment for order', dto.orderId);
     }
 
-    return this.mapToPaymentResponse(payment);
+    return payment as PaymentResponse;
   }
 
   /**
@@ -311,35 +311,6 @@ export class PaymentsService {
     // Mock verification logic
     // In production: verify signature, check transaction status, etc.
     return payload.status === 'success' || payload.verified === true;
-  }
-
-  /**
-   * Chuyển đổi Prisma payment sang PaymentResponse DTO
-   *
-   * @param payment - Payment từ Prisma
-   * @returns PaymentResponse DTO
-   * @private
-   */
-  private mapToPaymentResponse(payment: {
-    id: string;
-    orderId: string;
-    method: string;
-    amountInt: number;
-    status: string;
-    payload: unknown;
-    createdAt: Date;
-    updatedAt: Date;
-  }): PaymentResponse {
-    return {
-      id: payment.id,
-      orderId: payment.orderId,
-      method: payment.method,
-      amountInt: payment.amountInt,
-      status: payment.status,
-      payload: payment.payload as Record<string, unknown> | null,
-      createdAt: payment.createdAt,
-      updatedAt: payment.updatedAt,
-    };
   }
 
   /**

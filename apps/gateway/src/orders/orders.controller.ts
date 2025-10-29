@@ -1,25 +1,10 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  Req,
-  Inject,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { OrderCreateDto, OrderUpdateStatusDto, OrderListByUserDto } from '@shared/dto/order.dto';
+import { OrderCreateDto, OrderUpdateStatusDto, OrderListDto } from '@shared/dto/order.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
-import {
-  OrderResponse,
-  PaginatedOrdersResponse,
-  OrderStatusUpdateResponse,
-} from '@shared/types/order.types';
+import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
 
 /**
  * Orders Controller
@@ -42,17 +27,8 @@ export class OrdersController extends BaseGatewayController {
    * Microservice nhận: OrderCreateDto (đã có userId)
    */
   @Post()
-  create(
-    @Req() req: Request & { user: { userId: string } },
-    @Body() dto: OrderCreateDto,
-  ): Promise<OrderResponse> {
-    // Merge userId from JWT into DTO
-    const payload: OrderCreateDto = {
-      ...dto,
-      userId: req.user.userId,
-    };
-
-    return this.send<OrderCreateDto, OrderResponse>(EVENTS.ORDER.CREATE, payload);
+  create(@Body() dto: OrderCreateDto): Promise<OrderResponse> {
+    return this.send<OrderCreateDto, OrderResponse>(EVENTS.ORDER.CREATE, dto);
   }
 
   /**
@@ -64,20 +40,8 @@ export class OrdersController extends BaseGatewayController {
    * Microservice nhận: OrderListByUserDto (đã có userId)
    */
   @Get()
-  list(
-    @Req() req: Request & { user: { userId: string } },
-    @Query() query: OrderListByUserDto,
-  ): Promise<PaginatedOrdersResponse> {
-    // Merge userId from JWT into query DTO
-    const payload: OrderListByUserDto = {
-      ...query,
-      userId: req.user.userId,
-    };
-
-    return this.send<OrderListByUserDto, PaginatedOrdersResponse>(
-      EVENTS.ORDER.LIST_BY_USER,
-      payload,
-    );
+  list(@Query() query: OrderListDto): Promise<PaginatedOrdersResponse> {
+    return this.send<OrderListDto, PaginatedOrdersResponse>(EVENTS.ORDER.LIST, query);
   }
 
   /**
@@ -98,20 +62,8 @@ export class OrdersController extends BaseGatewayController {
    * Microservice nhận: OrderUpdateStatusDto (đã có id)
    */
   @Put(':id/status')
-  updateStatus(
-    @Param('id') id: string,
-    @Body() dto: OrderUpdateStatusDto,
-  ): Promise<OrderStatusUpdateResponse> {
-    // Merge id from path param into DTO
-    const payload: OrderUpdateStatusDto = {
-      ...dto,
-      id,
-    };
-
-    return this.send<OrderUpdateStatusDto, OrderStatusUpdateResponse>(
-      EVENTS.ORDER.UPDATE_STATUS,
-      payload,
-    );
+  updateStatus(@Body() dto: OrderUpdateStatusDto): Promise<OrderResponse> {
+    return this.send<OrderUpdateStatusDto, OrderResponse>(EVENTS.ORDER.UPDATE_STATUS, dto);
   }
 
   /**

@@ -99,7 +99,7 @@ export class UsersService implements IUserService {
           passwordHash,
           fullName: dto.fullName,
           phone: dto.phone,
-          role: dto.role || 'CUSTOMER', // Mặc định role là CUSTOMER nếu không truyền
+          role: dto.role,
         },
         select: {
           id: true,

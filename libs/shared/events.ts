@@ -50,7 +50,7 @@ export const EVENTS = {
   ORDER: {
     CREATE: 'order.create',
     GET: 'order.get',
-    LIST_BY_USER: 'order.listByUser',
+    LIST: 'order.list',
     UPDATE_STATUS: 'order.updateStatus',
     CANCEL: 'order.cancel',
   },

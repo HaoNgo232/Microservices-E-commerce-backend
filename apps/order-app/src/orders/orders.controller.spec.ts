@@ -5,9 +5,9 @@ import { OrdersService } from './orders.service';
 import {
   OrderCreateDto,
   OrderIdDto,
-  OrderListByUserDto,
   OrderUpdateStatusDto,
   OrderCancelDto,
+  OrderListDto,
 } from '@shared/dto/order.dto';
 import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
 
@@ -181,7 +181,7 @@ describe('OrdersController', () => {
   });
 
   describe('listByUser', () => {
-    const listDto: OrderListByUserDto = {
+    const listDto: OrderListDto = {
       userId: 'user-123',
       page: 1,
       pageSize: 10,
@@ -190,7 +190,7 @@ describe('OrdersController', () => {
     it('should return paginated orders for user', async () => {
       mockOrdersService.listByUser.mockResolvedValue(mockPaginatedResponse);
 
-      const result = await controller.listByUser(listDto);
+      const result = await controller.list(listDto);
 
       expect(result).toEqual(mockPaginatedResponse);
       expect(mockOrdersService.listByUser).toHaveBeenCalledWith(listDto);
@@ -207,7 +207,7 @@ describe('OrdersController', () => {
       };
       mockOrdersService.listByUser.mockResolvedValue(emptyResponse);
 
-      const result = await controller.listByUser(listDto);
+      const result = await controller.list(listDto);
 
       expect(result.orders).toEqual([]);
       expect(result.total).toBe(0);
@@ -217,7 +217,7 @@ describe('OrdersController', () => {
       const dtoWithoutPagination = { userId: 'user-123' };
       mockOrdersService.listByUser.mockResolvedValue(mockPaginatedResponse);
 
-      await controller.listByUser(dtoWithoutPagination as OrderListByUserDto);
+      await controller.list(dtoWithoutPagination as OrderListDto);
 
       expect(mockOrdersService.listByUser).toHaveBeenCalledWith(dtoWithoutPagination);
     });
@@ -233,7 +233,7 @@ describe('OrdersController', () => {
       };
       mockOrdersService.listByUser.mockResolvedValue(emptyResponse);
 
-      const result = await controller.listByUser(largePage);
+      const result = await controller.list(largePage);
 
       expect(result.orders).toEqual([]);
       expect(result.page).toBe(100);
@@ -243,23 +243,23 @@ describe('OrdersController', () => {
       const error = new Error('Database error');
       mockOrdersService.listByUser.mockRejectedValue(error);
 
-      await expect(controller.listByUser(listDto)).rejects.toThrow(error);
+      await expect(controller.list(listDto)).rejects.toThrow(error);
     });
   });
 
   describe('updateStatus', () => {
     const updateDto: OrderUpdateStatusDto = {
       id: 'order-123',
-      status: 'PAID',
+      status: 'PROCESSING',
     };
 
     it('should update order status successfully', async () => {
-      const updatedOrder = { ...mockOrderResponse, status: 'PAID' };
+      const updatedOrder: OrderResponse = { ...mockOrderResponse, status: 'PROCESSING' };
       mockOrdersService.updateStatus.mockResolvedValue(updatedOrder);
 
       const result = await controller.updateStatus(updateDto);
 
-      expect(result.status).toBe('PAID');
+      expect(result.status).toBe('PROCESSING');
       expect(mockOrdersService.updateStatus).toHaveBeenCalledWith(updateDto);
       expect(mockOrdersService.updateStatus).toHaveBeenCalledTimes(1);
     });
@@ -279,8 +279,8 @@ describe('OrdersController', () => {
     });
 
     it('should update status to SHIPPED', async () => {
-      const shippedDto = { ...updateDto, status: 'SHIPPED' as const };
-      const shippedOrder = { ...mockOrderResponse, status: 'SHIPPED' };
+      const shippedDto: OrderUpdateStatusDto = { id: 'order-123', status: 'SHIPPED' };
+      const shippedOrder: OrderResponse = { ...mockOrderResponse, status: 'SHIPPED' };
       mockOrdersService.updateStatus.mockResolvedValue(shippedOrder);
 
       const result = await controller.updateStatus(shippedDto);
@@ -289,8 +289,8 @@ describe('OrdersController', () => {
     });
 
     it('should update status to CANCELLED', async () => {
-      const cancelledDto = { ...updateDto, status: 'CANCELLED' as const };
-      const cancelledOrder = { ...mockOrderResponse, status: 'CANCELLED' };
+      const cancelledDto: OrderUpdateStatusDto = { id: 'order-123', status: 'CANCELLED' };
+      const cancelledOrder: OrderResponse = { ...mockOrderResponse, status: 'CANCELLED' };
       mockOrdersService.updateStatus.mockResolvedValue(cancelledOrder);
 
       const result = await controller.updateStatus(cancelledDto);
@@ -312,7 +312,7 @@ describe('OrdersController', () => {
     };
 
     it('should cancel order successfully', async () => {
-      const cancelledOrder = { ...mockOrderResponse, status: 'CANCELLED' };
+      const cancelledOrder: OrderResponse = { ...mockOrderResponse, status: 'CANCELLED' };
       mockOrdersService.cancel.mockResolvedValue(cancelledOrder);
 
       const result = await controller.cancel(cancelDto);
@@ -345,7 +345,7 @@ describe('OrdersController', () => {
 
     it('should cancel order with reason', async () => {
       const cancelWithReason = { ...cancelDto, reason: 'Customer changed mind' };
-      const cancelledOrder = { ...mockOrderResponse, status: 'CANCELLED' };
+      const cancelledOrder: OrderResponse = { ...mockOrderResponse, status: 'CANCELLED' };
       mockOrdersService.cancel.mockResolvedValue(cancelledOrder);
 
       const result = await controller.cancel(cancelWithReason);

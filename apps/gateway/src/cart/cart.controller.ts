@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Inject, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Inject, UseGuards } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthGuard } from '@gateway/auth/auth.guard';
 import {
@@ -38,12 +38,8 @@ export class CartController extends BaseGatewayController {
    * Microservice nhận: CartGetDto
    */
   @Get()
-  get(@Req() req: Request & { user: { userId: string } }): Promise<CartWithProductsResponse> {
-    const payload: CartGetDto = {
-      userId: req.user.userId,
-    };
-
-    return this.send<CartGetDto, CartWithProductsResponse>(EVENTS.CART.GET, payload);
+  get(@Body() dto: CartGetDto): Promise<CartWithProductsResponse> {
+    return this.send<CartGetDto, CartWithProductsResponse>(EVENTS.CART.GET, dto);
   }
 
   /**
@@ -55,16 +51,8 @@ export class CartController extends BaseGatewayController {
    * Microservice nhận: CartAddItemDto
    */
   @Post('items')
-  addItem(
-    @Req() req: Request & { user: { userId: string } },
-    @Body() dto: Omit<CartAddItemDto, 'userId'>,
-  ): Promise<CartItemOperationResponse> {
-    const payload: CartAddItemDto = {
-      ...dto,
-      userId: req.user.userId,
-    };
-
-    return this.send<CartAddItemDto, CartItemOperationResponse>(EVENTS.CART.ADD_ITEM, payload);
+  addItem(@Body() dto: CartAddItemDto): Promise<CartItemOperationResponse> {
+    return this.send<CartAddItemDto, CartItemOperationResponse>(EVENTS.CART.ADD_ITEM, dto);
   }
 
   /**
@@ -76,19 +64,8 @@ export class CartController extends BaseGatewayController {
    * Microservice nhận: CartUpdateItemDto
    */
   @Patch('items')
-  updateItem(
-    @Req() req: Request & { user: { userId: string } },
-    @Body() dto: Omit<CartUpdateItemDto, 'userId'>,
-  ): Promise<CartItemOperationResponse> {
-    const payload: CartUpdateItemDto = {
-      ...dto,
-      userId: req.user.userId,
-    };
-
-    return this.send<CartUpdateItemDto, CartItemOperationResponse>(
-      EVENTS.CART.UPDATE_ITEM,
-      payload,
-    );
+  updateItem(@Body() dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
+    return this.send<CartUpdateItemDto, CartItemOperationResponse>(EVENTS.CART.UPDATE_ITEM, dto);
   }
 
   /**
@@ -100,18 +77,7 @@ export class CartController extends BaseGatewayController {
    * Microservice nhận: CartRemoveItemDto
    */
   @Delete('items')
-  removeItem(
-    @Req() req: Request & { user: { userId: string } },
-    @Body() dto: Omit<CartRemoveItemDto, 'userId'>,
-  ): Promise<CartOperationSuccessResponse> {
-    const payload: CartRemoveItemDto = {
-      ...dto,
-      userId: req.user.userId,
-    };
-
-    return this.send<CartRemoveItemDto, CartOperationSuccessResponse>(
-      EVENTS.CART.REMOVE_ITEM,
-      payload,
-    );
+  removeItem(@Body() dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
+    return this.send<CartRemoveItemDto, CartOperationSuccessResponse>(EVENTS.CART.REMOVE_ITEM, dto);
   }
 }

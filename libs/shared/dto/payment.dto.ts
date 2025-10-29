@@ -12,7 +12,7 @@ import {
 
 export enum PaymentMethod {
   COD = 'COD',
-  SePay = 'SePay',
+  SEPAY = 'SEPAY',
 }
 
 export enum PaymentStatus {
@@ -28,7 +28,7 @@ export class PaymentProcessDto {
 
   @IsNotEmpty()
   @IsEnum(PaymentMethod)
-  method: 'COD' | 'SePay';
+  method: 'COD' | 'SEPAY';
 
   @IsNotEmpty()
   @IsNumber()

@@ -21,19 +21,3 @@ export type ListUsersResponse = {
   page: number;
   pageSize: number;
 };
-
-/**
- * Internal User type (bao gồm passwordHash)
- * CHỈ dùng trong user-service, KHÔNG được expose qua API
- */
-export type User = {
-  id: string;
-  email: string;
-  passwordHash: string;
-  fullName: string | null;
-  phone: string | null;
-  role: string;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-} | null;
