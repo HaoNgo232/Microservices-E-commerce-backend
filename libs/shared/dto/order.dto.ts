@@ -10,13 +10,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export enum OrderStatus {
-  PENDING = 'PENDING',
-  PAID = 'PAID',
-  SHIPPED = 'SHIPPED',
-  CANCELLED = 'CANCELLED',
-}
+import { OrderStatus } from '@shared/types';
 
 export class OrderItemDto {
   @IsNotEmpty()
@@ -83,7 +77,7 @@ export class OrderUpdateStatusDto {
 
   @IsNotEmpty()
   @IsEnum(OrderStatus)
-  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  status: OrderStatus;
 }
 
 export class OrderCancelDto {

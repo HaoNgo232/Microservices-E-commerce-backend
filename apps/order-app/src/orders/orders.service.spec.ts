@@ -15,6 +15,7 @@ import {
 } from '@shared/dto/order.dto';
 import { of, throwError } from 'rxjs';
 import { EVENTS } from '@shared/events';
+import { OrderStatus } from '@shared/types';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -503,7 +504,7 @@ describe('OrdersService', () => {
     it('should update order status from PENDING to PROCESSING', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'order-123',
-        status: 'PROCESSING',
+        status: OrderStatus.PROCESSING,
       };
 
       prisma.order.findUnique.mockResolvedValue(mockOrder);
@@ -529,7 +530,7 @@ describe('OrdersService', () => {
     it('should throw EntityNotFoundRpcException when order not found', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'non-existent',
-        status: 'PROCESSING',
+        status: OrderStatus.PROCESSING,
       };
 
       prisma.order.findUnique.mockResolvedValue(null);
@@ -540,24 +541,24 @@ describe('OrdersService', () => {
     it('should throw ValidationRpcException for invalid status transition', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'order-123',
-        status: 'PENDING',
+        status: OrderStatus.PENDING,
       };
 
       prisma.order.findUnique.mockResolvedValue({
         ...mockOrder,
-        status: 'SHIPPED',
+        status: OrderStatus.SHIPPED,
       });
 
       await expect(service.updateStatus(dto)).rejects.toThrow(ValidationRpcException);
       await expect(service.updateStatus(dto)).rejects.toThrow(
-        'Invalid status transition from SHIPPED to PENDING',
+        `Invalid status transition from ${OrderStatus.SHIPPED} to ${OrderStatus.PENDING}`,
       );
     });
 
     it('should restore stock when status changed to CANCELLED', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'order-123',
-        status: 'CANCELLED',
+        status: OrderStatus.CANCELLED,
       };
 
       prisma.order.findUnique.mockResolvedValue(mockOrder);
@@ -585,29 +586,29 @@ describe('OrdersService', () => {
     it('should allow PENDING to CANCELLED transition', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'order-123',
-        status: 'CANCELLED',
+        status: OrderStatus.CANCELLED,
       };
 
       prisma.order.findUnique.mockResolvedValue(mockOrder);
       prisma.order.update.mockResolvedValue({
         ...mockOrder,
-        status: 'CANCELLED',
+        status: OrderStatus.CANCELLED,
       });
 
       const result = await service.updateStatus(dto);
 
-      expect(result.status).toBe('CANCELLED');
+      expect(result.status).toBe(OrderStatus.CANCELLED);
     });
 
     it('should allow PROCESSING to SHIPPED transition', async () => {
       const dto: OrderUpdateStatusDto = {
         id: 'order-123',
-        status: 'SHIPPED',
+        status: OrderStatus.SHIPPED,
       };
 
       prisma.order.findUnique.mockResolvedValue({
         ...mockOrder,
-        status: 'PROCESSING',
+        status: OrderStatus.PROCESSING,
       });
       prisma.order.update.mockResolvedValue({
         ...mockOrder,
@@ -692,7 +693,7 @@ describe('OrdersService', () => {
       prisma.order.findUnique.mockResolvedValue(mockOrder);
       prisma.order.update.mockResolvedValue({
         ...mockOrder,
-        status: 'CANCELLED',
+        status: OrderStatus.CANCELLED,
       });
       productClient.send.mockReturnValue(of({ success: true }));
 
@@ -718,16 +719,16 @@ describe('OrdersService', () => {
 
       prisma.order.findUnique.mockResolvedValue({
         ...mockOrder,
-        status: 'PROCESSING',
+        status: OrderStatus.PROCESSING,
       });
       prisma.order.update.mockResolvedValue({
         ...mockOrder,
-        status: 'CANCELLED',
+        status: OrderStatus.CANCELLED,
       });
 
       const result = await service.cancel(dto);
 
-      expect(result.status).toBe('CANCELLED');
+      expect(result.status).toBe(OrderStatus.CANCELLED);
     });
   });
 
@@ -806,8 +807,8 @@ describe('OrdersService', () => {
   describe('validateStatusTransition (private method)', () => {
     it('should allow valid PENDING transitions', async () => {
       const validTransitions = [
-        { from: 'PENDING', to: 'PROCESSING' },
-        { from: 'PENDING', to: 'CANCELLED' },
+        { from: OrderStatus.PENDING, to: OrderStatus.PROCESSING },
+        { from: OrderStatus.PENDING, to: OrderStatus.CANCELLED },
       ];
 
       for (const transition of validTransitions) {
@@ -823,7 +824,7 @@ describe('OrdersService', () => {
         await expect(
           service.updateStatus({
             id: 'order-123',
-            status: transition.to as 'PROCESSING' | 'CANCELLED',
+            status: transition.to,
           }),
         ).resolves.toBeDefined();
       }
@@ -831,8 +832,8 @@ describe('OrdersService', () => {
 
     it('should allow valid PROCESSING transitions', async () => {
       const validTransitions = [
-        { from: 'PROCESSING', to: 'SHIPPED' },
-        { from: 'PROCESSING', to: 'CANCELLED' },
+        { from: OrderStatus.PROCESSING, to: OrderStatus.SHIPPED },
+        { from: OrderStatus.PROCESSING, to: OrderStatus.CANCELLED },
       ];
 
       for (const transition of validTransitions) {
@@ -848,43 +849,47 @@ describe('OrdersService', () => {
         await expect(
           service.updateStatus({
             id: 'order-123',
-            status: transition.to as 'SHIPPED' | 'CANCELLED',
+            status: transition.to,
           }),
         ).resolves.toBeDefined();
       }
     });
 
     it('should reject invalid transitions from SHIPPED', async () => {
-      const invalidTransitions = ['PENDING', 'PROCESSING', 'CANCELLED'];
+      const invalidTransitions = [
+        OrderStatus.PENDING,
+        OrderStatus.PROCESSING,
+        OrderStatus.CANCELLED,
+      ];
 
       for (const toStatus of invalidTransitions) {
         prisma.order.findUnique.mockResolvedValue({
           ...mockOrder,
-          status: 'SHIPPED',
+          status: OrderStatus.SHIPPED,
         });
 
         await expect(
           service.updateStatus({
             id: 'order-123',
-            status: toStatus as 'PENDING' | 'PROCESSING' | 'CANCELLED',
+            status: toStatus,
           }),
         ).rejects.toThrow(ValidationRpcException);
       }
     });
 
     it('should reject invalid transitions from CANCELLED', async () => {
-      const invalidTransitions = ['PENDING', 'PROCESSING', 'SHIPPED'];
+      const invalidTransitions = [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.SHIPPED];
 
       for (const toStatus of invalidTransitions) {
         prisma.order.findUnique.mockResolvedValue({
           ...mockOrder,
-          status: 'CANCELLED',
+          status: OrderStatus.CANCELLED,
         });
 
         await expect(
           service.updateStatus({
             id: 'order-123',
-            status: toStatus as 'PENDING' | 'PROCESSING' | 'SHIPPED',
+            status: toStatus,
           }),
         ).rejects.toThrow(ValidationRpcException);
       }

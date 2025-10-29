@@ -1,3 +1,4 @@
+import { PaymentMethod } from '@shared/types';
 import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
@@ -10,17 +11,6 @@ import {
   IsIn,
 } from 'class-validator';
 
-export enum PaymentMethod {
-  COD = 'COD',
-  SEPAY = 'SEPAY',
-}
-
-export enum PaymentStatus {
-  PENDING = 'PENDING',
-  SUCCESS = 'SUCCESS',
-  FAILED = 'FAILED',
-}
-
 export class PaymentProcessDto {
   @IsNotEmpty()
   @IsString()
@@ -28,7 +18,7 @@ export class PaymentProcessDto {
 
   @IsNotEmpty()
   @IsEnum(PaymentMethod)
-  method: 'COD' | 'SEPAY';
+  method: PaymentMethod;
 
   @IsNotEmpty()
   @IsNumber()

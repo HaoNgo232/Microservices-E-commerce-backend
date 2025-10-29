@@ -165,7 +165,7 @@ graph TB
 - **Database**: PostgreSQL (port 5437)
 - **Features**:
   - Multiple payment methods
-  - Payment status tracking (PENDING, SUCCESS, FAILED)
+  - Payment status tracking (UNPAID, PAID)
   - Payload storage for extended info
 - **Key Events**: Process, Verify, Get by order ID
 
@@ -299,7 +299,7 @@ Payment
 ├── orderId
 ├── method (CREDIT_CARD, BANK_TRANSFER, etc.)
 ├── amountInt
-├── status (PENDING, SUCCESS, FAILED)
+├── status (UNPAID, PAID)
 ├── payload (JSON for extended info)
 └── createdAt
 

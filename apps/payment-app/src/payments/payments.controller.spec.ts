@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '@payment-app/prisma/prisma.service';
+import { PaymentMethod, PaymentProcessResponse, PaymentStatus } from '@shared/main';
 
 describe('PaymentsController', () => {
   let controller: PaymentsController;
@@ -10,9 +11,9 @@ describe('PaymentsController', () => {
   const mockPaymentResponse = {
     id: 'payment-123',
     orderId: 'order-123',
-    method: 'COD',
+    method: PaymentMethod.COD,
     amountInt: 100000,
-    status: 'SUCCESS',
+    status: PaymentStatus.PAID,
     payload: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -177,20 +178,20 @@ describe('PaymentsController', () => {
       // Arrange
       const processDto = {
         orderId: 'order-123',
-        method: 'COD' as const,
+        method: PaymentMethod.COD,
         amountInt: 100000,
       };
 
       const mockResponse = {
         paymentId: 'payment-123',
-        status: 'SUCCESS' as const,
+        status: PaymentStatus.PAID,
         message: 'COD payment processed successfully',
       };
 
       mockPaymentsService.process.mockResolvedValue(mockResponse);
 
       // Act
-      const result = await controller.process(processDto);
+      const result: PaymentProcessResponse = await controller.process(processDto);
 
       // Assert
       expect(result).toEqual(mockResponse);
@@ -202,13 +203,13 @@ describe('PaymentsController', () => {
       // Arrange
       const processDto = {
         orderId: 'order-123',
-        method: 'SePay' as const,
+        method: PaymentMethod.SEPAY,
         amountInt: 100000,
       };
 
       const mockResponse = {
         paymentId: 'payment-123',
-        status: 'PENDING' as const,
+        status: 'UNPAID' as const,
         paymentUrl: 'https://sepay.vn/payment/payment-123',
         message: 'Redirect to payment gateway',
       };
@@ -216,7 +217,7 @@ describe('PaymentsController', () => {
       mockPaymentsService.process.mockResolvedValue(mockResponse);
 
       // Act
-      const result = await controller.process(processDto);
+      const result: PaymentProcessResponse = await controller.process(processDto);
 
       // Assert
       expect(result).toEqual(mockResponse);
@@ -239,7 +240,7 @@ describe('PaymentsController', () => {
       const mockResponse = {
         paymentId: 'payment-123',
         orderId: 'order-123',
-        status: 'SUCCESS' as const,
+        status: PaymentStatus.PAID,
         verified: true,
         transactionId: 'txn-123',
         message: 'Payment verified successfully',
@@ -269,7 +270,7 @@ describe('PaymentsController', () => {
       const mockResponse = {
         paymentId: 'payment-123',
         orderId: 'order-123',
-        status: 'FAILED' as const,
+        status: PaymentStatus.UNPAID,
         verified: false,
         message: 'Payment verification failed',
       };

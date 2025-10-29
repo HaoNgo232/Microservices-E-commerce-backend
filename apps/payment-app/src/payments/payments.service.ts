@@ -16,11 +16,13 @@ import {
   PaymentResponse,
   PaymentProcessResponse,
   PaymentVerifyResponse,
+  PaymentMethod,
+  PaymentStatus,
 } from '@shared/types/payment.types';
 import { SePayWebhookResponse } from '@shared/types/payment.webhook.types';
 import { EVENTS } from '@shared/events';
 import { catchError, timeout, throwError, firstValueFrom } from 'rxjs';
-import { OrderResponse } from '@shared/types';
+import { OrderResponse, OrderStatus } from '@shared/types';
 
 /**
  * PaymentsService - Service xử lý thanh toán
@@ -57,7 +59,7 @@ export class PaymentsService {
    *
    * Flow:
    * 1. Validate order tồn tại và ở trạng thái PENDING
-   * 2. Tạo payment record
+   * 2. Tạo payment record ở trạng thái UNPAID
    * 3. COD: Hoàn thành thanh toán ngay, cập nhật order sang PAID
    * 4. SePay: Tạo payment URL, trả về cho client để redirect
    *
@@ -76,19 +78,19 @@ export class PaymentsService {
           orderId: dto.orderId,
           method: dto.method,
           amountInt: dto.amountInt,
-          status: 'PENDING',
+          status: PaymentStatus.UNPAID,
           payload: false,
         },
       });
 
       // Handle payment method
-      if (dto.method === 'COD') {
+      if (dto.method === PaymentMethod.COD) {
         // COD: Payment completed immediately
         await this.completePayment(payment.id, dto.orderId);
 
         return {
           paymentId: payment.id,
-          status: 'SUCCESS',
+          status: 'PAID',
           message: 'COD payment processed successfully',
         };
       }
@@ -98,7 +100,7 @@ export class PaymentsService {
 
       return {
         paymentId: payment.id,
-        status: 'PENDING',
+        status: 'UNPAID',
         paymentUrl,
         message: 'Redirect to payment gateway',
       };
@@ -117,8 +119,8 @@ export class PaymentsService {
    * Flow:
    * 1. Tìm payment theo orderId
    * 2. Verify payload từ gateway (mock verification)
-   * 3. Nếu hợp lệ: Cập nhật payment và order sang SUCCESS/PAID
-   * 4. Nếu không hợp lệ: Cập nhật payment sang FAILED
+   * 3. Nếu hợp lệ: Cập nhật payment và order sang PAID
+   * 4. Nếu không hợp lệ: Giữ payment ở trạng thái UNPAID
    *
    * @param dto - Payload từ payment gateway
    * @returns Kết quả xác thực với verified flag
@@ -144,7 +146,7 @@ export class PaymentsService {
         await this.prisma.payment.update({
           where: { id: payment.id },
           data: {
-            status: 'FAILED',
+            status: 'UNPAID',
             payload: dto.payload as never,
           },
         });
@@ -152,7 +154,7 @@ export class PaymentsService {
         return {
           paymentId: payment.id,
           orderId: dto.orderId,
-          status: 'FAILED',
+          status: PaymentStatus.UNPAID,
           verified: false,
           message: 'Payment verification failed',
         };
@@ -164,7 +166,7 @@ export class PaymentsService {
       return {
         paymentId: payment.id,
         orderId: dto.orderId,
-        status: 'SUCCESS',
+        status: PaymentStatus.PAID,
         verified: true,
         transactionId: (dto.payload.transactionId as string) || payment.id,
         message: 'Payment verified successfully',
@@ -245,7 +247,7 @@ export class PaymentsService {
         ),
       )) as OrderResponse;
 
-      if (order.status !== 'PENDING') {
+      if (order.status !== OrderStatus.PENDING) {
         throw new ValidationRpcException(
           `Cannot process payment for order with status: ${order.status}`,
         );
@@ -264,7 +266,7 @@ export class PaymentsService {
    * Hoàn thành thanh toán và cập nhật trạng thái order
    *
    * Flow:
-   * 1. Cập nhật payment status sang SUCCESS
+   * 1. Cập nhật payment status sang PAID
    * 2. Cập nhật order status sang PAID (fire-and-forget)
    *
    * @param paymentId - ID của payment cần cập nhật
@@ -275,7 +277,7 @@ export class PaymentsService {
     // Update payment status
     await this.prisma.payment.update({
       where: { id: paymentId },
-      data: { status: 'SUCCESS' },
+      data: { status: 'PAID' },
     });
 
     // Update order status to PAID (fire-and-forget)
@@ -323,8 +325,8 @@ export class PaymentsService {
    * 2. Lưu transaction vào database
    * 3. Chỉ xử lý giao dịch incoming (transferType = 'in')
    * 4. Extract order ID từ transaction content (pattern: DH123, DH-123)
-   * 5. Tìm payment matching (orderId + amount + status PENDING)
-   * 6. Cập nhật payment status sang SUCCESS
+   * 5. Tìm payment matching (orderId + amount + status UNPAID)
+   * 6. Cập nhật payment status sang PAID
    * 7. Cập nhật order status sang PAID (fire-and-forget)
    *
    * **Idempotency:** Webhook có thể được gọi nhiều lần, service phải handle duplicate
@@ -392,12 +394,12 @@ export class PaymentsService {
       const orderId = orderIdMatch[1];
 
       // 5. Find matching payment
-      // Conditions: orderId matches, amount matches, status is PENDING
+      // Conditions: orderId matches, amount matches, status is UNPAID
       const payment = await this.prisma.payment.findFirst({
         where: {
           orderId,
           amountInt: dto.transferAmount,
-          status: 'PENDING',
+          status: 'UNPAID',
         },
       });
 
@@ -407,15 +409,15 @@ export class PaymentsService {
         );
         return {
           success: true,
-          message: 'Transaction saved (no matching pending payment)',
+          message: 'Transaction saved (no matching unpaid payment)',
         };
       }
 
-      // 6. Update payment status to SUCCESS
+      // 6. Update payment status to PAID
       await this.prisma.payment.update({
         where: { id: payment.id },
         data: {
-          status: 'SUCCESS',
+          status: 'PAID',
           payload: {
             sePayTransactionId: dto.id,
             gateway: dto.gateway,

@@ -13,7 +13,8 @@ import {
   ValidationRpcException,
   ConflictRpcException,
 } from '@shared/exceptions/rpc-exceptions';
-import { OrderResponse, OrderStatus, PaginatedOrdersResponse } from '@shared/types/order.types';
+import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
+import { OrderStatus } from '@shared/types';
 import { EVENTS } from '@shared/events';
 import { firstValueFrom, timeout, catchError, of, throwError } from 'rxjs';
 import { ProductResponse } from '@shared/types/product.types';
@@ -120,7 +121,7 @@ export class OrdersService implements IOrdersService {
       data: {
         userId: dto.userId,
         addressId: dto.addressId,
-        status: 'PENDING',
+        status: OrderStatus.PENDING,
         totalInt,
         items: {
           create: dto.items.map(item => ({
@@ -158,7 +159,7 @@ export class OrdersService implements IOrdersService {
     this.clearUserCart(dto.userId);
 
     console.log(`[OrdersService] Created order: ${order.id} with ${order.items.length} items`);
-    return order;
+    return order as OrderResponse;
   }
 
   /**
@@ -196,7 +197,7 @@ export class OrdersService implements IOrdersService {
       throw new EntityNotFoundRpcException('Order', dto.id);
     }
 
-    return order;
+    return order as OrderResponse;
   }
 
   /**
@@ -227,7 +228,7 @@ export class OrdersService implements IOrdersService {
     });
 
     return {
-      orders: orders,
+      orders: orders as OrderResponse[],
       total,
       page,
       pageSize,
@@ -267,7 +268,7 @@ export class OrdersService implements IOrdersService {
     const updatedOrder = await this.prisma.order.update({
       where: { id: dto.id },
       data: {
-        status: dto.status as OrderStatus,
+        status: dto.status,
         updatedAt: new Date(),
       },
       include: {
@@ -276,12 +277,12 @@ export class OrdersService implements IOrdersService {
     });
 
     // If cancelled, restore stock (fire-and-forget)
-    if (dto.status === 'CANCELLED') {
+    if (dto.status === OrderStatus.CANCELLED) {
       this.restoreProductStock(existingOrder.items);
     }
 
     console.log(`[OrdersService] Updated order ${dto.id} status to ${dto.status}`);
-    return updatedOrder;
+    return updatedOrder as OrderResponse;
   }
 
   /**
@@ -310,11 +311,11 @@ export class OrdersService implements IOrdersService {
     }
 
     // Validate that order can be cancelled
-    if (existingOrder.status === 'CANCELLED') {
+    if ((existingOrder.status as OrderStatus) === OrderStatus.CANCELLED) {
       throw new ConflictRpcException('Order is already cancelled');
     }
 
-    if (existingOrder.status === 'SHIPPED') {
+    if ((existingOrder.status as OrderStatus) === OrderStatus.SHIPPED) {
       throw new ValidationRpcException('Cannot cancel shipped orders');
     }
 
@@ -322,7 +323,7 @@ export class OrdersService implements IOrdersService {
     const cancelledOrder = await this.prisma.order.update({
       where: { id: dto.id },
       data: {
-        status: 'CANCELLED',
+        status: OrderStatus.CANCELLED,
         updatedAt: new Date(),
       },
       include: {
@@ -334,7 +335,7 @@ export class OrdersService implements IOrdersService {
     this.restoreProductStock(existingOrder.items);
 
     console.log(`[OrdersService] Cancelled order: ${dto.id}`);
-    return cancelledOrder;
+    return cancelledOrder as OrderResponse;
   }
 
   /**
@@ -512,11 +513,11 @@ export class OrdersService implements IOrdersService {
    */
   private validateStatusTransition(currentStatus: string, newStatus: string): void {
     const validTransitions: Record<string, string[]> = {
-      PENDING: ['PROCESSING', 'CANCELLED'],
-      PROCESSING: ['SHIPPED', 'CANCELLED'],
-      SHIPPED: ['DELIVERED'],
-      DELIVERED: [], // Cannot change once delivered
-      CANCELLED: [], // Cannot change once cancelled
+      [OrderStatus.PENDING]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
+      [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+      [OrderStatus.SHIPPED]: [OrderStatus.DELIVERED],
+      [OrderStatus.DELIVERED]: [], // Cannot change once delivered
+      [OrderStatus.CANCELLED]: [], // Cannot change once cancelled
     };
 
     const allowedStatuses = validTransitions[currentStatus] || [];

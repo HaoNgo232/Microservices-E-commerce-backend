@@ -14,9 +14,8 @@ enum PaymentMethod {
 }
 
 enum PaymentStatus {
-  PENDING
-  SUCCESS
-  FAILED
+  UNPAID
+  PAID
 }
 
 model Payment {
@@ -24,7 +23,7 @@ model Payment {
   orderId   String
   method    PaymentMethod
   amountInt Int
-  status    PaymentStatus   @default(PENDING)
+  status    PaymentStatus   @default(UNPAID)
   payload   Json?
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt

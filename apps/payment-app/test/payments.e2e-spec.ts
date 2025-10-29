@@ -108,7 +108,7 @@ describe('PaymentsController (e2e)', () => {
 
       expect(result).toBeDefined();
       expect(result.paymentId).toBeDefined();
-      expect(result.status).toBe('SUCCESS');
+      expect(result.status).toBe('PAID');
       expect(result.message).toContain('COD payment processed');
     });
 
@@ -123,7 +123,7 @@ describe('PaymentsController (e2e)', () => {
 
       expect(result).toBeDefined();
       expect(result.paymentId).toBeDefined();
-      expect(result.status).toBe('PENDING');
+      expect(result.status).toBe('UNPAID');
       expect(result.paymentUrl).toBeDefined();
       expect(result.message).toContain('Redirect to payment gateway');
     });
@@ -165,7 +165,7 @@ describe('PaymentsController (e2e)', () => {
 
       expect(result).toBeDefined();
       expect(result.verified).toBe(true);
-      expect(result.status).toBe('SUCCESS');
+      expect(result.status).toBe('PAID');
     });
 
     it('should throw error when verifying non-existent payment', async () => {

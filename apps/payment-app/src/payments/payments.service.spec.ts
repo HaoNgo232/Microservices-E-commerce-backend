@@ -7,6 +7,7 @@ import {
   EntityNotFoundRpcException,
   ValidationRpcException,
 } from '@shared/exceptions/rpc-exceptions';
+import { PaymentMethod, PaymentStatus } from '@shared/types';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -17,7 +18,7 @@ describe('PaymentsService', () => {
   const mockOrder = {
     id: 'order-123',
     userId: 'user-123',
-    status: 'PENDING',
+    status: 'PENDING' as const,
     totalInt: 100000,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -28,7 +29,7 @@ describe('PaymentsService', () => {
     orderId: 'order-123',
     method: 'SEPAY',
     amountInt: 100000,
-    status: 'PENDING',
+    status: 'UNPAID',
     payload: {},
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -79,36 +80,36 @@ describe('PaymentsService', () => {
       mockOrderClient.send.mockReturnValue(of(mockOrder));
       mockPrisma.payment.create.mockResolvedValue({
         ...mockPayment,
-        method: 'COD',
-        status: 'PENDING',
+        method: PaymentMethod.COD,
+        status: PaymentStatus.UNPAID,
       });
       mockPrisma.payment.update.mockResolvedValue({
         ...mockPayment,
-        status: 'SUCCESS',
+        status: PaymentStatus.PAID,
       });
 
       // Act
       const result = await service.process({
         orderId: 'order-123',
-        method: 'COD',
+        method: PaymentMethod.COD,
         amountInt: 100000,
       });
 
       // Assert
-      expect(result.status).toBe('SUCCESS');
+      expect(result.status).toBe(PaymentStatus.PAID);
       expect(result.message).toBe('COD payment processed successfully');
       expect(mockPrisma.payment.create).toHaveBeenCalledWith({
         data: {
           orderId: 'order-123',
-          method: 'COD',
+          method: PaymentMethod.COD,
           amountInt: 100000,
-          status: 'PENDING',
+          status: 'UNPAID',
           payload: false,
         },
       });
       expect(mockPrisma.payment.update).toHaveBeenCalledWith({
         where: { id: mockPayment.id },
-        data: { status: 'SUCCESS' },
+        data: { status: 'PAID' },
       });
     });
 
@@ -120,12 +121,12 @@ describe('PaymentsService', () => {
       // Act
       const result = await service.process({
         orderId: 'order-123',
-        method: 'SePay',
+        method: PaymentMethod.SEPAY,
         amountInt: 100000,
       });
 
       // Assert
-      expect(result.status).toBe('PENDING');
+      expect(result.status).toBe(PaymentStatus.UNPAID);
       expect(result.paymentUrl).toBe(`https://sepay.vn/payment/${mockPayment.id}`);
       expect(result.message).toBe('Redirect to payment gateway');
     });
@@ -143,7 +144,7 @@ describe('PaymentsService', () => {
       await expect(
         service.process({
           orderId: 'order-123',
-          method: 'COD',
+          method: PaymentMethod.COD,
           amountInt: 100000,
         }),
       ).rejects.toThrow(ValidationRpcException);
@@ -159,7 +160,7 @@ describe('PaymentsService', () => {
       await expect(
         service.process({
           orderId: 'order-999',
-          method: 'COD',
+          method: PaymentMethod.COD,
           amountInt: 100000,
         }),
       ).rejects.toThrow(ValidationRpcException);
@@ -174,7 +175,7 @@ describe('PaymentsService', () => {
       await expect(
         service.process({
           orderId: 'order-123',
-          method: 'COD',
+          method: PaymentMethod.COD,
           amountInt: 100000,
         }),
       ).rejects.toThrow(ValidationRpcException);
@@ -187,7 +188,7 @@ describe('PaymentsService', () => {
       mockPrisma.payment.findFirst.mockResolvedValue(mockPayment);
       mockPrisma.payment.update.mockResolvedValue({
         ...mockPayment,
-        status: 'SUCCESS',
+        status: 'PAID',
       });
       mockOrderClient.send.mockReturnValue(of({ success: true }));
 
@@ -201,12 +202,12 @@ describe('PaymentsService', () => {
       });
 
       // Assert
-      expect(result.status).toBe('SUCCESS');
+      expect(result.status).toBe('PAID');
       expect(result.verified).toBe(true);
       expect(result.transactionId).toBe('txn-123');
       expect(mockPrisma.payment.update).toHaveBeenCalledWith({
         where: { id: mockPayment.id },
-        data: { status: 'SUCCESS' },
+        data: { status: 'PAID' },
       });
     });
 
@@ -215,7 +216,7 @@ describe('PaymentsService', () => {
       mockPrisma.payment.findFirst.mockResolvedValue(mockPayment);
       mockPrisma.payment.update.mockResolvedValue({
         ...mockPayment,
-        status: 'FAILED',
+        status: 'UNPAID',
       });
 
       // Act
@@ -227,12 +228,12 @@ describe('PaymentsService', () => {
       });
 
       // Assert
-      expect(result.status).toBe('FAILED');
+      expect(result.status).toBe('UNPAID');
       expect(result.verified).toBe(false);
       expect(mockPrisma.payment.update).toHaveBeenCalledWith({
         where: { id: mockPayment.id },
         data: {
-          status: 'FAILED',
+          status: 'UNPAID',
           payload: { status: 'failed' },
         },
       });
@@ -341,7 +342,7 @@ describe('PaymentsService', () => {
       mockPrisma.payment.findFirst.mockResolvedValue(mockPayment);
       mockPrisma.payment.update.mockResolvedValue({
         ...mockPayment,
-        status: 'SUCCESS',
+        status: 'PAID',
       });
       mockOrderClient.send.mockReturnValue(of({ success: true }));
 
@@ -356,7 +357,7 @@ describe('PaymentsService', () => {
       expect(mockPrisma.payment.update).toHaveBeenCalledWith({
         where: { id: mockPayment.id },
         data: expect.objectContaining({
-          status: 'SUCCESS',
+          status: 'PAID',
         }),
       });
     });
@@ -414,7 +415,7 @@ describe('PaymentsService', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Transaction saved (no matching pending payment)');
+      expect(result.message).toBe('Transaction saved (no matching unpaid payment)');
     });
 
     it('should return false on internal error', async () => {

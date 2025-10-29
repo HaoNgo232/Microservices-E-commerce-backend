@@ -1,3 +1,4 @@
+import { Order } from './../prisma/generated/client/index.d';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestMicroservice } from '@nestjs/common';
 import { ClientsModule, Transport, ClientProxy } from '@nestjs/microservices';
@@ -13,6 +14,7 @@ import {
 } from '@shared/dto/order.dto';
 import { firstValueFrom, of } from 'rxjs';
 import { expectRpcError } from '@shared/testing/rpc-test-helpers';
+import { OrderStatus } from '@shared/types';
 
 describe('OrdersController (e2e)', () => {
   let app: INestMicroservice;
@@ -294,14 +296,14 @@ describe('OrdersController (e2e)', () => {
 
       const dto: OrderUpdateStatusDto = {
         id: createResult.id,
-        status: 'PAID',
+        status: OrderStatus.DELIVERED,
       };
 
       const result = await firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, dto));
 
       expect(result).toBeDefined();
       expect(result.id).toBe(createResult.id);
-      expect(result.status).toBe('PAID');
+      expect(result.status).toBe(OrderStatus.DELIVERED);
     });
 
     it('should throw error when updating non-existent order', async () => {
