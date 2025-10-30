@@ -32,10 +32,6 @@ export class CartController extends BaseGatewayController {
   /**
    * GET /cart
    * Lấy giỏ hàng của user với thông tin chi tiết sản phẩm
-   *
-   * Pattern: Extract userId từ JWT token (SECURITY: không tin query params)
-   * Gateway gửi: CartGetDto (với userId từ JWT)
-   * Microservice nhận: CartGetDto
    */
   @Get()
   get(@Body() dto: CartGetDto): Promise<CartWithProductsResponse> {
@@ -44,11 +40,6 @@ export class CartController extends BaseGatewayController {
 
   /**
    * POST /cart/items
-   * Thêm sản phẩm vào giỏ hàng
-   *
-   * Pattern: Extract userId từ JWT token
-   * Gateway gửi: CartAddItemDto (với userId từ JWT)
-   * Microservice nhận: CartAddItemDto
    */
   @Post('items')
   addItem(@Body() dto: CartAddItemDto): Promise<CartItemOperationResponse> {
@@ -58,10 +49,6 @@ export class CartController extends BaseGatewayController {
   /**
    * PATCH /cart/items
    * Cập nhật số lượng sản phẩm trong giỏ hàng
-   *
-   * Pattern: Extract userId từ JWT token
-   * Gateway gửi: CartUpdateItemDto (với userId từ JWT)
-   * Microservice nhận: CartUpdateItemDto
    */
   @Patch('items')
   updateItem(@Body() dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
@@ -71,10 +58,6 @@ export class CartController extends BaseGatewayController {
   /**
    * DELETE /cart/items
    * Xóa sản phẩm khỏi giỏ hàng
-   *
-   * Pattern: Extract userId từ JWT token
-   * Gateway gửi: CartRemoveItemDto (với userId từ JWT)
-   * Microservice nhận: CartRemoveItemDto
    */
   @Delete('items')
   removeItem(@Body() dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {

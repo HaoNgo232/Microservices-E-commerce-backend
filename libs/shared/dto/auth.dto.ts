@@ -21,9 +21,9 @@ export class RegisterDto {
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   password: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  fullName?: string;
+  fullName: string;
 }
 
 export class VerifyDto {
