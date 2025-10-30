@@ -30,6 +30,18 @@ export class UsersController extends BaseGatewayController {
   }
 
   /**
+   * GET /users/email/:email
+   * Lấy user theo email (admin only)
+   * Note: Phải đặt route này TRƯỚC :id route để tránh conflict
+   */
+  @Get('email/:email')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findByEmail(@Param('email') email: string): Promise<UserResponse> {
+    return this.send<string, UserResponse>(EVENTS.USER.FIND_BY_EMAIL, email);
+  }
+
+  /**
    * GET /users/:id
    * Lấy chi tiết user theo ID
    */
@@ -37,17 +49,6 @@ export class UsersController extends BaseGatewayController {
   @UseGuards(AuthGuard, RolesGuard)
   findById(@Param('id') id: string): Promise<UserResponse> {
     return this.send<string, UserResponse>(EVENTS.USER.FIND_BY_ID, id);
-  }
-
-  /**
-   * GET /users/email/:email
-   * Lấy user theo email (admin only)
-   */
-  @Get('email/:email')
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  findByEmail(@Param('email') email: string): Promise<UserResponse> {
-    return this.send<string, UserResponse>(EVENTS.USER.FIND_BY_EMAIL, email);
   }
 
   /**

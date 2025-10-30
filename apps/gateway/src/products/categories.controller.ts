@@ -47,23 +47,24 @@ export class CategoriesController extends BaseGatewayController {
   }
 
   /**
-   * GET /categories/:id
-   * Lấy chi tiết category theo ID (bao gồm children nếu có)
-   */
-  @Get(':id')
-  findById(@Param('id') id: string): Promise<CategoryResponse> {
-    return this.send<string, CategoryResponse>(EVENTS.CATEGORY.GET_BY_ID, id);
-  }
-
-  /**
    * GET /categories/slug/:slug
    * Lấy chi tiết category theo slug
+   * Note: Phải đặt route này TRƯỚC :id route để tránh conflict
    */
   @Get('slug/:slug')
   findBySlug(@Param('slug') slug: string): Promise<CategoryResponse> {
     return this.send<{ slug: string }, CategoryResponse>(EVENTS.CATEGORY.GET_BY_SLUG, {
       slug,
     });
+  }
+
+  /**
+   * GET /categories/:id
+   * Lấy chi tiết category theo ID (bao gồm children nếu có)
+   */
+  @Get(':id')
+  findById(@Param('id') id: string): Promise<CategoryResponse> {
+    return this.send<string, CategoryResponse>(EVENTS.CATEGORY.GET_BY_ID, id);
   }
 
   /**

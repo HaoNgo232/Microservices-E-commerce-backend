@@ -41,21 +41,22 @@ export class ProductsController extends BaseGatewayController {
   }
 
   /**
+   * GET /products/slug/:slug
+   * Lấy chi tiết product theo slug
+   * Note: Phải đặt route này TRƯỚC :id route để tránh conflict
+   */
+  @Get('slug/:slug')
+  findBySlug(@Param('slug') slug: string): Promise<ProductResponse> {
+    return this.send<{ slug: string }, ProductResponse>(EVENTS.PRODUCT.GET_BY_SLUG, { slug });
+  }
+
+  /**
    * GET /products/:id
    * Lấy chi tiết product theo ID
    */
   @Get(':id')
   findById(@Param('id') id: string): Promise<ProductResponse> {
     return this.send<string, ProductResponse>(EVENTS.PRODUCT.GET_BY_ID, id);
-  }
-
-  /**
-   * GET /products/slug/:slug
-   * Lấy chi tiết product theo slug
-   */
-  @Get('slug/:slug')
-  findBySlug(@Param('slug') slug: string): Promise<ProductResponse> {
-    return this.send<{ slug: string }, ProductResponse>(EVENTS.PRODUCT.GET_BY_SLUG, { slug });
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Inject, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Inject, UseGuards, Req } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthGuard } from '@gateway/auth/auth.guard';
 import {
@@ -32,9 +32,13 @@ export class CartController extends BaseGatewayController {
   /**
    * GET /cart
    * Lấy giỏ hàng của user với thông tin chi tiết sản phẩm
+   * userId được extract từ JWT token (req.user.userId)
    */
   @Get()
-  get(@Body() dto: CartGetDto): Promise<CartWithProductsResponse> {
+  get(@Req() req: Request & { user: { userId: string } }): Promise<CartWithProductsResponse> {
+    const dto: CartGetDto = {
+      userId: req.user.userId,
+    };
     return this.send<CartGetDto, CartWithProductsResponse>(EVENTS.CART.GET, dto);
   }
 

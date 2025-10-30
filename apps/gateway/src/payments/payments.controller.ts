@@ -51,6 +51,18 @@ export class PaymentsController extends BaseGatewayController {
   }
 
   /**
+   * GET /payments/order/:orderId
+   * Lấy payment theo order ID
+   * Note: Phải đặt route này TRƯỚC :id route để tránh conflict
+   */
+  @Get('order/:orderId')
+  findByOrder(@Param('orderId') orderId: string): Promise<PaymentResponse> {
+    return this.send<{ orderId: string }, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ORDER, {
+      orderId,
+    });
+  }
+
+  /**
    * GET /payments/:id
    * Lấy chi tiết payment theo ID
    */
@@ -58,17 +70,6 @@ export class PaymentsController extends BaseGatewayController {
   findById(@Param('id') paymentId: string): Promise<PaymentResponse> {
     return this.send<{ paymentId: string }, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ID, {
       paymentId,
-    });
-  }
-
-  /**
-   * GET /payments/order/:orderId
-   * Lấy payment theo order ID
-   */
-  @Get('order/:orderId')
-  findByOrder(@Param('orderId') orderId: string): Promise<PaymentResponse> {
-    return this.send<{ orderId: string }, PaymentResponse>(EVENTS.PAYMENT.GET_BY_ORDER, {
-      orderId,
     });
   }
 }

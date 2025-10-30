@@ -4,7 +4,7 @@ import { OrderCreateDto, OrderUpdateStatusDto, OrderListDto } from '@shared/dto/
 import { AuthGuard } from '../auth/auth.guard';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
-import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
+import { OrderResponse, OrderStatus, PaginatedOrdersResponse } from '@shared/types/order.types';
 
 /**
  * Orders Controller
@@ -21,10 +21,6 @@ export class OrdersController extends BaseGatewayController {
   /**
    * POST /orders
    * Tạo order mới từ cart
-   *
-   * Pattern: Enrich DTO với userId từ JWT context
-   * Gateway gửi: OrderCreateDto (đã có userId)
-   * Microservice nhận: OrderCreateDto (đã có userId)
    */
   @Post()
   create(@Body() dto: OrderCreateDto): Promise<OrderResponse> {
@@ -34,10 +30,6 @@ export class OrdersController extends BaseGatewayController {
   /**
    * GET /orders
    * Lấy danh sách orders của user hiện tại
-   *
-   * Pattern: Enrich query params với userId từ JWT context
-   * Gateway gửi: OrderListByUserDto (đã có userId)
-   * Microservice nhận: OrderListByUserDto (đã có userId)
    */
   @Get()
   list(@Query() query: OrderListDto): Promise<PaginatedOrdersResponse> {
@@ -56,14 +48,14 @@ export class OrdersController extends BaseGatewayController {
   /**
    * PUT /orders/:id/status
    * Cập nhật trạng thái order (admin only)
-   *
-   * Pattern: Merge path param vào DTO
-   * Gateway gửi: OrderUpdateStatusDto (đã có id)
-   * Microservice nhận: OrderUpdateStatusDto (đã có id)
    */
   @Put(':id/status')
-  updateStatus(@Body() dto: OrderUpdateStatusDto): Promise<OrderResponse> {
-    return this.send<OrderUpdateStatusDto, OrderResponse>(EVENTS.ORDER.UPDATE_STATUS, dto);
+  updateStatus(@Param('id') id: string, @Body() dto: { status: string }): Promise<OrderResponse> {
+    const payload: OrderUpdateStatusDto = {
+      id,
+      status: dto.status as OrderStatus,
+    };
+    return this.send<OrderUpdateStatusDto, OrderResponse>(EVENTS.ORDER.UPDATE_STATUS, payload);
   }
 
   /**
