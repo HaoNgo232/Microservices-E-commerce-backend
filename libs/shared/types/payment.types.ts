@@ -10,9 +10,9 @@
 export type PaymentResponse = {
   id: string;
   orderId: string;
-  method: string;
+  method: PaymentMethod;
   amountInt: number; // Số tiền thanh toán (cents)
-  status: 'UNPAID' | 'PAID';
+  status: PaymentStatus;
   payload?: Record<string, unknown> | null; // Payment gateway response data
   createdAt: Date;
   updatedAt: Date;
@@ -23,8 +23,8 @@ export type PaymentResponse = {
  */
 export type PaymentProcessResponse = {
   paymentId: string;
-  status: 'UNPAID' | 'PAID';
-  paymentUrl?: string; // URL để redirect user đến payment gateway
+  status: PaymentStatus;
+  paymentUrl?: string; // URL thanh toán (SePay)
   qrCode?: string; // QR code cho bank transfer
   message?: string;
 };

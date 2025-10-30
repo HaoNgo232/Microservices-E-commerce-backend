@@ -10,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderStatus } from '@shared/types';
+import { OrderStatus, PaymentStatus } from '@shared/types';
 
 export class OrderItemDto {
   @IsNotEmpty()
@@ -78,6 +78,20 @@ export class OrderUpdateStatusDto {
   @IsNotEmpty()
   @IsEnum(OrderStatus)
   status: OrderStatus;
+
+  @IsOptional()
+  @IsEnum(PaymentStatus)
+  paymentStatus?: PaymentStatus;
+}
+
+export class OrderUpdatePaymentStatusDto {
+  @IsNotEmpty()
+  @IsString()
+  id: string;
+
+  @IsNotEmpty()
+  @IsEnum(PaymentStatus)
+  paymentStatus: PaymentStatus;
 }
 
 export class OrderCancelDto {

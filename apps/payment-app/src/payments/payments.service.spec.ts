@@ -51,6 +51,7 @@ describe('PaymentsService', () => {
 
     const mockClientProxy = {
       send: jest.fn(),
+      emit: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -71,6 +72,11 @@ describe('PaymentsService', () => {
     mockPrisma = module.get(PrismaService);
     mockOrderClient = module.get('ORDER_SERVICE');
 
+    // Setup env for VietQR URL generation
+    process.env.SEPAY_ACCOUNT_NUMBER = '0123456789';
+    process.env.SEPAY_ACCOUNT_NAME = 'Test Account';
+    process.env.SEPAY_BANK_CODE = '970422';
+
     jest.clearAllMocks();
   });
 
@@ -78,6 +84,7 @@ describe('PaymentsService', () => {
     it('should process COD payment successfully', async () => {
       // Arrange
       mockOrderClient.send.mockReturnValue(of(mockOrder));
+      mockOrderClient.emit.mockReturnValue(of({} as unknown as void));
       mockPrisma.payment.create.mockResolvedValue({
         ...mockPayment,
         method: PaymentMethod.COD,
@@ -92,7 +99,7 @@ describe('PaymentsService', () => {
       });
 
       // Assert
-      expect(result.status).toBe(PaymentStatus.UNPAID); // COD now stays UNPAID
+      expect(result.status).toBe(PaymentStatus.UNPAID);
       expect(result.message).toContain('will be completed on delivery');
       expect(mockPrisma.payment.create).toHaveBeenCalledWith({
         data: {
@@ -107,7 +114,7 @@ describe('PaymentsService', () => {
       expect(mockPrisma.payment.update).not.toHaveBeenCalled();
     });
 
-    it('should process SePay payment and return payment URL', async () => {
+    it('should process SePay payment and return VietQR URL', async () => {
       // Arrange
       mockOrderClient.send.mockReturnValue(of(mockOrder));
       mockPrisma.payment.create.mockResolvedValue(mockPayment);
@@ -121,8 +128,10 @@ describe('PaymentsService', () => {
 
       // Assert
       expect(result.status).toBe(PaymentStatus.UNPAID);
-      expect(result.paymentUrl).toBe(`https://sepay.vn/payment/${mockPayment.id}`);
-      expect(result.message).toBe('Redirect to payment gateway');
+      expect(result.paymentUrl).toBe(
+        `https://img.vietqr.io/image/${process.env.SEPAY_BANK_CODE}-${process.env.SEPAY_ACCOUNT_NUMBER}-compact2.jpg?amount=100000&addInfo=DHorder-123&accountName=${encodeURIComponent(process.env.SEPAY_ACCOUNT_NAME!)}`,
+      );
+      expect(result.message).toBe('SePay payment created');
     });
 
     it('should throw ValidationRpcException when order status is not PENDING', async () => {

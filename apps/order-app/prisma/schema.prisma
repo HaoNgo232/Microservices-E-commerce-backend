@@ -13,10 +13,16 @@ model Order {
   userId     String
   addressId  String?
   status     OrderStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
   totalInt   Int        @default(0)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   items      OrderItem[]
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
 }
 
 model OrderItem {

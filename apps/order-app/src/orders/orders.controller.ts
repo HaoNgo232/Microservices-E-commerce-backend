@@ -8,6 +8,7 @@ import {
   OrderListDto,
   OrderUpdateStatusDto,
   OrderCancelDto,
+  OrderUpdatePaymentStatusDto,
 } from '@shared/dto/order.dto';
 import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
 
@@ -78,6 +79,15 @@ export class OrdersController {
   @MessagePattern(EVENTS.ORDER.UPDATE_STATUS)
   updateStatus(@Payload() dto: OrderUpdateStatusDto): Promise<OrderResponse> {
     return this.ordersService.updateStatus(dto);
+  }
+
+  /**
+   * NATS Handler: Cập nhật paymentStatus của order
+   * Pattern: order.updatePaymentStatus
+   */
+  @MessagePattern(EVENTS.ORDER.UPDATE_PAYMENT_STATUS)
+  updatePaymentStatus(@Payload() dto: OrderUpdatePaymentStatusDto): Promise<OrderResponse> {
+    return this.ordersService.updatePaymentStatus(dto);
   }
 
   /**

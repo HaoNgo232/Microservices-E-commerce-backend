@@ -470,3 +470,5 @@ Trước khi đánh dấu feature này là DONE:
 1. Review requirements với team
 2. Create design document
 3. Begin implementation Phase 1
+
+

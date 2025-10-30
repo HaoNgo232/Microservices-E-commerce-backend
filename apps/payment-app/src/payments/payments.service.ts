@@ -25,6 +25,54 @@ import { catchError, timeout, throwError, firstValueFrom } from 'rxjs';
 import { OrderResponse, OrderStatus } from '@shared/types';
 
 /**
+ * Interface cho Payment Service - quản lý các thao tác thanh toán
+ * Cung cấp các phương thức xử lý, xác thực và lấy thông tin thanh toán
+ */
+export interface IPaymentService {
+  /**
+   * Xử lý giao dịch thanh toán
+   * @param dto - Chi tiết xử lý thanh toán
+   * @returns Promise chứa phản hồi xử lý thanh toán
+   */
+  process(dto: PaymentProcessDto): Promise<PaymentProcessResponse>;
+
+  /**
+   * Xác thực giao dịch thanh toán
+   * @param dto - Chi tiết xác thực thanh toán
+   * @returns Promise chứa phản hồi xác thực thanh toán
+   */
+  verify(dto: PaymentVerifyDto): Promise<PaymentVerifyResponse>;
+
+  /**
+   * Lấy thông tin thanh toán theo ID
+   * @param dto - Chi tiết ID thanh toán
+   * @returns Promise chứa thông tin thanh toán
+   */
+  getById(dto: PaymentIdDto): Promise<PaymentResponse>;
+
+  /**
+   * Lấy thông tin thanh toán theo ID đơn hàng
+   * @param dto - Chi tiết ID đơn hàng
+   * @returns Promise chứa thông tin thanh toán
+   */
+  getByOrder(dto: PaymentByOrderDto): Promise<PaymentResponse>;
+
+  /**
+   * Xác nhận thanh toán COD (Thanh toán khi nhận hàng)
+   * @param dto - Chi tiết ID thanh toán hoặc ID đơn hàng
+   * @returns Promise chứa thông tin thanh toán đã được cập nhật
+   */
+  confirmCodPayment(dto: PaymentIdDto | PaymentByOrderDto): Promise<PaymentResponse>;
+
+  /**
+   * Xử lý webhook từ cổng thanh toán SePay
+   * @param dto - Dữ liệu sự kiện webhook từ SePay
+   * @returns Promise chứa phản hồi webhook
+   */
+  handleSePayWebhook(dto: SePayWebhookDto): Promise<SePayWebhookResponse>;
+}
+
+/**
  * PaymentsService - Service xử lý thanh toán
  *
  * Xử lý business logic liên quan đến:
@@ -42,7 +90,7 @@ import { OrderResponse, OrderStatus } from '@shared/types';
  * - SePay: Chuyển khoản ngân hàng qua SePay gateway
  */
 @Injectable()
-export class PaymentsService {
+export class PaymentsService implements IPaymentService {
   /**
    * Constructor - Inject dependencies
    *
@@ -72,7 +120,7 @@ export class PaymentsService {
       // Validate order exists and is in PENDING status
       await this.validateOrderForPayment(dto.orderId);
 
-      // Create payment record
+      // Tạo hồ sơ thanh toán
       const payment = await this.prisma.payment.create({
         data: {
           orderId: dto.orderId,
@@ -85,23 +133,30 @@ export class PaymentsService {
 
       // Handle payment method
       if (dto.method === PaymentMethod.COD) {
-        // COD: Payment will be confirmed when order is delivered
-        // Payment status stays UNPAID until admin/shipper confirms
+        await this.updateOrderStatus(dto.orderId, OrderStatus.PROCESSING);
+
         return {
           paymentId: payment.id,
-          status: 'UNPAID',
+          status: PaymentStatus.UNPAID,
           message: 'COD payment created - will be completed on delivery',
         };
       }
 
-      // SePay: Generate mock payment URL
-      const paymentUrl = `https://sepay.vn/payment/${payment.id}`;
+      // SePay: Tạo VietQR URL động
+      const qrCodeUrl = this.generateVietQRUrl(
+        process.env.SEPAY_ACCOUNT_NUMBER!, // Số tài khoản của bạn
+        process.env.SEPAY_ACCOUNT_NAME!, // Tên chủ tài khoản
+        process.env.SEPAY_BANK_CODE!, // Mã ngân hàng (VD: "970422" cho MBBank)
+        dto.amountInt,
+        dto.orderId,
+      );
 
       return {
         paymentId: payment.id,
-        status: 'UNPAID',
-        paymentUrl,
-        message: 'Redirect to payment gateway',
+        status: PaymentStatus.UNPAID,
+        paymentUrl: qrCodeUrl,
+        qrCode: qrCodeUrl,
+        message: 'SePay payment created',
       };
     } catch (error) {
       if (error instanceof EntityNotFoundRpcException || error instanceof ValidationRpcException) {
@@ -257,14 +312,14 @@ export class PaymentsService {
       }
 
       // Validate payment is COD
-      if (payment.method !== (PaymentMethod.COD as string)) {
+      if (payment.method !== PaymentMethod.COD) {
         throw new ValidationRpcException(
           `Cannot confirm non-COD payment. Payment method: ${payment.method}`,
         );
       }
 
       // Validate payment is not already PAID
-      if (payment.status === (PaymentStatus.PAID as string)) {
+      if (payment.status === PaymentStatus.PAID) {
         throw new ValidationRpcException('Payment already confirmed');
       }
 
@@ -280,18 +335,18 @@ export class PaymentsService {
         },
       });
 
-      // Update order status to PAID (fire-and-forget)
+      // Update order.paymentStatus to PAID (fire-and-forget)
       firstValueFrom(
         this.orderClient
-          .send(EVENTS.ORDER.UPDATE_STATUS, {
+          .send(EVENTS.ORDER.UPDATE_PAYMENT_STATUS, {
             id: payment.orderId,
-            status: 'PAID',
+            paymentStatus: PaymentStatus.PAID,
           })
           .pipe(
             timeout(5000),
             catchError(error => {
-              console.error('[PaymentsService] Failed to update order status:', error);
-              return throwError(() => new Error('Failed to update order status'));
+              console.error('[PaymentsService] Failed to update order paymentStatus:', error);
+              return throwError(() => new Error('Failed to update order payment status'));
             }),
           ),
       ).catch(() => {
@@ -310,102 +365,6 @@ export class PaymentsService {
       console.error('[PaymentsService] confirmCodPayment error:', error);
       throw new ValidationRpcException('Failed to confirm COD payment');
     }
-  }
-
-  /**
-   * Kiểm tra order tồn tại và có trạng thái hợp lệ để thanh toán
-   *
-   * Quy tắc:
-   * - Order phải tồn tại
-   * - Order phải ở trạng thái PENDING (chưa thanh toán)
-   *
-   * @param orderId - ID của order cần validate
-   * @throws EntityNotFoundRpcException nếu order không tồn tại
-   * @throws ValidationRpcException nếu order không ở trạng thái PENDING
-   * @private
-   */
-  private async validateOrderForPayment(orderId: string): Promise<void> {
-    try {
-      const order = (await firstValueFrom(
-        this.orderClient.send(EVENTS.ORDER.GET, { id: orderId }).pipe(
-          timeout(5000),
-          catchError(error => {
-            if (error instanceof Error && error.name === 'TimeoutError') {
-              return throwError(
-                () => new ValidationRpcException('Order service không phản hồi, vui lòng thử lại'),
-              );
-            }
-            return throwError(() => new EntityNotFoundRpcException('Order', orderId));
-          }),
-        ),
-      )) as OrderResponse;
-
-      if (order.status !== OrderStatus.PENDING) {
-        throw new ValidationRpcException(
-          `Cannot process payment for order with status: ${order.status}`,
-        );
-      }
-    } catch (error: unknown) {
-      if (error instanceof EntityNotFoundRpcException || error instanceof ValidationRpcException) {
-        throw error;
-      }
-
-      console.error('[PaymentsService] validateOrderForPayment error:', error);
-      throw new ValidationRpcException('Failed to validate order');
-    }
-  }
-
-  /**
-   * Hoàn thành thanh toán và cập nhật trạng thái order
-   *
-   * Flow:
-   * 1. Cập nhật payment status sang PAID
-   * 2. Cập nhật order status sang PAID (fire-and-forget)
-   *
-   * @param paymentId - ID của payment cần cập nhật
-   * @param orderId - ID của order cần cập nhật
-   * @private
-   */
-  private async completePayment(paymentId: string, orderId: string): Promise<void> {
-    // Update payment status
-    await this.prisma.payment.update({
-      where: { id: paymentId },
-      data: { status: 'PAID' },
-    });
-
-    // Update order status to PAID (fire-and-forget)
-    firstValueFrom(
-      this.orderClient
-        .send(EVENTS.ORDER.UPDATE_STATUS, {
-          id: orderId,
-          status: 'PAID',
-        })
-        .pipe(
-          timeout(5000),
-          catchError(error => {
-            console.error('[PaymentsService] Failed to update order status:', error);
-            return throwError(() => new Error('Failed to update order status'));
-          }),
-        ),
-    ).catch(() => {
-      // Ignore errors
-    });
-  }
-
-  /**
-   * Mock xác thực payment gateway
-   *
-   * Trong production, method này sẽ gọi API thực tế của payment gateway
-   * để verify signature, check transaction status, etc.
-   *
-   * @param payload - Payload từ payment gateway
-   * @returns true nếu hợp lệ, false nếu không hợp lệ
-   * @private
-   */
-  private mockVerifyPaymentGateway(payload: Record<string, unknown>): boolean {
-    // Mock verification logic
-    // In production: verify signature, check transaction status, etc.
-    return payload.status === 'success' || payload.verified === true;
   }
 
   /**
@@ -520,23 +479,26 @@ export class PaymentsService {
         },
       });
 
-      // 7. Update order status to PAID (fire-and-forget)
+      // 7. Update order.paymentStatus to PAID (fire-and-forget)
       firstValueFrom(
         this.orderClient
-          .send(EVENTS.ORDER.UPDATE_STATUS, {
+          .send(EVENTS.ORDER.UPDATE_PAYMENT_STATUS, {
             id: orderId,
-            status: 'PAID',
+            paymentStatus: PaymentStatus.PAID,
           })
           .pipe(
             timeout(5000),
             catchError(error => {
-              console.error('[PaymentsService] Failed to update order status:', error);
-              return throwError(() => new Error('Failed to update order status'));
+              console.error('[PaymentsService] Failed to update order paymentStatus:', error);
+              return throwError(() => new Error('Failed to update order payment status'));
             }),
           ),
       ).catch(() => {
         // Ignore errors (fire-and-forget)
       });
+
+      // Notify frontend via webhook (fire-and-forget)
+      this.notifyFrontend(orderId, payment.id, PaymentStatus.PAID);
 
       console.log(
         `[PaymentsService] Payment completed: orderId=${orderId}, paymentId=${payment.id}`,
@@ -557,5 +519,174 @@ export class PaymentsService {
         message: 'Internal error processing webhook',
       };
     }
+  }
+
+  /**
+   * Kiểm tra order tồn tại và có trạng thái hợp lệ để thanh toán
+   *
+   * Quy tắc:
+   * - Order phải tồn tại
+   * - Order phải ở trạng thái PENDING (chưa thanh toán)
+   *
+   * @param orderId - ID của order cần validate
+   * @throws EntityNotFoundRpcException nếu order không tồn tại
+   * @throws ValidationRpcException nếu order không ở trạng thái PENDING
+   * @private
+   */
+  private async validateOrderForPayment(orderId: string): Promise<void> {
+    try {
+      const order = (await firstValueFrom(
+        this.orderClient.send(EVENTS.ORDER.GET, { id: orderId }).pipe(
+          timeout(5000),
+          catchError(error => {
+            if (error instanceof Error && error.name === 'TimeoutError') {
+              return throwError(
+                () => new ValidationRpcException('Order service không phản hồi, vui lòng thử lại'),
+              );
+            }
+            return throwError(() => new EntityNotFoundRpcException('Order', orderId));
+          }),
+        ),
+      )) as OrderResponse;
+
+      if (order.status !== OrderStatus.PENDING) {
+        throw new ValidationRpcException(
+          `Cannot process payment for order with status: ${order.status}`,
+        );
+      }
+    } catch (error: unknown) {
+      if (error instanceof EntityNotFoundRpcException || error instanceof ValidationRpcException) {
+        throw error;
+      }
+
+      console.error('[PaymentsService] validateOrderForPayment error:', error);
+      throw new ValidationRpcException('Failed to validate order');
+    }
+  }
+
+  /**
+   * Hoàn thành thanh toán và cập nhật trạng thái order
+   *
+   * Flow:
+   * 1. Cập nhật payment status sang PAID
+   * 2. Cập nhật order status sang PAID (fire-and-forget)
+   *
+   * @param paymentId - ID của payment cần cập nhật
+   * @param orderId - ID của order cần cập nhật
+   * @private
+   */
+  private async completePayment(paymentId: string, orderId: string): Promise<void> {
+    // Update payment status
+    await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: { status: 'PAID' },
+    });
+
+    // Update order.paymentStatus to PAID (fire-and-forget)
+    firstValueFrom(
+      this.orderClient
+        .send(EVENTS.ORDER.UPDATE_PAYMENT_STATUS, {
+          id: orderId,
+          paymentStatus: PaymentStatus.PAID,
+        })
+        .pipe(
+          timeout(5000),
+          catchError(error => {
+            console.error('[PaymentsService] Failed to update order paymentStatus:', error);
+            return throwError(() => new Error('Failed to update order payment status'));
+          }),
+        ),
+    ).catch(() => {
+      // Ignore errors
+    });
+  }
+
+  /**
+   * Helper: cập nhật Order status qua NATS với timeout
+   */
+  private async updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
+    await firstValueFrom(
+      this.orderClient.emit(EVENTS.ORDER.UPDATE_STATUS, { id: orderId, status }).pipe(
+        timeout(5000),
+        catchError(error => {
+          console.error('[PaymentsService] Failed to update order status:', error);
+          return throwError(() => new Error('Failed to update order status'));
+        }),
+      ),
+    ).catch(() => {
+      // fire-and-forget
+    });
+  }
+
+  /**
+   * Mock xác thực payment gateway
+   *
+   * Trong production, method này sẽ gọi API thực tế của payment gateway
+   * để verify signature, check transaction status, etc.
+   *
+   * @param payload - Payload từ payment gateway
+   * @returns true nếu hợp lệ, false nếu không hợp lệ
+   * @private
+   */
+  private mockVerifyPaymentGateway(payload: Record<string, unknown>): boolean {
+    // Mock verification logic
+    // In production: verify signature, check transaction status, etc.
+    return payload.status === 'success' || payload.verified === true;
+  }
+
+  /**
+   * Tạo VietQR URL động theo chuẩn
+   * Docs: https://vietqr.net/
+   */
+  private generateVietQRUrl(
+    accountNo: string,
+    accountName: string,
+    bankCode: string,
+    amount: number,
+    orderId: string,
+  ): string {
+    // Nội dung chuyển khoản: DH{orderId}
+    const content = `DH${orderId}`;
+
+    // Template: https://img.vietqr.io/image/{BANK_ID}-{ACCOUNT_NO}-{TEMPLATE}.png?amount={AMOUNT}&addInfo={CONTENT}&accountName={ACCOUNT_NAME}
+    const qrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(accountName)}`;
+
+    return qrUrl;
+  }
+
+  /**
+   * Bắn webhook về Frontend URL
+   * (Fire-and-forget)
+   */
+  private notifyFrontend(orderId: string, paymentId: string, status: PaymentStatus): void {
+    const frontendWebhookUrl = process.env.FRONTEND_WEBHOOK_URL;
+
+    if (!frontendWebhookUrl) {
+      console.warn('[PaymentsService] FRONTEND_WEBHOOK_URL not configured');
+      return;
+    }
+
+    const payload = {
+      orderId,
+      paymentId,
+      status,
+      success: true,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Fire-and-forget HTTP POST
+    fetch(frontendWebhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then(response => {
+        if (!response.ok) {
+          console.error(`[PaymentsService] Failed to notify frontend: ${response.statusText}`);
+        }
+      })
+      .catch(error => {
+        console.error('[PaymentsService] Error notifying frontend:', error);
+      });
   }
 }

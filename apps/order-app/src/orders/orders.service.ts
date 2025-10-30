@@ -6,6 +6,7 @@ import {
   OrderUpdateStatusDto,
   OrderCancelDto,
   OrderListDto,
+  OrderUpdatePaymentStatusDto,
 } from '@shared/dto/order.dto';
 import { PrismaService } from '@order-app/prisma/prisma.service';
 import {
@@ -51,6 +52,11 @@ export interface IOrdersService {
    * @returns Order đã cập nhật
    */
   updateStatus(dto: OrderUpdateStatusDto): Promise<OrderResponse>;
+
+  /**
+   * Cập nhật paymentStatus của order
+   */
+  updatePaymentStatus(dto: OrderUpdatePaymentStatusDto): Promise<OrderResponse>;
 
   /**
    * Hủy order
@@ -282,6 +288,33 @@ export class OrdersService implements IOrdersService {
     }
 
     console.log(`[OrdersService] Updated order ${dto.id} status to ${dto.status}`);
+    return updatedOrder as OrderResponse;
+  }
+
+  /**
+   * Cập nhật paymentStatus của order
+   * @param dto - { id, paymentStatus }
+   */
+  async updatePaymentStatus(dto: OrderUpdatePaymentStatusDto): Promise<OrderResponse> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: dto.id },
+      include: { items: true },
+    });
+
+    if (!order) {
+      throw new EntityNotFoundRpcException('Order', dto.id);
+    }
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: dto.id },
+      data: {
+        paymentStatus: dto.paymentStatus,
+        updatedAt: new Date(),
+      },
+      include: { items: true },
+    });
+
+    console.log(`[OrdersService] Updated order ${dto.id} paymentStatus to ${dto.paymentStatus}`);
     return updatedOrder as OrderResponse;
   }
 
