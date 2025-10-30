@@ -4,6 +4,8 @@
  * Based on Order và OrderItem models trong order-app Prisma schema
  */
 
+import { PaymentStatus } from '@shared/types/payment.types';
+
 /**
  * Order item trong order response
  */
@@ -24,6 +26,7 @@ export type OrderResponse = {
   userId: string;
   addressId: string | null; // Match Prisma field name
   status: OrderStatus; // PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  paymentStatus: PaymentStatus;
   totalInt: number; // Tổng tiền (cents)
   items: OrderItemResponse[];
   createdAt: Date;

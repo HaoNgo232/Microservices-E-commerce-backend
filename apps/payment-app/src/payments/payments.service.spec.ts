@@ -72,10 +72,9 @@ describe('PaymentsService', () => {
     mockPrisma = module.get(PrismaService);
     mockOrderClient = module.get('ORDER_SERVICE');
 
-    // Setup env for VietQR URL generation
+    // Setup env cho SePay QR URL
     process.env.SEPAY_ACCOUNT_NUMBER = '0123456789';
-    process.env.SEPAY_ACCOUNT_NAME = 'Test Account';
-    process.env.SEPAY_BANK_CODE = '970422';
+    process.env.SEPAY_BANK_NAME = 'MBBank';
 
     jest.clearAllMocks();
   });
@@ -114,7 +113,7 @@ describe('PaymentsService', () => {
       expect(mockPrisma.payment.update).not.toHaveBeenCalled();
     });
 
-    it('should process SePay payment and return VietQR URL', async () => {
+    it('should process SePay payment and return SePay QR URL', async () => {
       // Arrange
       mockOrderClient.send.mockReturnValue(of(mockOrder));
       mockPrisma.payment.create.mockResolvedValue(mockPayment);
@@ -129,7 +128,7 @@ describe('PaymentsService', () => {
       // Assert
       expect(result.status).toBe(PaymentStatus.UNPAID);
       expect(result.paymentUrl).toBe(
-        `https://img.vietqr.io/image/${process.env.SEPAY_BANK_CODE}-${process.env.SEPAY_ACCOUNT_NUMBER}-compact2.jpg?amount=100000&addInfo=DHorder-123&accountName=${encodeURIComponent(process.env.SEPAY_ACCOUNT_NAME!)}`,
+        `https://qr.sepay.vn/img?acc=${process.env.SEPAY_ACCOUNT_NUMBER}&bank=${encodeURIComponent(process.env.SEPAY_BANK_NAME!)}&amount=100000&des=DHorder-123`,
       );
       expect(result.message).toBe('SePay payment created');
     });

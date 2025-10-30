@@ -142,11 +142,10 @@ export class PaymentsService implements IPaymentService {
         };
       }
 
-      // SePay: Tạo VietQR URL động
-      const qrCodeUrl = this.generateVietQRUrl(
-        process.env.SEPAY_ACCOUNT_NUMBER!, // Số tài khoản của bạn
-        process.env.SEPAY_ACCOUNT_NAME!, // Tên chủ tài khoản
-        process.env.SEPAY_BANK_CODE!, // Mã ngân hàng (VD: "970422" cho MBBank)
+      // SePay: Tạo SePay QR URL động
+      const qrCodeUrl = this.generateSePayQRUrl(
+        process.env.SEPAY_ACCOUNT_NUMBER!, // Số tài khoản ngân hàng
+        process.env.SEPAY_BANK_NAME!, // Tên ngân hàng đúng chuẩn SePay VD: 'Vietcombank', 'MBBank'
         dto.amountInt,
         dto.orderId,
       );
@@ -606,7 +605,7 @@ export class PaymentsService implements IPaymentService {
    */
   private async updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
     await firstValueFrom(
-      this.orderClient.emit(EVENTS.ORDER.UPDATE_STATUS, { id: orderId, status }).pipe(
+      this.orderClient.send(EVENTS.ORDER.UPDATE_STATUS, { id: orderId, status }).pipe(
         timeout(5000),
         catchError(error => {
           console.error('[PaymentsService] Failed to update order status:', error);
@@ -635,23 +634,17 @@ export class PaymentsService implements IPaymentService {
   }
 
   /**
-   * Tạo VietQR URL động theo chuẩn
-   * Docs: https://vietqr.net/
+   * Generate SePay QR URL theo chuẩn docs SePay
+   * https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG
    */
-  private generateVietQRUrl(
+  private generateSePayQRUrl(
     accountNo: string,
-    accountName: string,
-    bankCode: string,
+    bankName: string,
     amount: number,
     orderId: string,
   ): string {
-    // Nội dung chuyển khoản: DH{orderId}
-    const content = `DH${orderId}`;
-
-    // Template: https://img.vietqr.io/image/{BANK_ID}-{ACCOUNT_NO}-{TEMPLATE}.png?amount={AMOUNT}&addInfo={CONTENT}&accountName={ACCOUNT_NAME}
-    const qrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNo}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(accountName)}`;
-
-    return qrUrl;
+    const description = `DH${orderId}`;
+    return `https://qr.sepay.vn/img?acc=${accountNo}&bank=${encodeURIComponent(bankName)}&amount=${amount}&des=${encodeURIComponent(description)}`;
   }
 
   /**

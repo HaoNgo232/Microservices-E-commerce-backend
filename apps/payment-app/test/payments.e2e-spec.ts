@@ -129,7 +129,7 @@ describe('PaymentsController (e2e)', () => {
       expect(result.paymentId).toBeDefined();
       expect(result.status).toBe('UNPAID');
       expect(result.paymentUrl).toBeDefined();
-      expect(result.message).toContain('Redirect to payment gateway');
+      expect(result.message).toContain('SePay payment created');
     });
 
     it('should throw error when processing payment for non-existent order', async () => {
