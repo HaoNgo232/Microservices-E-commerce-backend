@@ -10,7 +10,7 @@ import {
   UseGuards,
   Inject,
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { ClientProxy, Payload } from '@nestjs/microservices';
 import { ProductCreateDto, ProductUpdateDto, ProductListQueryDto } from '@shared/dto/product.dto';
 import { AuthGuard } from '@gateway/auth/auth.guard';
 import { RolesGuard } from '@gateway/auth/roles.guard';
@@ -32,12 +32,13 @@ export class ProductsController extends BaseGatewayController {
   }
 
   /**
-   * GET /products
-   * Lấy danh sách products với pagination
+   * GET /products/:id
+   * Lấy chi tiết product theo ID
    */
-  @Get()
-  list(@Query() query: ProductListQueryDto): Promise<PaginatedProductsResponse> {
-    return this.send<ProductListQueryDto, PaginatedProductsResponse>(EVENTS.PRODUCT.LIST, query);
+  @Get(':id')
+  findById(@Param('id') id: string): Promise<ProductResponse> {
+    const payload = { id };
+    return this.send<typeof payload, ProductResponse>(EVENTS.PRODUCT.GET_BY_ID, payload);
   }
 
   /**
@@ -51,12 +52,12 @@ export class ProductsController extends BaseGatewayController {
   }
 
   /**
-   * GET /products/:id
-   * Lấy chi tiết product theo ID
+   * GET /products
+   * Lấy danh sách products với pagination
    */
-  @Get(':id')
-  findById(@Param('id') id: string): Promise<ProductResponse> {
-    return this.send<string, ProductResponse>(EVENTS.PRODUCT.GET_BY_ID, id);
+  @Get()
+  list(@Query() query: ProductListQueryDto): Promise<PaginatedProductsResponse> {
+    return this.send<ProductListQueryDto, PaginatedProductsResponse>(EVENTS.PRODUCT.LIST, query);
   }
 
   /**

@@ -40,6 +40,7 @@ export class CategoryUpdateDto {
 export class CategoryIdDto {
   @IsNotEmpty()
   @IsString()
+  @Type(() => String)
   id: string;
 }
 

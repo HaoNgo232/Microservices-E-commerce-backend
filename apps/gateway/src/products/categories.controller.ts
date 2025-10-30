@@ -53,9 +53,8 @@ export class CategoriesController extends BaseGatewayController {
    */
   @Get('slug/:slug')
   findBySlug(@Param('slug') slug: string): Promise<CategoryResponse> {
-    return this.send<{ slug: string }, CategoryResponse>(EVENTS.CATEGORY.GET_BY_SLUG, {
-      slug,
-    });
+    const payload = { slug };
+    return this.send<typeof payload, CategoryResponse>(EVENTS.CATEGORY.GET_BY_SLUG, payload);
   }
 
   /**
@@ -64,7 +63,8 @@ export class CategoriesController extends BaseGatewayController {
    */
   @Get(':id')
   findById(@Param('id') id: string): Promise<CategoryResponse> {
-    return this.send<string, CategoryResponse>(EVENTS.CATEGORY.GET_BY_ID, id);
+    const payload = { id };
+    return this.send<typeof payload, CategoryResponse>(EVENTS.CATEGORY.GET_BY_ID, payload);
   }
 
   /**

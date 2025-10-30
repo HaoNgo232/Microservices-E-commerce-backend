@@ -42,7 +42,8 @@ export class OrdersController extends BaseGatewayController {
    */
   @Get(':id')
   findById(@Param('id') id: string): Promise<OrderResponse> {
-    return this.send<string, OrderResponse>(EVENTS.ORDER.GET, id);
+    const payload = { id };
+    return this.send<typeof payload, OrderResponse>(EVENTS.ORDER.GET, payload);
   }
 
   /**
@@ -64,6 +65,7 @@ export class OrdersController extends BaseGatewayController {
    */
   @Put(':id/cancel')
   cancel(@Param('id') id: string): Promise<OrderResponse> {
-    return this.send<string, OrderResponse>(EVENTS.ORDER.CANCEL, id);
+    const payload = { id };
+    return this.send<typeof payload, OrderResponse>(EVENTS.ORDER.CANCEL, payload);
   }
 }
