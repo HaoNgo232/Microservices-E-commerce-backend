@@ -51,6 +51,18 @@ export class PaymentsController extends BaseGatewayController {
   }
 
   /**
+   * POST /payments/confirm-cod/:orderId
+   * Confirm COD payment đã thu tiền (admin/shipper only)
+   * Gọi khi đã giao hàng và nhận tiền từ khách
+   */
+  @Post('confirm-cod/:orderId')
+  confirmCod(@Param('orderId') orderId: string): Promise<PaymentResponse> {
+    return this.send<{ orderId: string }, PaymentResponse>(EVENTS.PAYMENT.CONFIRM_COD, {
+      orderId,
+    });
+  }
+
+  /**
    * GET /payments/order/:orderId
    * Lấy payment theo order ID
    * Note: Phải đặt route này TRƯỚC :id route để tránh conflict

@@ -83,10 +83,6 @@ describe('PaymentsService', () => {
         method: PaymentMethod.COD,
         status: PaymentStatus.UNPAID,
       });
-      mockPrisma.payment.update.mockResolvedValue({
-        ...mockPayment,
-        status: PaymentStatus.PAID,
-      });
 
       // Act
       const result = await service.process({
@@ -96,8 +92,8 @@ describe('PaymentsService', () => {
       });
 
       // Assert
-      expect(result.status).toBe(PaymentStatus.PAID);
-      expect(result.message).toBe('COD payment processed successfully');
+      expect(result.status).toBe(PaymentStatus.UNPAID); // COD now stays UNPAID
+      expect(result.message).toContain('will be completed on delivery');
       expect(mockPrisma.payment.create).toHaveBeenCalledWith({
         data: {
           orderId: 'order-123',
@@ -107,10 +103,8 @@ describe('PaymentsService', () => {
           payload: false,
         },
       });
-      expect(mockPrisma.payment.update).toHaveBeenCalledWith({
-        where: { id: mockPayment.id },
-        data: { status: 'PAID' },
-      });
+      // Payment.update should NOT be called for COD anymore
+      expect(mockPrisma.payment.update).not.toHaveBeenCalled();
     });
 
     it('should process SePay payment and return payment URL', async () => {

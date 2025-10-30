@@ -23,6 +23,7 @@ import { SePayWebhookResponse } from '@shared/types/payment.webhook.types';
  * - WEBHOOK_SEPAY: Nhận webhook từ SePay khi có giao dịch
  * - PROCESS: Xử lý thanh toán cho order (COD hoặc SePay)
  * - VERIFY: Xác thực thanh toán từ payment gateway
+ * - CONFIRM_COD: Confirm COD payment đã thu tiền (admin/shipper)
  * - GET_BY_ID: Lấy thông tin payment theo ID
  * - GET_BY_ORDER: Lấy thông tin payment theo order ID
  *
@@ -66,6 +67,18 @@ export class PaymentsController {
   @MessagePattern(EVENTS.PAYMENT.VERIFY)
   verify(@Payload() dto: PaymentVerifyDto): Promise<PaymentVerifyResponse> {
     return this.paymentsService.verify(dto);
+  }
+
+  /**
+   * NATS Handler: Confirm COD payment đã thu tiền
+   *
+   * Pattern: payment.confirmCod
+   * @param dto - { id } hoặc { orderId }
+   * @returns Kết quả confirm payment
+   */
+  @MessagePattern(EVENTS.PAYMENT.CONFIRM_COD)
+  confirmCod(@Payload() dto: PaymentIdDto | PaymentByOrderDto): Promise<PaymentResponse> {
+    return this.paymentsService.confirmCodPayment(dto);
   }
 
   /**

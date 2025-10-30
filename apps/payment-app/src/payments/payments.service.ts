@@ -85,13 +85,12 @@ export class PaymentsService {
 
       // Handle payment method
       if (dto.method === PaymentMethod.COD) {
-        // COD: Payment completed immediately
-        await this.completePayment(payment.id, dto.orderId);
-
+        // COD: Payment will be confirmed when order is delivered
+        // Payment status stays UNPAID until admin/shipper confirms
         return {
           paymentId: payment.id,
-          status: 'PAID',
-          message: 'COD payment processed successfully',
+          status: 'UNPAID',
+          message: 'COD payment created - will be completed on delivery',
         };
       }
 
@@ -217,6 +216,100 @@ export class PaymentsService {
     }
 
     return payment as PaymentResponse;
+  }
+
+  /**
+   * Confirm COD payment đã thu tiền
+   *
+   * Dùng khi admin/shipper đã giao hàng và thu tiền từ khách hàng.
+   * Chỉ áp dụng cho COD payments.
+   *
+   * Flow:
+   * 1. Tìm payment theo ID hoặc orderId
+   * 2. Validate payment method = COD và status = UNPAID
+   * 3. Update payment status → PAID
+   * 4. Update order status → PAID (fire-and-forget)
+   *
+   * @param dto - { id } hoặc { orderId }
+   * @returns Payment đã được confirm
+   * @throws EntityNotFoundRpcException nếu payment không tồn tại
+   * @throws ValidationRpcException nếu không phải COD hoặc đã PAID
+   */
+  async confirmCodPayment(dto: PaymentIdDto | PaymentByOrderDto): Promise<PaymentResponse> {
+    try {
+      // Find payment by id or orderId
+      let payment: PaymentResponse | null = null;
+
+      if ('id' in dto) {
+        payment = (await this.prisma.payment.findUnique({
+          where: { id: dto.id },
+        })) as PaymentResponse | null;
+      } else {
+        payment = (await this.prisma.payment.findFirst({
+          where: { orderId: dto.orderId },
+          orderBy: { createdAt: 'desc' },
+        })) as PaymentResponse | null;
+      }
+
+      if (!payment) {
+        const identifier = 'id' in dto ? dto.id : dto.orderId;
+        throw new EntityNotFoundRpcException('Payment', identifier);
+      }
+
+      // Validate payment is COD
+      if (payment.method !== (PaymentMethod.COD as string)) {
+        throw new ValidationRpcException(
+          `Cannot confirm non-COD payment. Payment method: ${payment.method}`,
+        );
+      }
+
+      // Validate payment is not already PAID
+      if (payment.status === (PaymentStatus.PAID as string)) {
+        throw new ValidationRpcException('Payment already confirmed');
+      }
+
+      // Update payment status to PAID
+      const updatedPayment = await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.PAID,
+          payload: {
+            confirmedAt: new Date().toISOString(),
+            method: 'manual_cod_confirmation',
+          } as never,
+        },
+      });
+
+      // Update order status to PAID (fire-and-forget)
+      firstValueFrom(
+        this.orderClient
+          .send(EVENTS.ORDER.UPDATE_STATUS, {
+            id: payment.orderId,
+            status: 'PAID',
+          })
+          .pipe(
+            timeout(5000),
+            catchError(error => {
+              console.error('[PaymentsService] Failed to update order status:', error);
+              return throwError(() => new Error('Failed to update order status'));
+            }),
+          ),
+      ).catch(() => {
+        // Ignore errors (fire-and-forget)
+      });
+
+      console.log(
+        `[PaymentsService] COD payment confirmed: orderId=${payment.orderId}, paymentId=${payment.id}`,
+      );
+
+      return updatedPayment as PaymentResponse;
+    } catch (error: unknown) {
+      if (error instanceof EntityNotFoundRpcException || error instanceof ValidationRpcException) {
+        throw error;
+      }
+      console.error('[PaymentsService] confirmCodPayment error:', error);
+      throw new ValidationRpcException('Failed to confirm COD payment');
+    }
   }
 
   /**

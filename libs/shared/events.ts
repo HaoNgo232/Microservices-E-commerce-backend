@@ -63,6 +63,7 @@ export const EVENTS = {
     WEBHOOK_SEPAY: 'payment.webhook.sepay',
     PROCESS: 'payment.process',
     VERIFY: 'payment.verify',
+    CONFIRM_COD: 'payment.confirmCod',
     GET_BY_ID: 'payment.getById',
     GET_BY_ORDER: 'payment.getByOrder',
   },

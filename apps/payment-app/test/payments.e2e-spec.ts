@@ -10,6 +10,7 @@ import {
   PaymentIdDto,
   PaymentByOrderDto,
 } from '@shared/dto/payment.dto';
+import { PaymentMethod } from '@shared/types/payment.types';
 import { firstValueFrom, of } from 'rxjs';
 import { expectRpcError } from '@shared/testing/rpc-test-helpers';
 
@@ -55,8 +56,11 @@ describe('PaymentsController (e2e)', () => {
     });
 
     await app.listen();
+
+    // Get instances from the test module
     client = moduleFixture.get('PAYMENT_SERVICE_CLIENT');
-    prisma = moduleFixture.get<PrismaService>(PrismaService);
+    prisma = app.get<PrismaService>(PrismaService);
+
     await client.connect();
 
     // Setup mocks
@@ -97,10 +101,10 @@ describe('PaymentsController (e2e)', () => {
   });
 
   describe('PAYMENT.PROCESS', () => {
-    it('should process COD payment', async () => {
+    it('should process COD payment (status UNPAID initially)', async () => {
       const dto: PaymentProcessDto = {
         orderId: testOrderId,
-        method: 'COD',
+        method: PaymentMethod.COD,
         amountInt: 50000,
       };
 
@@ -108,14 +112,14 @@ describe('PaymentsController (e2e)', () => {
 
       expect(result).toBeDefined();
       expect(result.paymentId).toBeDefined();
-      expect(result.status).toBe('PAID');
-      expect(result.message).toContain('COD payment processed');
+      expect(result.status).toBe('UNPAID'); // COD starts as UNPAID
+      expect(result.message).toContain('will be completed on delivery');
     });
 
     it('should process SePay payment', async () => {
       const dto: PaymentProcessDto = {
         orderId: testOrderId,
-        method: 'SEPAY',
+        method: PaymentMethod.SEPAY,
         amountInt: 50000,
       };
 
@@ -131,7 +135,7 @@ describe('PaymentsController (e2e)', () => {
     it('should throw error when processing payment for non-existent order', async () => {
       const dto: PaymentProcessDto = {
         orderId: 'non-existent-order',
-        method: 'COD',
+        method: PaymentMethod.COD,
         amountInt: 50000,
       };
 
@@ -142,13 +146,87 @@ describe('PaymentsController (e2e)', () => {
     });
   });
 
+  describe('PAYMENT.CONFIRM_COD', () => {
+    it('should confirm COD payment by orderId', async () => {
+      // First create a COD payment (UNPAID)
+      const processResult = await firstValueFrom(
+        client.send(EVENTS.PAYMENT.PROCESS, {
+          orderId: testOrderId,
+          method: PaymentMethod.COD,
+          amountInt: 50000,
+        }),
+      );
+
+      expect(processResult.status).toBe('UNPAID');
+
+      // Confirm COD payment
+      const confirmResult = await firstValueFrom(
+        client.send(EVENTS.PAYMENT.CONFIRM_COD, {
+          orderId: testOrderId,
+        }),
+      );
+
+      expect(confirmResult).toBeDefined();
+      expect(confirmResult.status).toBe('PAID');
+      expect(confirmResult.method).toBe('COD');
+    });
+
+    it('should throw error when confirming non-COD payment', async () => {
+      // Create SePay payment
+      await firstValueFrom(
+        client.send(EVENTS.PAYMENT.PROCESS, {
+          orderId: testOrderId,
+          method: PaymentMethod.SEPAY,
+          amountInt: 50000,
+        }),
+      );
+
+      // Try to confirm as COD
+      await expectRpcError(
+        firstValueFrom(
+          client.send(EVENTS.PAYMENT.CONFIRM_COD, {
+            orderId: testOrderId,
+          }),
+        ),
+        'Cannot confirm non-COD payment',
+      );
+    });
+
+    it('should throw error when confirming already PAID payment', async () => {
+      // Create and confirm COD payment
+      await firstValueFrom(
+        client.send(EVENTS.PAYMENT.PROCESS, {
+          orderId: testOrderId,
+          method: PaymentMethod.COD,
+          amountInt: 50000,
+        }),
+      );
+
+      await firstValueFrom(
+        client.send(EVENTS.PAYMENT.CONFIRM_COD, {
+          orderId: testOrderId,
+        }),
+      );
+
+      // Try to confirm again
+      await expectRpcError(
+        firstValueFrom(
+          client.send(EVENTS.PAYMENT.CONFIRM_COD, {
+            orderId: testOrderId,
+          }),
+        ),
+        'Payment already confirmed',
+      );
+    });
+  });
+
   describe('PAYMENT.VERIFY', () => {
     it('should verify payment from gateway', async () => {
       // First create a payment
       await firstValueFrom(
         client.send(EVENTS.PAYMENT.PROCESS, {
           orderId: testOrderId,
-          method: 'SEPAY',
+          method: PaymentMethod.SEPAY,
           amountInt: 50000,
         }),
       );
@@ -187,7 +265,7 @@ describe('PaymentsController (e2e)', () => {
       const processResult = await firstValueFrom(
         client.send(EVENTS.PAYMENT.PROCESS, {
           orderId: testOrderId,
-          method: 'COD',
+          method: PaymentMethod.COD,
           amountInt: 50000,
         }),
       );
