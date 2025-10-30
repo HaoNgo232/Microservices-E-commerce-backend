@@ -127,15 +127,16 @@ export class PaymentsModule {}
 
 ### 3. NATS Message Patterns
 
-Controller xử lý 5 NATS message patterns:
+Controller xử lý 6 NATS message patterns:
 
-| Pattern                 | Purpose                   | Input DTO           | Output Type              |
-| ----------------------- | ------------------------- | ------------------- | ------------------------ |
-| `payment.webhook.sepay` | Nhận webhook từ SePay     | `SePayWebhookDto`   | `SePayWebhookResponse`   |
-| `payment.process`       | Xử lý thanh toán          | `PaymentProcessDto` | `PaymentProcessResponse` |
-| `payment.verify`        | Verify payment từ gateway | `PaymentVerifyDto`  | `PaymentVerifyResponse`  |
-| `payment.getById`       | Lấy payment theo ID       | `PaymentIdDto`      | `PaymentResponse`        |
-| `payment.getByOrder`    | Lấy payment theo order ID | `PaymentByOrderDto` | `PaymentResponse`        |
+| Pattern                 | Purpose                   | Input DTO                           | Output Type              |
+| ----------------------- | ------------------------- | ----------------------------------- | ------------------------ |
+| `payment.webhook.sepay` | Nhận webhook từ SePay     | `SePayWebhookDto`                   | `SePayWebhookResponse`   |
+| `payment.process`       | Xử lý thanh toán          | `PaymentProcessDto`                 | `PaymentProcessResponse` |
+| `payment.verify`        | Verify payment từ gateway | `PaymentVerifyDto`                  | `PaymentVerifyResponse`  |
+| `payment.confirmCod`    | Confirm COD đã thu tiền   | `PaymentIdDto \| PaymentByOrderDto` | `PaymentResponse`        |
+| `payment.getById`       | Lấy payment theo ID       | `PaymentIdDto`                      | `PaymentResponse`        |
+| `payment.getByOrder`    | Lấy payment theo order ID | `PaymentByOrderDto`                 | `PaymentResponse`        |
 
 **Example NATS Handler:**
 
@@ -144,11 +145,18 @@ Controller xử lý 5 NATS message patterns:
 process(@Payload() dto: PaymentProcessDto): Promise<PaymentProcessResponse> {
   return this.paymentsService.process(dto);
 }
+
+@MessagePattern(EVENTS.PAYMENT.CONFIRM_COD)
+confirmCod(@Payload() dto: PaymentIdDto | PaymentByOrderDto): Promise<PaymentResponse> {
+  return this.paymentsService.confirmCodPayment(dto);
+}
 ```
 
 ### 4. Payment Processing Flow
 
-#### COD Payment Flow
+#### COD Payment Flow (Updated - Correct Logic)
+
+**⚠️ IMPORTANT**: COD = Cash on Delivery = Thu tiền KHI giao hàng, KHÔNG auto PAID!
 
 ```
 1. Client → Gateway: POST /payments/process { orderId, method: "COD", amountInt }
@@ -156,9 +164,18 @@ process(@Payload() dto: PaymentProcessDto): Promise<PaymentProcessResponse> {
 3. Payment Service:
    a. Validate order exists & status = PENDING (call Order Service)
    b. Create Payment record (status = UNPAID)
+   c. Return payment info với status UNPAID
+4. Return: { paymentId, status: "UNPAID", message: "will be completed on delivery" }
+
+--- Later, after delivery ---
+
+5. Admin/Shipper: POST /payments/confirm-cod/:orderId
+6. Payment Service:
+   a. Validate payment is COD method
+   b. Validate payment is UNPAID
    c. Update Payment status → PAID
    d. Update Order status → PAID (fire-and-forget)
-4. Return: { paymentId, status: "PAID", message }
+7. Return: { payment with status PAID }
 ```
 
 **Code:**
@@ -179,13 +196,12 @@ async process(dto: PaymentProcessDto): Promise<PaymentProcessResponse> {
     },
   });
 
-  // 3. Handle COD
+  // 3. Handle COD - stays UNPAID until confirmed
   if (dto.method === PaymentMethod.COD) {
-    await this.completePayment(payment.id, dto.orderId);
     return {
       paymentId: payment.id,
-      status: 'PAID',
-      message: 'COD payment processed successfully',
+      status: 'UNPAID',
+      message: 'COD payment created - will be completed on delivery',
     };
   }
 
@@ -197,6 +213,38 @@ async process(dto: PaymentProcessDto): Promise<PaymentProcessResponse> {
     paymentUrl,
     message: 'Redirect to payment gateway',
   };
+}
+
+/**
+ * Confirm COD payment after delivery
+ */
+async confirmCodPayment(dto: PaymentIdDto | PaymentByOrderDto): Promise<PaymentResponse> {
+  // Find payment
+  let payment = /* ... find by id or orderId ... */;
+
+  // Validate COD method
+  if (payment.method !== PaymentMethod.COD) {
+    throw new ValidationRpcException('Cannot confirm non-COD payment');
+  }
+
+  // Validate UNPAID
+  if (payment.status === PaymentStatus.PAID) {
+    throw new ValidationRpcException('Payment already confirmed');
+  }
+
+  // Update to PAID
+  const updatedPayment = await this.prisma.payment.update({
+    where: { id: payment.id },
+    data: { status: PaymentStatus.PAID },
+  });
+
+  // Update order (fire-and-forget)
+  this.orderClient.send(EVENTS.ORDER.UPDATE_STATUS, {
+    id: payment.orderId,
+    status: 'PAID',
+  });
+
+  return updatedPayment;
 }
 ```
 
@@ -1153,6 +1201,7 @@ File: `apps/payment-app/test/payments.e2e-spec.ts`
    ```
 
 4. **Error Cases**
+
    ```typescript
    it('should throw error for non-existent order', async () => {
      const dto: PaymentProcessDto = {

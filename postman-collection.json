@@ -1323,7 +1323,8 @@
                                 "payments",
                                 "process"
                             ]
-                        }
+                        },
+                        "description": "Process payment for an order.\n\n**Payment Methods:**\n- `COD`: Cash on Delivery - Payment stays UNPAID until confirmed by admin/shipper\n- `SEPAY`: Bank transfer via SePay gateway\n\n**COD Example:**\n```json\n{\n  \"orderId\": \"order-123\",\n  \"method\": \"COD\",\n  \"amountInt\": 500000\n}\n```\n\n**SePay Example (current):**\n```json\n{\n  \"orderId\": \"order-123\",\n  \"method\": \"SEPAY\",\n  \"amountInt\": 3998000\n}\n```"
                     }
                 },
                 {
@@ -1397,6 +1398,32 @@
                                 }
                             ]
                         }
+                    }
+                },
+                {
+                    "name": "Confirm COD Payment",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/payments/confirm-cod/:orderId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "payments",
+                                "confirm-cod",
+                                ":orderId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "orderId",
+                                    "value": "",
+                                    "description": "Order ID to confirm COD payment"
+                                }
+                            ]
+                        },
+                        "description": "Confirm COD payment after delivery. Admin/Shipper only.\n\nUse this endpoint when:\n- Order has been delivered\n- Cash has been collected from customer\n- Payment status needs to be updated to PAID\n\nValidations:\n- Payment must exist\n- Payment method must be COD\n- Payment status must be UNPAID"
                     }
                 },
                 {
