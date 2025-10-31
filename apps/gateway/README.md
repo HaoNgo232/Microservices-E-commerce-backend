@@ -33,7 +33,6 @@ gateway/src/
 - `GET /users` - Danh sách users (admin)
 - `GET /users/:id` - Chi tiết user
 - `GET /users/email/:email` - Tìm user theo email
-- `POST /users` - Tạo user mới (admin)
 - `PUT /users/:id` - Cập nhật user
 - `PUT /users/:id/deactivate` - Vô hiệu hóa user
 
@@ -65,11 +64,12 @@ gateway/src/
 
 ### 🛒 Cart (`/cart`)
 
-- `GET /cart?sessionId=xxx` - Lấy giỏ hàng
+- `GET /cart` - Lấy giỏ hàng hiện tại (yêu cầu JWT)
 - `POST /cart/items` - Thêm sản phẩm vào giỏ
+- `PATCH /cart/items` - Cập nhật số lượng sản phẩm
 - `DELETE /cart/items` - Xóa sản phẩm khỏi giỏ
-- `DELETE /cart?sessionId=xxx` - Xóa toàn bộ giỏ hàng
-- `POST /cart/transfer` - Chuyển giỏ hàng guest sang user (sau login)
+
+Lưu ý: Hiện không có endpoint `DELETE /cart` (xóa toàn bộ) hay `POST /cart/transfer`.
 
 ### 📋 Orders (`/orders`)
 
@@ -164,6 +164,9 @@ async login(dto: LoginDto) {
 - `GET /health` - NATS health check
 - `GET /health/ready` - Readiness probe
 - `GET /health/live` - Liveness probe
+- `GET /health/services` - Kiểm tra từng microservice qua message `health_check`
+
+Hiện tại, `GET /health/services` đo latency và luôn đánh dấu service là "up" khi nhận được phản hồi trong timeout; nếu lỗi/timeout, kết quả được đánh dấu "down" ở tầng xử lý ngoại lệ (theo mã nguồn hiện hành).
 
 ## ⚙️ Environment Variables
 

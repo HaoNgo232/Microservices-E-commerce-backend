@@ -33,7 +33,23 @@ CORS_ORIGIN=http://localhost:3001,http://localhost:4200
 # Database URLs are pre-configured for Docker
 ```
 
-### 3. Start Infrastructure
+### 3. Generate RSA Keys (bắt buộc)
+
+Gateway và các microservice xác thực JWT bằng RSA public key, user-app ký token bằng private key. Tạo cặp khóa mặc định:
+
+```bash
+pnpm run generate:keys
+```
+
+Lệnh trên sẽ tạo thư mục `keys/` ở project root:
+
+```
+keys/
+├── public-key.pem   # dùng bởi tất cả services để verify
+└── private-key.pem  # dùng bởi user-app để sign
+```
+
+### 4. Start Infrastructure
 
 ```bash
 # Start NATS and all PostgreSQL databases
@@ -43,7 +59,7 @@ docker compose up -d
 docker compose logs -f
 ```
 
-### 4. Run Database Migrations
+### 5. Run Database Migrations
 
 ```bash
 # Generate Prisma clients
@@ -53,7 +69,7 @@ pnpm db:gen:all
 pnpm db:migrate:all
 ```
 
-### 5. Start All Services
+### 6. Start All Services
 
 ```bash
 # Development mode with hot reload
@@ -65,7 +81,7 @@ pnpm nest start --watch product-app
 # ... etc
 ```
 
-### 6. Verify Services
+### 7. Verify Services
 
 **Gateway**: http://localhost:3000
 **NATS Monitor**: http://localhost:8222

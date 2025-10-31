@@ -436,13 +436,20 @@ File: apps/gateway/src/health.controller.ts
 - `GET /health/live` → Liveness probe
 - `GET /health/services` → Gửi `health_check` đến từng microservice, đo latency, tổng hợp trạng thái
 
-Pseudocode kiểm tra service:
+Pseudocode kiểm tra service (theo mã nguồn hiện tại):
 
 ```ts
 const start = Date.now();
-await firstValueFrom(client.send({ cmd: 'health_check' }, {}).pipe(timeout(2000), catchError(() => of(...))));
+await firstValueFrom(
+  client.send({ cmd: 'health_check' }, {}).pipe(
+    timeout(2000),
+    catchError(() => of({ status: 'down' })) // giá trị này hiện không được kiểm tra
+  )
+);
 return { status: 'up', latency: Date.now() - start };
 ```
+
+Lưu ý: Do giá trị từ `catchError` chưa được kiểm tra, kết quả hiện tại luôn trả `status: 'up'` nếu Observable hoàn thành, kể cả khi service lỗi/timeout. Cần cải tiến nếu muốn phản ánh đúng trạng thái "down".
 
 ---
 

@@ -40,23 +40,13 @@ Hệ thống áp dụng **Perimeter Security** model:
 
 - Gateway thực hiện authentication (AuthGuard)
 - Microservices tin tưởng message từ NATS (no guards)
-- Chi tiết: [Security Architecture Documentation](./docs/architecture/SECURITY-ARCHITECTURE.md)
 
 ### 📚 Documentation
 
-#### 🤖 Cho AI Assistants
+#### 🏗️ Documentation
 
-- [AI Assistant Guide](./docs/AI-ASSISTANT-GUIDE.md) - **Hướng dẫn toàn diện cho AI assistants**
-
-#### 🏗️ Architecture & Security
-
-- [Security Architecture](./docs/architecture/SECURITY-ARCHITECTURE.md) - Chi tiết về mô hình bảo mật
-- [Security Quick Reference](./docs/architecture/SECURITY-QUICK-REFERENCE.md) - Hướng dẫn nhanh cho developer
-
-#### 📖 Knowledge Base
-
-- [RPC Exceptions Guide](./docs/knowledge/RPC-EXCEPTIONS-GUIDE.md) - Hướng dẫn xử lý exceptions
-- [Testing Guide](./docs/knowledge/TESTING.md) - Hướng dẫn testing
+- [Setup Guide](./SETUP.md)
+- Tài liệu luận văn: `docs/thesis/*` (API Gateway, User, Order, v.v.)
 
 #### 🚀 Getting Started
 
@@ -96,16 +86,7 @@ $ pnpm run test:cov
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Tham khảo tài liệu NestJS về triển khai production: https://docs.nestjs.com/deployment
 
 ## Resources
 
