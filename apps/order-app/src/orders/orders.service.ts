@@ -16,6 +16,7 @@ import {
 } from '@shared/exceptions/rpc-exceptions';
 import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
 import { OrderStatus } from '@shared/types';
+import { PaymentStatus } from '@shared/types/payment.types';
 import { EVENTS } from '@shared/events';
 import { firstValueFrom, timeout, catchError, of, throwError } from 'rxjs';
 import { ProductResponse } from '@shared/types/product.types';
@@ -128,6 +129,7 @@ export class OrdersService implements IOrdersService {
         userId: dto.userId,
         addressId: dto.addressId,
         status: OrderStatus.PENDING,
+        paymentStatus: PaymentStatus.UNPAID,
         totalInt,
         items: {
           create: dto.items.map(item => ({
@@ -141,6 +143,7 @@ export class OrdersService implements IOrdersService {
         id: true,
         userId: true,
         addressId: true,
+        paymentStatus: true,
         status: true,
         totalInt: true,
         createdAt: true,
@@ -182,6 +185,7 @@ export class OrdersService implements IOrdersService {
         id: true,
         userId: true,
         addressId: true,
+        paymentStatus: true,
         status: true,
         totalInt: true,
         createdAt: true,

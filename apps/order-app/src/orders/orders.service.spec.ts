@@ -193,6 +193,7 @@ describe('OrdersService', () => {
           userId: validDto.userId,
           addressId: validDto.addressId,
           status: 'PENDING',
+          paymentStatus: 'UNPAID',
           totalInt: 3000,
           items: {
             create: validDto.items.map(item => ({
@@ -207,6 +208,7 @@ describe('OrdersService', () => {
           userId: true,
           addressId: true,
           status: true,
+          paymentStatus: true,
           totalInt: true,
           createdAt: true,
           updatedAt: true,
@@ -360,6 +362,7 @@ describe('OrdersService', () => {
           userId: true,
           addressId: true,
           status: true,
+          paymentStatus: true,
           totalInt: true,
           createdAt: true,
           updatedAt: true,
