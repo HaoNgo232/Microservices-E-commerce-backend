@@ -61,4 +61,14 @@ export class ProductsController implements IProductsController {
   delete(@Payload() id: string): Promise<{ success: boolean; id: string }> {
     return this.productsService.delete(id);
   }
+
+  @MessagePattern(EVENTS.PRODUCT.DEC_STOCK)
+  decrementStock(@Payload() payload: { productId: string; quantity: number }): Promise<ProductResponse> {
+    return this.productsService.decrementStock(payload.productId, payload.quantity);
+  }
+
+  @MessagePattern(EVENTS.PRODUCT.INC_STOCK)
+  incrementStock(@Payload() payload: { productId: string; quantity: number }): Promise<ProductResponse> {
+    return this.productsService.incrementStock(payload.productId, payload.quantity);
+  }
 }

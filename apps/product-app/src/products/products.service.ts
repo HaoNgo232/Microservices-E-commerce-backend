@@ -20,6 +20,9 @@ export interface IProductsService {
   list(query: ProductListQueryDto): Promise<PaginatedProductsResponse>;
   create(dto: ProductCreateDto): Promise<ProductResponse>;
   update(id: string, dto: ProductUpdateDto): Promise<ProductResponse>;
+  delete(id: string): Promise<{ success: boolean; id: string }>;
+  decrementStock(id: string, quantity: number): Promise<ProductResponse>;
+  incrementStock(id: string, quantity: number): Promise<ProductResponse>;
 }
 
 @Injectable()
@@ -373,5 +376,85 @@ export class ProductsService implements IProductsService {
     if (dto.model3dUrl !== undefined) updateData.model3dUrl = dto.model3dUrl;
 
     return updateData;
+  }
+
+  /**
+   * Decrement product stock (called when order is created)
+   * Used by order-app to reduce stock after order creation
+   *
+   * @param productId - Product ID
+   * @param quantity - Quantity to decrement
+   * @throws EntityNotFoundRpcException if product not found
+   * @throws RpcException if stock is insufficient
+   */
+  async decrementStock(productId: string, quantity: number): Promise<ProductResponse> {
+    try {
+      const product = await this.prisma.product.findUnique({
+        where: { id: productId },
+        include: { category: true },
+      });
+
+      if (!product) {
+        throw new EntityNotFoundRpcException('Product', productId);
+      }
+
+      if (product.stock < quantity) {
+        throw new RpcException({
+          statusCode: 400,
+          message: `Insufficient stock for product ${productId}. Available: ${product.stock}, Requested: ${quantity}`,
+        });
+      }
+
+      const updated = await this.prisma.product.update({
+        where: { id: productId },
+        data: { stock: { decrement: quantity } },
+        include: { category: true },
+      });
+
+      return {
+        ...updated,
+        attributes: (updated.attributes as Record<string, unknown>) || null,
+      };
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      console.error('[ProductsService] decrementStock error:', error);
+      throw new InternalServerRpcException('Failed to decrement stock');
+    }
+  }
+
+  /**
+   * Increment product stock (called when order is cancelled)
+   * Used by order-app to restore stock after order cancellation
+   *
+   * @param productId - Product ID
+   * @param quantity - Quantity to increment
+   * @throws EntityNotFoundRpcException if product not found
+   */
+  async incrementStock(productId: string, quantity: number): Promise<ProductResponse> {
+    try {
+      const product = await this.prisma.product.findUnique({
+        where: { id: productId },
+        include: { category: true },
+      });
+
+      if (!product) {
+        throw new EntityNotFoundRpcException('Product', productId);
+      }
+
+      const updated = await this.prisma.product.update({
+        where: { id: productId },
+        data: { stock: { increment: quantity } },
+        include: { category: true },
+      });
+
+      return {
+        ...updated,
+        attributes: (updated.attributes as Record<string, unknown>) || null,
+      };
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      console.error('[ProductsService] incrementStock error:', error);
+      throw new InternalServerRpcException('Failed to increment stock');
+    }
   }
 }

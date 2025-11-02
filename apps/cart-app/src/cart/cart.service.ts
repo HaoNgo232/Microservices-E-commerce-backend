@@ -347,4 +347,41 @@ export class CartService implements ICartService {
       updatedAt: cart.updatedAt,
     };
   }
+
+  /**
+   * Clear all items from user's cart
+   * Called when order is created successfully
+   *
+   * @param userId - User ID
+   * @returns Success response
+   * @throws EntityNotFoundRpcException if cart not found
+   */
+  async clear(userId: string): Promise<CartOperationSuccessResponse> {
+    try {
+      const cart = await this.prisma.cart.findFirst({
+        where: { userId },
+      });
+
+      if (!cart) {
+        throw new EntityNotFoundRpcException('Cart', userId);
+      }
+
+      // Delete all cart items
+      await this.prisma.cartItem.deleteMany({
+        where: { cartId: cart.id },
+      });
+
+      console.log(`[CartService] Cleared cart for user ${userId}`);
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      if (error instanceof EntityNotFoundRpcException) {
+        throw error;
+      }
+      console.error('[CartService] clear error:', error);
+      throw new InternalServerRpcException('Failed to clear cart');
+    }
+  }
 }

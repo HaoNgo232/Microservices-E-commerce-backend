@@ -3,7 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CartService } from '@cart-app/cart/cart.service';
 import { EVENTS } from '@shared/events';
 import { CartGetDto, CartAddItemDto, CartUpdateItemDto, CartRemoveItemDto } from '@shared/dto/cart.dto';
-import { CartWithProductsResponse } from '@shared/types';
+import { CartOperationSuccessResponse, CartWithProductsResponse } from '@shared/types';
 
 /**
  * CartController - NATS Message Handler cho Cart operations
@@ -48,5 +48,15 @@ export class CartController {
     await this.cartService.removeItem(dto);
     // Return full cart
     return this.cartService.get({ userId: dto.userId });
+  }
+
+  /**
+   * Clear all items from user's cart
+   * Called when order is created successfully
+   * Event: cart.clear
+   */
+  @MessagePattern(EVENTS.CART.CLEAR)
+  clear(@Payload() dto: CartGetDto): Promise<CartOperationSuccessResponse> {
+    return this.cartService.clear(dto.userId);
   }
 }
