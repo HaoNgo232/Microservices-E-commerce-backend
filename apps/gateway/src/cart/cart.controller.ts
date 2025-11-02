@@ -4,7 +4,7 @@ import { AuthGuard } from '@gateway/auth/auth.guard';
 import { CartGetDto, CartAddItemDto, CartUpdateItemDto, CartRemoveItemDto } from '@shared/dto/cart.dto';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
-import { CartWithProductsResponse, CartItemOperationResponse, CartOperationSuccessResponse } from '@shared/types';
+import { CartWithProductsResponse } from '@shared/types';
 
 /**
  * Cart Controller - Gateway endpoint cho shopping cart
@@ -35,10 +35,17 @@ export class CartController extends BaseGatewayController {
 
   /**
    * POST /cart/items
+   * Thêm sản phẩm vào giỏ hàng
    */
   @Post('items')
-  addItem(@Body() dto: CartAddItemDto): Promise<CartItemOperationResponse> {
-    return this.send<CartAddItemDto, CartItemOperationResponse>(EVENTS.CART.ADD_ITEM, dto);
+  addItem(
+    @Body() dto: CartAddItemDto,
+    @Req() req: Request & { user: { userId: string } },
+  ): Promise<CartWithProductsResponse> {
+    return this.send<CartAddItemDto, CartWithProductsResponse>(EVENTS.CART.ADD_ITEM, {
+      ...dto,
+      userId: req.user.userId,
+    });
   }
 
   /**
@@ -46,8 +53,14 @@ export class CartController extends BaseGatewayController {
    * Cập nhật số lượng sản phẩm trong giỏ hàng
    */
   @Patch('items')
-  updateItem(@Body() dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
-    return this.send<CartUpdateItemDto, CartItemOperationResponse>(EVENTS.CART.UPDATE_ITEM, dto);
+  updateItem(
+    @Body() dto: CartUpdateItemDto,
+    @Req() req: Request & { user: { userId: string } },
+  ): Promise<CartWithProductsResponse> {
+    return this.send<CartUpdateItemDto, CartWithProductsResponse>(EVENTS.CART.UPDATE_ITEM, {
+      ...dto,
+      userId: req.user.userId,
+    });
   }
 
   /**
@@ -55,7 +68,13 @@ export class CartController extends BaseGatewayController {
    * Xóa sản phẩm khỏi giỏ hàng
    */
   @Delete('items')
-  removeItem(@Body() dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
-    return this.send<CartRemoveItemDto, CartOperationSuccessResponse>(EVENTS.CART.REMOVE_ITEM, dto);
+  removeItem(
+    @Body() dto: CartRemoveItemDto,
+    @Req() req: Request & { user: { userId: string } },
+  ): Promise<CartWithProductsResponse> {
+    return this.send<CartRemoveItemDto, CartWithProductsResponse>(EVENTS.CART.REMOVE_ITEM, {
+      ...dto,
+      userId: req.user.userId,
+    });
   }
 }

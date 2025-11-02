@@ -3,7 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CartService } from '@cart-app/cart/cart.service';
 import { EVENTS } from '@shared/events';
 import { CartGetDto, CartAddItemDto, CartUpdateItemDto, CartRemoveItemDto } from '@shared/dto/cart.dto';
-import { CartItemOperationResponse, CartOperationSuccessResponse, CartWithProductsResponse } from '@shared/types';
+import { CartWithProductsResponse } from '@shared/types';
 
 /**
  * CartController - NATS Message Handler cho Cart operations
@@ -22,29 +22,31 @@ export class CartController {
   }
 
   /**
-   * Thêm sản phẩm vào giỏ hàng
+   * Thêm sản phẩm vào giỏ hàng, trả về giỏ hàng đầy đủ
    * Event: cart.addItem
    */
   @MessagePattern(EVENTS.CART.ADD_ITEM)
-  addItem(@Payload() dto: CartAddItemDto): Promise<CartItemOperationResponse> {
+  addItem(@Payload() dto: CartAddItemDto): Promise<CartWithProductsResponse> {
     return this.cartService.addItem(dto);
   }
 
   /**
-   * Cập nhật số lượng sản phẩm
+   * Cập nhật số lượng sản phẩm, trả về giỏ hàng đầy đủ
    * Event: cart.updateItem
    */
   @MessagePattern(EVENTS.CART.UPDATE_ITEM)
-  updateItem(@Payload() dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
+  updateItem(@Payload() dto: CartUpdateItemDto): Promise<CartWithProductsResponse> {
     return this.cartService.updateItem(dto);
   }
 
   /**
-   * Xóa sản phẩm khỏi giỏ hàng
+   * Xóa sản phẩm khỏi giỏ hàng, trả về giỏ hàng đầy đủ
    * Event: cart.removeItem
    */
   @MessagePattern(EVENTS.CART.REMOVE_ITEM)
-  removeItem(@Payload() dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
-    return this.cartService.removeItem(dto);
+  async removeItem(@Payload() dto: CartRemoveItemDto): Promise<CartWithProductsResponse> {
+    await this.cartService.removeItem(dto);
+    // Return full cart
+    return this.cartService.get({ userId: dto.userId });
   }
 }

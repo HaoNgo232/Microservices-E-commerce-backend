@@ -2,7 +2,6 @@ import { Injectable, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
-import { CartItemService } from '@cart-app/cart-item/cart-item.service';
 import { EVENTS } from '@shared/events';
 import {
   ServiceUnavailableRpcException,
@@ -14,7 +13,6 @@ import { CartGetDto, CartAddItemDto, CartUpdateItemDto, CartRemoveItemDto } from
 import {
   CartResponse,
   CartWithProductsResponse,
-  CartItemOperationResponse,
   CartOperationSuccessResponse,
   ProductData,
   CartItemWithProduct,
@@ -32,8 +30,8 @@ import {
  */
 export interface ICartService {
   get(dto: CartGetDto): Promise<CartWithProductsResponse>;
-  addItem(dto: CartAddItemDto): Promise<CartItemOperationResponse>;
-  updateItem(dto: CartUpdateItemDto): Promise<CartItemOperationResponse>;
+  addItem(dto: CartAddItemDto): Promise<CartWithProductsResponse>;
+  updateItem(dto: CartUpdateItemDto): Promise<CartWithProductsResponse>;
   removeItem(dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse>;
 }
 
@@ -46,12 +44,10 @@ export class CartService implements ICartService {
    * Constructor - Inject các dependencies cần thiết
    *
    * @param prisma - PrismaService để truy cập database
-   * @param cartItemService - CartItemService để quản lý items
    * @param productClient - NATS client để gọi Product Service
    */
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cartItemService: CartItemService,
     @Inject('PRODUCT_SERVICE') private readonly productClient: ClientProxy,
   ) {}
 
@@ -97,11 +93,29 @@ export class CartService implements ICartService {
   /**
    * 2. ADD - Thêm sản phẩm vào giỏ hàng
    */
-  async addItem(dto: CartAddItemDto): Promise<CartItemOperationResponse> {
+  async addItem(dto: CartAddItemDto): Promise<CartWithProductsResponse> {
     try {
+      if (dto.quantity <= 0) {
+        throw new ValidationRpcException('Số lượng phải lớn hơn 0');
+      }
+
       const cart = await this.getOrCreateCart(dto.userId);
-      const cartItem = await this.cartItemService.addItem(cart.id, dto.productId, dto.quantity);
-      return { cartItem };
+
+      await this.prisma.cartItem.upsert({
+        where: {
+          cartId_productId: { cartId: cart.id, productId: dto.productId },
+        },
+        update: {
+          quantity: { increment: dto.quantity },
+        },
+        create: {
+          cartId: cart.id,
+          productId: dto.productId,
+          quantity: dto.quantity,
+        },
+      });
+
+      return this.get({ userId: dto.userId });
     } catch (error) {
       if (error instanceof InternalServerRpcException || error instanceof ValidationRpcException) {
         throw error;
@@ -120,11 +134,26 @@ export class CartService implements ICartService {
   /**
    * 3. UPDATE - Cập nhật số lượng sản phẩm
    */
-  async updateItem(dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
+  async updateItem(dto: CartUpdateItemDto): Promise<CartWithProductsResponse> {
     try {
+      if (dto.quantity < 0) {
+        throw new ValidationRpcException('Số lượng không hợp lệ');
+      }
+
       const cart = await this.getOrCreateCart(dto.userId);
-      const cartItem = await this.cartItemService.updateQuantity(cart.id, dto.productId, dto.quantity);
-      return { cartItem };
+
+      if (dto.quantity === 0) {
+        await this.prisma.cartItem.deleteMany({
+          where: { cartId: cart.id, productId: dto.productId },
+        });
+      } else {
+        await this.prisma.cartItem.updateMany({
+          where: { cartId: cart.id, productId: dto.productId },
+          data: { quantity: dto.quantity },
+        });
+      }
+
+      return this.get({ userId: dto.userId });
     } catch (error) {
       if (
         error instanceof InternalServerRpcException ||
@@ -150,7 +179,12 @@ export class CartService implements ICartService {
   async removeItem(dto: CartRemoveItemDto): Promise<CartOperationSuccessResponse> {
     try {
       const cart = await this.getOrCreateCart(dto.userId);
-      return await this.cartItemService.removeItem(cart.id, dto.productId);
+
+      await this.prisma.cartItem.deleteMany({
+        where: { cartId: cart.id, productId: dto.productId },
+      });
+
+      return { success: true };
     } catch (error) {
       if (error instanceof InternalServerRpcException || error instanceof ValidationRpcException) {
         throw error;
