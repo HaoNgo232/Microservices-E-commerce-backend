@@ -3,6 +3,8 @@
  * Based on Product và Category models trong product-app Prisma schema
  */
 
+import type { CategoryResponse, CategoryWithRelations } from './category.types';
+
 // Product response types for API responses
 export type ProductResponse = {
   id: string;
@@ -21,31 +23,9 @@ export type ProductResponse = {
   category?: CategoryResponse | null; // Populated từ relation
 };
 
-// Category response types for API responses
-export type CategoryResponse = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  parentId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  parent?: CategoryResponse | null;
-  children?: CategoryResponse[];
-};
-
 // Paginated list response for products
 export type PaginatedProductsResponse = {
   products: ProductResponse[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-};
-
-// Paginated list response for categories
-export type PaginatedCategoriesResponse = {
-  categories: CategoryResponse[];
   total: number;
   page: number;
   pageSize: number;
@@ -57,13 +37,6 @@ export type ProductWithCategory = ProductResponse & {
   category: CategoryResponse | null;
 };
 
-// Category with children and products
-export type CategoryWithRelations = CategoryResponse & {
-  children: CategoryResponse[];
-  products?: ProductResponse[];
-  parent?: CategoryResponse | null;
-};
-
 // Stock change result
 export type StockChangeResult = {
   productId: string;
@@ -71,3 +44,7 @@ export type StockChangeResult = {
   newStock: number;
   quantityChanged: number;
 };
+
+// Re-export category types for convenience
+export type { CategoryResponse, CategoryWithRelations } from './category.types';
+export type { PaginatedCategoriesResponse } from './category.types';

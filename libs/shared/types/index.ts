@@ -15,6 +15,9 @@ export * from './user.types';
 // Product types
 export * from './product.types';
 
+// Category types
+export * from './category.types';
+
 // Cart types
 export * from './cart.types';
 

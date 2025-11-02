@@ -4,6 +4,28 @@
  */
 
 /**
+ * User role enum
+ */
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  CUSTOMER = 'CUSTOMER',
+}
+
+/**
+ * User response type based on User model trong user-app
+ */
+export type User = {
+  id: string;
+  email: string;
+  fullName: string;
+  phone: string | null;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/**
  * Auth response - chỉ trả về tokens
  * Client sẽ decode accessToken để lấy thông tin user
  */
