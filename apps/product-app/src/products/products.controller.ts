@@ -43,6 +43,7 @@ export class ProductsController implements IProductsController {
 
   @MessagePattern(EVENTS.PRODUCT.LIST)
   list(@Payload() query: ProductListQueryDto): Promise<PaginatedProductsResponse> {
+    console.log('ProductsController.list called with query:', query);
     return this.productsService.list(query);
   }
 

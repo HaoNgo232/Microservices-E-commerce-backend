@@ -94,6 +94,7 @@ export class ProductUpdateDto {
 export class ProductListQueryDto {
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   @Min(1)
   page?: number;
 

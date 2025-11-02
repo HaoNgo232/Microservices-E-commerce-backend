@@ -46,7 +46,24 @@ export class ProductsController extends BaseGatewayController {
    */
   @Get()
   list(@Query() query: ProductListQueryDto): Promise<PaginatedProductsResponse> {
-    return this.send<ProductListQueryDto, PaginatedProductsResponse>(EVENTS.PRODUCT.LIST, query);
+    console.log('[Gateway] Raw query params:', query);
+    console.log('[Gateway] Query types:', {
+      page: typeof query.page,
+      pageSize: typeof query.pageSize,
+    });
+
+    // Transform string query params to correct types
+    const transformedQuery: ProductListQueryDto = {
+      page: query.page ? Number(query.page) : undefined,
+      pageSize: query.pageSize ? Number(query.pageSize) : undefined,
+      search: query.search,
+      categorySlug: query.categorySlug,
+      minPriceInt: query.minPriceInt ? Number(query.minPriceInt) : undefined,
+      maxPriceInt: query.maxPriceInt ? Number(query.maxPriceInt) : undefined,
+    };
+
+    console.log('[Gateway] Transformed query:', transformedQuery);
+    return this.send<ProductListQueryDto, PaginatedProductsResponse>(EVENTS.PRODUCT.LIST, transformedQuery);
   }
 
   /**

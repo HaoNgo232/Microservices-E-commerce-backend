@@ -10,9 +10,8 @@ import {
 } from '@shared/dto/product.dto';
 import { ProductResponse, PaginatedProductsResponse } from '@shared/types/product.types';
 import { PrismaService } from '@product-app/prisma/prisma.service';
-import { ProductMapper } from './mappers/product.mapper';
-import { ProductValidator } from './validators/product.validator';
-import { ProductQueryBuilder } from './builders/product-query.builder';
+import { EntityNotFoundRpcException, InternalServerRpcException } from '@shared/main';
+import { ProductQueryBuilder } from '@product-app/products/builders/product-query.builder';
 
 export interface IProductsService {
   getById(dto: ProductIdDto): Promise<ProductResponse>;
@@ -27,8 +26,6 @@ export interface IProductsService {
 export class ProductsService implements IProductsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mapper: ProductMapper,
-    private readonly validator: ProductValidator,
     private readonly queryBuilder: ProductQueryBuilder,
   ) {}
 
@@ -46,20 +43,17 @@ export class ProductsService implements IProductsService {
       });
 
       if (!product) {
-        throw new RpcException({
-          statusCode: 404,
-          message: `Product with ID ${dto.id} not found`,
-        });
+        throw new EntityNotFoundRpcException('Product', dto.id);
       }
 
-      return this.mapper.mapToProductResponse(product);
+      return {
+        ...product,
+        attributes: (product.attributes as Record<string, unknown>) || null,
+      };
     } catch (error) {
       if (error instanceof RpcException) throw error;
       console.error('[ProductsService] getById error:', error);
-      throw new RpcException({
-        statusCode: 400,
-        message: 'Failed to retrieve product',
-      });
+      throw new InternalServerRpcException('Failed to retrieve product');
     }
   }
 
@@ -84,7 +78,12 @@ export class ProductsService implements IProductsService {
         },
       });
 
-      return products.map(product => this.mapper.mapToProductResponse(product));
+      const results = products.map(product => ({
+        ...product,
+        attributes: (product.attributes as Record<string, unknown>) || null,
+      }));
+
+      return results;
     } catch (error) {
       console.error('[ProductsService] getByIds error:', error);
       throw new RpcException({
@@ -114,7 +113,12 @@ export class ProductsService implements IProductsService {
         });
       }
 
-      return this.mapper.mapToProductResponse(product);
+      const results = {
+        ...product,
+        attributes: (product.attributes as Record<string, unknown>) || null,
+      };
+
+      return results;
     } catch (error) {
       if (error instanceof RpcException) throw error;
       console.error('[ProductsService] getBySlug error:', error);
@@ -130,9 +134,13 @@ export class ProductsService implements IProductsService {
    */
   async list(query: ProductListQueryDto): Promise<PaginatedProductsResponse> {
     try {
+      console.log('[ProductService] list called with query:', query);
+
       const page = query.page ?? 1;
       const pageSize = query.pageSize ?? 20;
       const { skip, take } = this.queryBuilder.getPaginationParams(query);
+
+      console.log('[ProductService] pagination:', { page, pageSize, skip, take });
 
       const where = this.queryBuilder.buildWhereClause(query);
 
@@ -152,10 +160,17 @@ export class ProductsService implements IProductsService {
         this.prisma.product.count({ where }),
       ]);
 
+      console.log('[ProductService] results:', { total, fetched: products.length });
+
       const { totalPages } = this.queryBuilder.getPaginationMetadata(page, pageSize, total);
 
+      const formattedProducts = products.map(p => ({
+        ...p,
+        attributes: (p.attributes as Record<string, unknown>) || null,
+      }));
+
       return {
-        products: this.mapper.mapManyToProductResponse(products),
+        products: formattedProducts,
         total,
         page,
         pageSize,
@@ -177,11 +192,27 @@ export class ProductsService implements IProductsService {
    */
   async create(dto: ProductCreateDto): Promise<ProductResponse> {
     try {
-      // Validate unique constraints
-      await this.validator.validateUniqueSKUAndSlug(dto.sku, dto.slug);
+      // Validate SKU uniqueness
+      const existingSku = await this.prisma.product.findFirst({
+        where: { sku: dto.sku },
+      });
+      if (existingSku) {
+        throw new RpcException({
+          statusCode: 409,
+          message: `SKU '${dto.sku}' already exists`,
+        });
+      }
 
-      // Validate category exists if provided
-      await this.validator.validateCategoryExists(dto.categoryId);
+      // Validate slug uniqueness
+      const existingSlug = await this.prisma.product.findFirst({
+        where: { slug: dto.slug },
+      });
+      if (existingSlug) {
+        throw new RpcException({
+          statusCode: 409,
+          message: `Slug '${dto.slug}' already exists`,
+        });
+      }
 
       // Create product
       const product = await this.prisma.product.create({
@@ -194,7 +225,7 @@ export class ProductsService implements IProductsService {
           description: dto.description,
           imageUrls: dto.imageUrls ?? [],
           categoryId: dto.categoryId,
-          attributes: dto.attributes as never, // Prisma JSON type
+          attributes: dto.attributes as never,
           model3dUrl: dto.model3dUrl,
         },
         include: {
@@ -203,16 +234,16 @@ export class ProductsService implements IProductsService {
       });
 
       console.log(`[ProductsService] Created product: ${product.id}`);
-      return this.mapper.mapToProductResponse(product);
+      return {
+        ...product,
+        attributes: (product.attributes as Record<string, unknown>) || null,
+      };
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;
       }
       console.error('[ProductsService] create error:', error);
-      throw new RpcException({
-        statusCode: 400,
-        message: 'Failed to create product',
-      });
+      throw new InternalServerRpcException('Failed to create product');
     }
   }
 
@@ -229,17 +260,21 @@ export class ProductsService implements IProductsService {
       });
 
       if (!existing) {
-        throw new RpcException({
-          statusCode: 404,
-          message: `Product with ID ${id} not found`,
-        });
+        throw new EntityNotFoundRpcException('Product', id);
       }
 
       // Validate slug uniqueness if updating slug
-      await this.validator.validateSlugForUpdate(dto.slug, existing.slug);
-
-      // Validate category exists if updating category
-      await this.validator.validateCategoryExists(dto.categoryId);
+      if (dto.slug && dto.slug !== existing.slug) {
+        const existingSlug = await this.prisma.product.findFirst({
+          where: { slug: dto.slug },
+        });
+        if (existingSlug) {
+          throw new RpcException({
+            statusCode: 409,
+            message: `Slug '${dto.slug}' already exists`,
+          });
+        }
+      }
 
       // Build update data object
       const updateData = this.buildProductUpdateData(dto);
@@ -254,16 +289,16 @@ export class ProductsService implements IProductsService {
       });
 
       console.log(`[ProductsService] Updated product: ${id}`);
-      return this.mapper.mapToProductResponse(product);
+      return {
+        ...product,
+        attributes: (product.attributes as Record<string, unknown>) || null,
+      };
     } catch (error) {
       if (error instanceof RpcException) {
         throw error;
       }
       console.error('[ProductsService] update error:', error);
-      throw new RpcException({
-        statusCode: 400,
-        message: 'Failed to update product',
-      });
+      throw new InternalServerRpcException('Failed to update product');
     }
   }
 
