@@ -143,6 +143,7 @@ export class PaymentsService implements IPaymentService {
       const qrCodeUrl = this.generateSePayQRUrl(
         process.env.SEPAY_ACCOUNT_NUMBER!, // Số tài khoản ngân hàng
         process.env.SEPAY_BANK_NAME!, // Tên ngân hàng đúng chuẩn SePay VD: 'Vietcombank', 'MBBank'
+        process.env.ACCOUNT_NAME!, // Tên tài khoản ảo (bắt buộc cho webhook)
         dto.amountInt,
         dto.orderId,
       );
@@ -617,10 +618,23 @@ export class PaymentsService implements IPaymentService {
 
   /**
    * Generate SePay QR URL theo chuẩn docs SePay
-   * https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG
+   * https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG&template=compact&accountName=TEN_TAI_KHOAN
+   *
+   * @param accountNo - Số tài khoản ngân hàng
+   * @param bankName - Tên ngân hàng (VD: MBBank, Vietcombank)
+   * @param accountName - Tên tài khoản ảo (bắt buộc để SePay gửi webhook)
+   * @param amount - Số tiền (integer, đơn vị VND)
+   * @param orderId - ID đơn hàng (sẽ thêm prefix DH)
+   * @returns URL QR code SePay
    */
-  private generateSePayQRUrl(accountNo: string, bankName: string, amount: number, orderId: string): string {
+  private generateSePayQRUrl(
+    accountNo: string,
+    bankName: string,
+    accountName: string,
+    amount: number,
+    orderId: string,
+  ): string {
     const description = `DH${orderId}`;
-    return `https://qr.sepay.vn/img?acc=${accountNo}&bank=${encodeURIComponent(bankName)}&amount=${amount}&des=${encodeURIComponent(description)}`;
+    return `https://qr.sepay.vn/img?acc=${accountNo}&bank=${encodeURIComponent(bankName)}&amount=${amount}&des=${encodeURIComponent(description)}&template=compact&accountName=${encodeURIComponent(accountName)}`;
   }
 }
