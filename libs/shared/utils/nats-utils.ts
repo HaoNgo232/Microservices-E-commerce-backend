@@ -1,7 +1,7 @@
 import { firstValueFrom, timeout, retry, catchError } from 'rxjs';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { Error } from '@shared/main';
+import { Error } from '@shared/types';
 
 /**
  * Gửi tin nhắn đến microservice với cơ chế retry tự động.
@@ -16,11 +16,7 @@ import { Error } from '@shared/main';
  * @example
  * const result = await sendWithRetry<User>(client, 'user.get', { id: 1 });
  */
-export async function sendWithRetry<T>(
-  client: ClientProxy,
-  pattern: string,
-  data: unknown,
-): Promise<T> {
+export async function sendWithRetry<T>(client: ClientProxy, pattern: string, data: unknown): Promise<T> {
   return firstValueFrom(
     client.send<T>(pattern, data).pipe(
       timeout(5000),

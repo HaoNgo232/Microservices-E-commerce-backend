@@ -162,9 +162,7 @@ describe('UsersController (e2e)', () => {
         phone: '0987654321',
       };
 
-      const result = await firstValueFrom(
-        client.send(EVENTS.USER.UPDATE, { id: created.id, dto: updateDto }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.USER.UPDATE, { id: created.id, dto: updateDto }));
 
       expect(result).toBeDefined();
       expect(result.fullName).toBe(updateDto.fullName);
@@ -178,9 +176,7 @@ describe('UsersController (e2e)', () => {
       };
 
       try {
-        await firstValueFrom(
-          client.send(EVENTS.USER.UPDATE, { id: 'non-existent-id', dto: updateDto }),
-        );
+        await firstValueFrom(client.send(EVENTS.USER.UPDATE, { id: 'non-existent-id', dto: updateDto }));
         fail('Should have thrown an error');
       } catch (error: any) {
         expect(error.message).toContain('not found');

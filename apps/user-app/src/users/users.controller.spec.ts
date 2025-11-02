@@ -131,9 +131,7 @@ describe('UsersController', () => {
       const error = new Error('User not found');
       mockUsersService.update.mockRejectedValue(error);
 
-      await expect(controller.update({ id: userId, dto: updateUserDto })).rejects.toThrow(
-        'User not found',
-      );
+      await expect(controller.update({ id: userId, dto: updateUserDto })).rejects.toThrow('User not found');
       expect(service.update).toHaveBeenCalledWith(userId, updateUserDto);
     });
 

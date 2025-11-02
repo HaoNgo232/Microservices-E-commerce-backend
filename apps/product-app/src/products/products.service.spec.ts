@@ -352,9 +352,7 @@ describe('ProductsService', () => {
         }),
       );
 
-      await expect(service.update('prod-1', { slug: 'existing-slug' })).rejects.toThrow(
-        RpcException,
-      );
+      await expect(service.update('prod-1', { slug: 'existing-slug' })).rejects.toThrow(RpcException);
     });
   });
 

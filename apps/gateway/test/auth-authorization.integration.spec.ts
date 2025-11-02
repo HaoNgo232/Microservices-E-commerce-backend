@@ -88,9 +88,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
       const adminPayload = { sub: 'admin-1', email: 'admin@example.com', role: 'ADMIN' };
       jwtService.verifyToken.mockResolvedValueOnce(adminPayload);
 
-      userService.send.mockReturnValueOnce(
-        of({ users: [mockUser], total: 1, page: 1, pageSize: 10 }),
-      );
+      userService.send.mockReturnValueOnce(of({ users: [mockUser], total: 1, page: 1, pageSize: 10 }));
 
       const response = await request(app.getHttpServer())
         .get('/users')
@@ -206,10 +204,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
       const adminPayload = { sub: 'admin-1', email: 'admin@example.com', role: 'ADMIN' };
       jwtService.verifyToken.mockResolvedValueOnce(adminPayload);
 
-      await request(app.getHttpServer())
-        .get('/users/user-123')
-        .set('Authorization', 'Bearer admin.token')
-        .expect(200);
+      await request(app.getHttpServer()).get('/users/user-123').set('Authorization', 'Bearer admin.token').expect(200);
 
       expect(userService.send).toHaveBeenCalled();
     });
@@ -287,10 +282,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
       };
       jwtService.verifyToken.mockResolvedValueOnce(customerPayload);
 
-      await request(app.getHttpServer())
-        .get('/users/user-123')
-        .set('Authorization', 'Bearer test.token')
-        .expect(200);
+      await request(app.getHttpServer()).get('/users/user-123').set('Authorization', 'Bearer test.token').expect(200);
 
       expect(jwtService.verifyToken).toHaveBeenCalledWith('test.token');
     });

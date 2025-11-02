@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  OrderItemListByOrderDto,
-  OrderItemAddDto,
-  OrderItemRemoveDto,
-} from '../../../../libs/shared/dto/order.dto';
+import { OrderItemListByOrderDto, OrderItemAddDto, OrderItemRemoveDto } from '../../../../libs/shared/dto/order.dto';
 import { PrismaService } from '@order-app/prisma/prisma.service';
 import {
   EntityNotFoundRpcException,

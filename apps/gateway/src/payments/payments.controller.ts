@@ -3,11 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { PaymentProcessDto, PaymentVerifyDto, SePayWebhookDto } from '@shared/dto/payment.dto';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
-import {
-  PaymentResponse,
-  PaymentProcessResponse,
-  PaymentVerifyResponse,
-} from '@shared/types/payment.types';
+import { PaymentResponse, PaymentProcessResponse, PaymentVerifyResponse } from '@shared/types/payment.types';
 import { SePayWebhookResponse } from '@shared/types/payment.webhook.types';
 
 /**

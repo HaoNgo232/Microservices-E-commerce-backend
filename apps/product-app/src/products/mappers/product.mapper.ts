@@ -55,9 +55,7 @@ export class ProductMapper {
   /**
    * Map multiple products to ProductResponse array
    */
-  mapManyToProductResponse(
-    products: Parameters<typeof this.mapToProductResponse>[0][],
-  ): ProductResponse[] {
+  mapManyToProductResponse(products: Parameters<typeof this.mapToProductResponse>[0][]): ProductResponse[] {
     return products.map(p => this.mapToProductResponse(p));
   }
 

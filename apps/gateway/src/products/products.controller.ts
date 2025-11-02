@@ -1,16 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  Inject,
-} from '@nestjs/common';
-import { ClientProxy, Payload } from '@nestjs/microservices';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { ProductCreateDto, ProductUpdateDto, ProductListQueryDto } from '@shared/dto/product.dto';
 import { AuthGuard } from '@gateway/auth/auth.guard';
 import { RolesGuard } from '@gateway/auth/roles.guard';

@@ -121,10 +121,7 @@ export abstract class BaseGatewayController {
   private isTimeoutError(error: unknown): boolean {
     return (
       (error instanceof Error && error.name === 'TimeoutError') ||
-      (typeof error === 'object' &&
-        error !== null &&
-        'name' in error &&
-        error.name === 'TimeoutError')
+      (typeof error === 'object' && error !== null && 'name' in error && error.name === 'TimeoutError')
     );
   }
 
@@ -135,8 +132,6 @@ export abstract class BaseGatewayController {
    * @returns true nếu có cấu trúc RPC error (message + statusCode)
    */
   private isRpcError(error: unknown): error is { message: string; statusCode: number } {
-    return (
-      typeof error === 'object' && error !== null && 'message' in error && 'statusCode' in error
-    );
+    return typeof error === 'object' && error !== null && 'message' in error && 'statusCode' in error;
   }
 }

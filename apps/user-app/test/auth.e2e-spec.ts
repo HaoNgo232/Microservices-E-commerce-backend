@@ -173,9 +173,7 @@ describe('AuthController (e2e)', () => {
       const loginResult = await firstValueFrom(client.send(EVENTS.AUTH.LOGIN, loginDto));
       const tokenToVerify = loginResult.accessToken;
 
-      const result = await firstValueFrom(
-        client.send(EVENTS.AUTH.VERIFY, { token: tokenToVerify }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.AUTH.VERIFY, { token: tokenToVerify }));
 
       expect(result).toBeDefined();
       expect(result.sub).toBeDefined();

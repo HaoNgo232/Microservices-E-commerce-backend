@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { LoginDto, VerifyDto, RefreshDto, RegisterDto } from '@shared/dto/auth.dto';
-import { AuthResponse, JwtService, UserResponse } from '@shared/main';
+import { JwtService } from '@shared/main';
+import { AuthResponse, UserResponse } from '@shared/types';
 import { PrismaService } from '@user-app/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as jose from 'jose';
@@ -307,9 +308,7 @@ export class AuthService implements IAuthService {
    * @returns { accessToken, refreshToken }
    * @private
    */
-  private async generateTokens(
-    payload: jose.JWTPayload,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  private async generateTokens(payload: jose.JWTPayload): Promise<{ accessToken: string; refreshToken: string }> {
     const expiresIn = this.parseExpiresIn(this.jwtExpiresIn);
     const refreshExpiresIn = this.parseExpiresIn(this.jwtRefreshExpiresIn);
 

@@ -96,9 +96,7 @@ export class CategoryMapper {
   /**
    * Map multiple categories to CategoryResponse array
    */
-  mapManyToCategoryResponse(
-    categories: Parameters<typeof this.mapToCategoryResponse>[0][],
-  ): CategoryResponse[] {
+  mapManyToCategoryResponse(categories: Parameters<typeof this.mapToCategoryResponse>[0][]): CategoryResponse[] {
     return categories.map(c => this.mapToCategoryResponse(c));
   }
 

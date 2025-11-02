@@ -3,11 +3,7 @@ import { RpcException } from '@nestjs/microservices';
 import { OrderItemController } from './order-item.controller';
 import { OrderItemService } from './order-item.service';
 import { OrderItemResponse } from '@shared/types/order.types';
-import {
-  OrderItemListByOrderDto,
-  OrderItemAddDto,
-  OrderItemRemoveDto,
-} from '@shared/dto/order.dto';
+import { OrderItemListByOrderDto, OrderItemAddDto, OrderItemRemoveDto } from '@shared/dto/order.dto';
 
 describe('OrderItemController', () => {
   let controller: OrderItemController;

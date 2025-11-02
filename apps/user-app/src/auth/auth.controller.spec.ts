@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, VerifyDto, RefreshDto } from '@shared/dto/auth.dto';
-import { AuthResponse, UserRole } from '@shared/main';
+import { AuthResponse } from '@shared/types';
 import { JWTPayload } from 'jose';
 
 describe('AuthController', () => {

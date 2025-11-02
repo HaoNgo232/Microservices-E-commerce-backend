@@ -36,9 +36,6 @@ export class ArController extends BaseGatewayController {
    */
   @Get('snapshots')
   listSnapshots(@Query() query: ARSnapshotListDto): Promise<PaginatedARSnapshotsResponse> {
-    return this.send<ARSnapshotListDto, PaginatedARSnapshotsResponse>(
-      EVENTS.AR.SNAPSHOT_LIST,
-      query,
-    );
+    return this.send<ARSnapshotListDto, PaginatedARSnapshotsResponse>(EVENTS.AR.SNAPSHOT_LIST, query);
   }
 }

@@ -298,9 +298,7 @@ describe('CategoriesService', () => {
         }),
       );
 
-      await expect(service.create({ ...createDto, parentId: 'non-existent' })).rejects.toThrow(
-        RpcException,
-      );
+      await expect(service.create({ ...createDto, parentId: 'non-existent' })).rejects.toThrow(RpcException);
     });
 
     it('should create child category with valid parent', async () => {
@@ -360,9 +358,7 @@ describe('CategoriesService', () => {
         }),
       );
 
-      await expect(service.update('cat-1', { slug: 'existing-slug' })).rejects.toThrow(
-        RpcException,
-      );
+      await expect(service.update('cat-1', { slug: 'existing-slug' })).rejects.toThrow(RpcException);
     });
 
     it('should throw RpcException if trying to set self as parent', async () => {
@@ -384,8 +380,7 @@ describe('CategoriesService', () => {
       mockCategoryValidator.validateParentUpdate.mockRejectedValue(
         new RpcException({
           statusCode: 400,
-          message:
-            'Cannot create circular reference: the new parent is a descendant of this category',
+          message: 'Cannot create circular reference: the new parent is a descendant of this category',
         }),
       );
 
@@ -398,8 +393,7 @@ describe('CategoriesService', () => {
       mockCategoryValidator.validateParentUpdate.mockRejectedValue(
         new RpcException({
           statusCode: 400,
-          message:
-            'Cannot create circular reference: the new parent is a descendant of this category',
+          message: 'Cannot create circular reference: the new parent is a descendant of this category',
         }),
       );
 
@@ -429,9 +423,7 @@ describe('CategoriesService', () => {
         childrenCount: 0,
         productCount: 0,
       });
-      mockPrismaService.category.delete.mockRejectedValue(
-        new Error('Record to delete does not exist'),
-      );
+      mockPrismaService.category.delete.mockRejectedValue(new Error('Record to delete does not exist'));
 
       await expect(service.delete('non-existent')).rejects.toThrow(RpcException);
     });
@@ -440,8 +432,7 @@ describe('CategoriesService', () => {
       mockCategoryValidator.validateCanDelete.mockRejectedValue(
         new RpcException({
           statusCode: 400,
-          message:
-            'Cannot delete category with child categories. Delete or reassign children first.',
+          message: 'Cannot delete category with child categories. Delete or reassign children first.',
         }),
       );
 

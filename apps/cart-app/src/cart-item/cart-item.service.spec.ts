@@ -92,25 +92,17 @@ describe('CartItemService', () => {
 
     it('should throw ValidationRpcException if quantity <= 0', async () => {
       // Act & Assert
-      await expect(service.addItem('cart-123', 'product-123', 0)).rejects.toThrow(
-        ValidationRpcException,
-      );
-      await expect(service.addItem('cart-123', 'product-123', -1)).rejects.toThrow(
-        ValidationRpcException,
-      );
+      await expect(service.addItem('cart-123', 'product-123', 0)).rejects.toThrow(ValidationRpcException);
+      await expect(service.addItem('cart-123', 'product-123', -1)).rejects.toThrow(ValidationRpcException);
       expect(mockPrisma.cartItem.upsert).not.toHaveBeenCalled();
     });
 
     it('should wrap unexpected database errors', async () => {
       // Arrange
-      (mockPrisma.cartItem.upsert as jest.Mock).mockRejectedValue(
-        new Error('Database connection failed'),
-      );
+      (mockPrisma.cartItem.upsert as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
 
       // Act & Assert
-      await expect(service.addItem('cart-123', 'product-123', 2)).rejects.toThrow(
-        InternalServerRpcException,
-      );
+      await expect(service.addItem('cart-123', 'product-123', 2)).rejects.toThrow(InternalServerRpcException);
     });
   });
 
@@ -148,9 +140,7 @@ describe('CartItemService', () => {
 
     it('should throw ValidationRpcException if quantity < 0', async () => {
       // Act & Assert
-      await expect(service.updateQuantity('cart-123', 'product-123', -1)).rejects.toThrow(
-        ValidationRpcException,
-      );
+      await expect(service.updateQuantity('cart-123', 'product-123', -1)).rejects.toThrow(ValidationRpcException);
       expect(mockPrisma.cartItem.updateMany).not.toHaveBeenCalled();
     });
 
@@ -159,9 +149,7 @@ describe('CartItemService', () => {
       (mockPrisma.cartItem.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
 
       // Act & Assert
-      await expect(service.updateQuantity('cart-123', 'product-123', 5)).rejects.toThrow(
-        EntityNotFoundRpcException,
-      );
+      await expect(service.updateQuantity('cart-123', 'product-123', 5)).rejects.toThrow(EntityNotFoundRpcException);
     });
 
     it('should wrap unexpected errors', async () => {
@@ -169,9 +157,7 @@ describe('CartItemService', () => {
       (mockPrisma.cartItem.updateMany as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(service.updateQuantity('cart-123', 'product-123', 5)).rejects.toThrow(
-        InternalServerRpcException,
-      );
+      await expect(service.updateQuantity('cart-123', 'product-123', 5)).rejects.toThrow(InternalServerRpcException);
     });
   });
 
@@ -209,9 +195,7 @@ describe('CartItemService', () => {
       (mockPrisma.cartItem.deleteMany as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(service.removeItem('cart-123', 'product-123')).rejects.toThrow(
-        InternalServerRpcException,
-      );
+      await expect(service.removeItem('cart-123', 'product-123')).rejects.toThrow(InternalServerRpcException);
     });
   });
 
@@ -248,9 +232,7 @@ describe('CartItemService', () => {
       (mockPrisma.cartItem.findUnique as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(service.findByCartAndProduct('cart-123', 'product-123')).rejects.toThrow(
-        InternalServerRpcException,
-      );
+      await expect(service.findByCartAndProduct('cart-123', 'product-123')).rejects.toThrow(InternalServerRpcException);
     });
   });
 });

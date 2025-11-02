@@ -4,12 +4,7 @@ import { ClientsModule, Transport, ClientProxy } from '@nestjs/microservices';
 import { PaymentAppModule } from '../src/payment-app.module';
 import { PrismaService } from '@payment-app/prisma/prisma.service';
 import { EVENTS } from '@shared/events';
-import {
-  PaymentProcessDto,
-  PaymentVerifyDto,
-  PaymentIdDto,
-  PaymentByOrderDto,
-} from '@shared/dto/payment.dto';
+import { PaymentProcessDto, PaymentVerifyDto, PaymentIdDto, PaymentByOrderDto } from '@shared/dto/payment.dto';
 import { PaymentMethod } from '@shared/types/payment.types';
 import { firstValueFrom, of } from 'rxjs';
 import { expectRpcError } from '@shared/testing/rpc-test-helpers';
@@ -139,10 +134,7 @@ describe('PaymentsController (e2e)', () => {
         amountInt: 50000,
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.PAYMENT.PROCESS, dto)),
-        'Failed to validate order',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.PAYMENT.PROCESS, dto)), 'Failed to validate order');
     });
   });
 
@@ -252,10 +244,7 @@ describe('PaymentsController (e2e)', () => {
         payload: {},
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.PAYMENT.VERIFY, dto)),
-        'không tồn tại',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.PAYMENT.VERIFY, dto)), 'không tồn tại');
     });
   });
 
@@ -285,10 +274,7 @@ describe('PaymentsController (e2e)', () => {
         id: 'non-existent-payment',
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.PAYMENT.GET_BY_ID, dto)),
-        'không tồn tại',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.PAYMENT.GET_BY_ID, dto)), 'không tồn tại');
     });
   });
 
@@ -318,10 +304,7 @@ describe('PaymentsController (e2e)', () => {
         orderId: 'non-existent-order',
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.PAYMENT.GET_BY_ORDER, dto)),
-        'không tồn tại',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.PAYMENT.GET_BY_ORDER, dto)), 'không tồn tại');
     });
   });
 });

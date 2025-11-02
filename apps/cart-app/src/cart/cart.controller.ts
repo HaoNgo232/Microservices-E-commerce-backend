@@ -2,17 +2,8 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { CartService } from '@cart-app/cart/cart.service';
 import { EVENTS } from '@shared/events';
-import {
-  CartGetDto,
-  CartAddItemDto,
-  CartUpdateItemDto,
-  CartRemoveItemDto,
-} from '@shared/dto/cart.dto';
-import {
-  CartItemOperationResponse,
-  CartOperationSuccessResponse,
-  CartWithProductsResponse,
-} from '@shared/types';
+import { CartGetDto, CartAddItemDto, CartUpdateItemDto, CartRemoveItemDto } from '@shared/dto/cart.dto';
+import { CartItemOperationResponse, CartOperationSuccessResponse, CartWithProductsResponse } from '@shared/types';
 
 /**
  * CartController - NATS Message Handler cho Cart operations

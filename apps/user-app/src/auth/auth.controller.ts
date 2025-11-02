@@ -3,8 +3,8 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthService } from '@user-app/auth/auth.service';
 import { EVENTS } from '@shared/events';
 import { LoginDto, VerifyDto, RefreshDto, RegisterDto } from '@shared/dto/auth.dto';
-import { AuthResponse } from '@shared/main';
 import { JWTPayload } from 'jose';
+import { AuthResponse } from '@shared/types';
 
 /**
  * Interface cho Auth Controller

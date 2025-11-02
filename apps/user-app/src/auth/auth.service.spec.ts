@@ -160,17 +160,13 @@ describe('AuthService', () => {
     });
 
     it('should throw RpcException when token is invalid', async () => {
-      mockJwtService.verifyToken.mockRejectedValue(
-        new RpcException({ statusCode: 401, message: 'Invalid token' }),
-      );
+      mockJwtService.verifyToken.mockRejectedValue(new RpcException({ statusCode: 401, message: 'Invalid token' }));
 
       await expect(service.verify({ token: 'invalid_token' })).rejects.toThrow(RpcException);
     });
 
     it('should throw RpcException when token is expired', async () => {
-      mockJwtService.verifyToken.mockRejectedValue(
-        new RpcException({ statusCode: 401, message: 'Token has expired' }),
-      );
+      mockJwtService.verifyToken.mockRejectedValue(new RpcException({ statusCode: 401, message: 'Token has expired' }));
 
       await expect(service.verify({ token: 'expired_token' })).rejects.toThrow(RpcException);
     });
@@ -220,13 +216,9 @@ describe('AuthService', () => {
     });
 
     it('should throw RpcException when refresh token is invalid', async () => {
-      mockJwtService.verifyToken.mockRejectedValue(
-        new RpcException({ statusCode: 401, message: 'Invalid token' }),
-      );
+      mockJwtService.verifyToken.mockRejectedValue(new RpcException({ statusCode: 401, message: 'Invalid token' }));
 
-      await expect(service.refresh({ refreshToken: 'invalid_refresh' })).rejects.toThrow(
-        RpcException,
-      );
+      await expect(service.refresh({ refreshToken: 'invalid_refresh' })).rejects.toThrow(RpcException);
     });
   });
 });

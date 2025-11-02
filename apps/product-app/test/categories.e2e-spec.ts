@@ -68,27 +68,21 @@ describe('CategoriesController (e2e)', () => {
     });
 
     it('should find category by ID', async () => {
-      const result = await firstValueFrom(
-        client.send(EVENTS.CATEGORY.GET_BY_ID, { id: createdCategoryId }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.CATEGORY.GET_BY_ID, { id: createdCategoryId }));
 
       expect(result).toBeDefined();
       expect(result.id).toBe(createdCategoryId);
     });
 
     it('should find category by slug', async () => {
-      const result = await firstValueFrom(
-        client.send(EVENTS.CATEGORY.GET_BY_SLUG, { slug: categorySlug }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.CATEGORY.GET_BY_SLUG, { slug: categorySlug }));
 
       expect(result).toBeDefined();
       expect(result.slug).toBe(categorySlug);
     });
 
     it('should list categories', async () => {
-      const result = await firstValueFrom(
-        client.send(EVENTS.CATEGORY.LIST, { page: 1, pageSize: 10 }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.CATEGORY.LIST, { page: 1, pageSize: 10 }));
 
       expect(result).toBeDefined();
       expect(result.categories).toBeInstanceOf(Array);

@@ -321,18 +321,14 @@ describe('UsersService', () => {
     it('should throw RpcException when user not found', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.update('999', { fullName: 'Test', role: UserRole.ADMIN }),
-      ).rejects.toThrow(RpcException);
+      await expect(service.update('999', { fullName: 'Test', role: UserRole.ADMIN })).rejects.toThrow(RpcException);
     });
 
     it('should handle database errors during update', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: '1', email: 'test@example.com' });
       prisma.user.update.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.update('1', { fullName: 'Test', role: UserRole.ADMIN })).rejects.toThrow(
-        RpcException,
-      );
+      await expect(service.update('1', { fullName: 'Test', role: UserRole.ADMIN })).rejects.toThrow(RpcException);
     });
   });
 

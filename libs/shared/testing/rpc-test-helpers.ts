@@ -14,10 +14,7 @@
  *   'không tồn tại'
  * );
  */
-export const expectRpcError = async (
-  promise: Promise<unknown>,
-  expectedMessage?: string,
-): Promise<void> => {
+export const expectRpcError = async (promise: Promise<unknown>, expectedMessage?: string): Promise<void> => {
   try {
     await promise;
     throw new Error('Expected RpcException but got success');
@@ -27,9 +24,7 @@ export const expectRpcError = async (
     if (expectedMessage) {
       const err = error as Record<string, unknown>;
       const msg =
-        (typeof err.message === 'string' ? err.message : '') ||
-        (typeof err.msg === 'string' ? err.msg : '') ||
-        '';
+        (typeof err.message === 'string' ? err.message : '') || (typeof err.msg === 'string' ? err.msg : '') || '';
       expect(msg).toContain(expectedMessage);
     }
   }
@@ -66,9 +61,7 @@ export const expectRpcErrorWithStatus = async (
     // Kiểm tra thông điệp (nếu cung cấp)
     if (expectedMessage) {
       const msg =
-        (typeof err.message === 'string' ? err.message : '') ||
-        (typeof err.msg === 'string' ? err.msg : '') ||
-        '';
+        (typeof err.message === 'string' ? err.message : '') || (typeof err.msg === 'string' ? err.msg : '') || '';
       expect(msg).toContain(expectedMessage);
     }
   }

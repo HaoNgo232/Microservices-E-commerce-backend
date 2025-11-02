@@ -334,9 +334,7 @@ describe('ArService', () => {
       const validationError = new ValidationRpcException('Invalid filter');
       (mockPrisma.aRSnapshot.findMany as jest.Mock).mockRejectedValue(validationError);
 
-      await expect(service.snapshotList({ page: 1, pageSize: 20 })).rejects.toThrow(
-        ValidationRpcException,
-      );
+      await expect(service.snapshotList({ page: 1, pageSize: 20 })).rejects.toThrow(ValidationRpcException);
     });
 
     it('should handle metadata mapping correctly', async () => {

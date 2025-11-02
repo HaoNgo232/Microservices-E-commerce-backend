@@ -186,9 +186,7 @@ describe('JwtService', () => {
       await testService.onModuleInit();
 
       const payload = { sub: 'test-123', email: 'test@example.com', role: 'USER' };
-      await expect(testService.signToken(payload, 900)).rejects.toThrow(
-        'Cannot sign token: Private key not loaded',
-      );
+      await expect(testService.signToken(payload, 900)).rejects.toThrow('Cannot sign token: Private key not loaded');
     });
   });
 

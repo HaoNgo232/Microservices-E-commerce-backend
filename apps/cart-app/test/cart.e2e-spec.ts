@@ -4,12 +4,7 @@ import { ClientsModule, Transport, ClientProxy } from '@nestjs/microservices';
 import { CartAppModule } from '../src/cart-app.module';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
 import { EVENTS } from '@shared/events';
-import {
-  CartGetDto,
-  CartAddItemDto,
-  CartUpdateItemDto,
-  CartRemoveItemDto,
-} from '@shared/dto/cart.dto';
+import { CartGetDto, CartAddItemDto, CartUpdateItemDto, CartRemoveItemDto } from '@shared/dto/cart.dto';
 import { firstValueFrom, of } from 'rxjs';
 import { expectRpcError } from '@shared/testing/rpc-test-helpers';
 
@@ -81,10 +76,7 @@ describe('CartController (e2e)', () => {
       if (pattern === EVENTS.PRODUCT.GET_BY_IDS) {
         // Check if the requested product IDs match our test product
         const requestPayload = payload as { ids: string[] };
-        if (
-          requestPayload.ids.includes(testProductId) ||
-          requestPayload.ids.includes('product-456')
-        ) {
+        if (requestPayload.ids.includes(testProductId) || requestPayload.ids.includes('product-456')) {
           return of(
             [
               {
@@ -199,10 +191,7 @@ describe('CartController (e2e)', () => {
         quantity: 5,
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.CART.UPDATE_ITEM, dto)),
-        'không tồn tại',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.CART.UPDATE_ITEM, dto)), 'không tồn tại');
     });
   });
 

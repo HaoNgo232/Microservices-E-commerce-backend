@@ -18,11 +18,7 @@ import { CartItemResponse } from '@shared/types/cart.types';
  */
 export interface ICartItemService {
   addItem(cartId: string, productId: string, quantity: number): Promise<CartItemResponse>;
-  updateQuantity(
-    cartId: string,
-    productId: string,
-    quantity: number,
-  ): Promise<CartItemResponse | null>;
+  updateQuantity(cartId: string, productId: string, quantity: number): Promise<CartItemResponse | null>;
   removeItem(cartId: string, productId: string): Promise<{ success: boolean }>;
   findByCartAndProduct(cartId: string, productId: string): Promise<CartItemResponse | null>;
 }
@@ -101,11 +97,7 @@ export class CartItemService implements ICartItemService {
    * @throws EntityNotFoundRpcException - Nếu CartItem không tồn tại
    * @throws InternalServerRpcException - Lỗi database
    */
-  async updateQuantity(
-    cartId: string,
-    productId: string,
-    quantity: number,
-  ): Promise<CartItemResponse | null> {
+  async updateQuantity(cartId: string, productId: string, quantity: number): Promise<CartItemResponse | null> {
     try {
       if (quantity < 0) {
         throw new ValidationRpcException('Số lượng không hợp lệ');

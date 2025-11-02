@@ -3,7 +3,7 @@
  * Based on Product và Category models trong product-app Prisma schema
  */
 
-import type { CategoryResponse, CategoryWithRelations } from './category.types';
+import type { CategoryResponse } from './category.types';
 
 // Product response types for API responses
 export type ProductResponse = {

@@ -229,9 +229,7 @@ describe('AddressController', () => {
       const error = new Error('Address not found or does not belong to user');
       mockAddressService.setDefaultAddress.mockRejectedValue(error);
 
-      await expect(controller.setDefault(dto)).rejects.toThrow(
-        'Address not found or does not belong to user',
-      );
+      await expect(controller.setDefault(dto)).rejects.toThrow('Address not found or does not belong to user');
       expect(service.setDefaultAddress).toHaveBeenCalledWith(dto);
     });
   });

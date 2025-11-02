@@ -6,13 +6,7 @@ import {
   ValidationRpcException,
   ConflictRpcException,
 } from '@shared/exceptions/rpc-exceptions';
-import {
-  OrderCreateDto,
-  OrderIdDto,
-  OrderListDto,
-  OrderUpdateStatusDto,
-  OrderCancelDto,
-} from '@shared/dto/order.dto';
+import { OrderCreateDto, OrderIdDto, OrderListDto, OrderUpdateStatusDto, OrderCancelDto } from '@shared/dto/order.dto';
 import { of, throwError } from 'rxjs';
 import { EVENTS } from '@shared/events';
 import { OrderStatus } from '@shared/types';
@@ -230,9 +224,7 @@ describe('OrdersService', () => {
       const emptyDto = { ...validDto, items: [] };
 
       await expect(service.create(emptyDto)).rejects.toThrow(ValidationRpcException);
-      await expect(service.create(emptyDto)).rejects.toThrow(
-        'Order must contain at least one item',
-      );
+      await expect(service.create(emptyDto)).rejects.toThrow('Order must contain at least one item');
     });
 
     it('should throw ValidationRpcException when items is undefined', async () => {
@@ -265,10 +257,7 @@ describe('OrdersService', () => {
 
       await service.create(validDto);
 
-      const expectedTotal = validDto.items.reduce(
-        (sum, item) => sum + item.priceInt * item.quantity,
-        0,
-      );
+      const expectedTotal = validDto.items.reduce((sum, item) => sum + item.priceInt * item.quantity, 0);
       expect(prisma.order.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -383,9 +372,7 @@ describe('OrdersService', () => {
     it('should throw EntityNotFoundRpcException when order not found', async () => {
       prisma.order.findUnique.mockResolvedValue(null);
 
-      await expect(service.get({ id: 'non-existent' } as OrderIdDto)).rejects.toThrow(
-        EntityNotFoundRpcException,
-      );
+      await expect(service.get({ id: 'non-existent' } as OrderIdDto)).rejects.toThrow(EntityNotFoundRpcException);
     });
   });
 
@@ -859,11 +846,7 @@ describe('OrdersService', () => {
     });
 
     it('should reject invalid transitions from SHIPPED', async () => {
-      const invalidTransitions = [
-        OrderStatus.PENDING,
-        OrderStatus.PROCESSING,
-        OrderStatus.CANCELLED,
-      ];
+      const invalidTransitions = [OrderStatus.PENDING, OrderStatus.PROCESSING, OrderStatus.CANCELLED];
 
       for (const toStatus of invalidTransitions) {
         prisma.order.findUnique.mockResolvedValue({

@@ -12,11 +12,7 @@
 import { Injectable } from '@nestjs/common';
 import { ARSnapshotCreateDto, ARSnapshotListDto } from '@shared/dto/ar.dto';
 import { PrismaService } from '@ar-app/prisma/prisma.service';
-import {
-  ARSnapshotCreateResponse,
-  ARSnapshotResponse,
-  PaginatedARSnapshotsResponse,
-} from '@shared/types/ar.types';
+import { ARSnapshotCreateResponse, ARSnapshotResponse, PaginatedARSnapshotsResponse } from '@shared/types/ar.types';
 import { ValidationRpcException } from '@shared/exceptions/rpc-exceptions';
 
 @Injectable()

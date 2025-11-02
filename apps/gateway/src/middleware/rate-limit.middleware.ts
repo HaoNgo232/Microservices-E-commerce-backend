@@ -36,10 +36,7 @@ export class RateLimitMiddleware implements NestMiddleware {
 
     // Check limit
     if (this.store[key].count > this.maxRequests) {
-      throw new HttpException(
-        'Too many requests, please try again later',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw new HttpException('Too many requests, please try again later', HttpStatus.TOO_MANY_REQUESTS);
     }
 
     next();

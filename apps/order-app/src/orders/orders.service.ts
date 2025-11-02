@@ -388,9 +388,7 @@ export class OrdersService implements IOrdersService {
    * @throws ValidationRpcException nếu sản phẩm không tồn tại hoặc không đủ tồn kho
    * @private
    */
-  private async validateProductsAndStock(
-    items: Array<{ productId: string; quantity: number }>,
-  ): Promise<void> {
+  private async validateProductsAndStock(items: Array<{ productId: string; quantity: number }>): Promise<void> {
     try {
       // Get all product IDs
       const productIds = items.map(item => item.productId);
@@ -406,9 +404,7 @@ export class OrdersService implements IOrdersService {
             catchError(error => {
               console.error('[OrdersService] Error fetching products:', error);
               if (error instanceof Error && error.name === 'TimeoutError') {
-                return throwError(
-                  () => new ValidationRpcException('Product service không phản hồi'),
-                );
+                return throwError(() => new ValidationRpcException('Product service không phản hồi'));
               }
               return throwError(() => new ValidationRpcException('Failed to validate products'));
             }),
@@ -464,10 +460,7 @@ export class OrdersService implements IOrdersService {
           .pipe(
             timeout(5000),
             catchError(error => {
-              console.error(
-                `[OrdersService] Failed to decrement stock for product ${item.productId}:`,
-                error,
-              );
+              console.error(`[OrdersService] Failed to decrement stock for product ${item.productId}:`, error);
               return of(null);
             }),
           ),
@@ -497,10 +490,7 @@ export class OrdersService implements IOrdersService {
           .pipe(
             timeout(5000),
             catchError(error => {
-              console.error(
-                `[OrdersService] Failed to restore stock for product ${item.productId}:`,
-                error,
-              );
+              console.error(`[OrdersService] Failed to restore stock for product ${item.productId}:`, error);
               return of(null);
             }),
           ),
@@ -560,9 +550,7 @@ export class OrdersService implements IOrdersService {
     const allowedStatuses = validTransitions[currentStatus] || [];
 
     if (!allowedStatuses.includes(newStatus)) {
-      throw new ValidationRpcException(
-        `Invalid status transition from ${currentStatus} to ${newStatus}`,
-      );
+      throw new ValidationRpcException(`Invalid status transition from ${currentStatus} to ${newStatus}`);
     }
   }
 }

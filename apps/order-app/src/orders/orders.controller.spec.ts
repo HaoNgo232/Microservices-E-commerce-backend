@@ -2,13 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RpcException } from '@nestjs/microservices';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
-import {
-  OrderCreateDto,
-  OrderIdDto,
-  OrderUpdateStatusDto,
-  OrderCancelDto,
-  OrderListDto,
-} from '@shared/dto/order.dto';
+import { OrderCreateDto, OrderIdDto, OrderUpdateStatusDto, OrderCancelDto, OrderListDto } from '@shared/dto/order.dto';
 import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
 
 describe('OrdersController', () => {

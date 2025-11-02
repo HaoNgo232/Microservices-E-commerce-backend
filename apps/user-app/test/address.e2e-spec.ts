@@ -20,10 +20,7 @@ const getUserIdFromToken = (token: string): string => {
 };
 
 // Helper function to assert NATS RpcException errors
-const expectRpcError = async (
-  promise: Promise<unknown>,
-  expectedMessage?: string,
-): Promise<void> => {
+const expectRpcError = async (promise: Promise<unknown>, expectedMessage?: string): Promise<void> => {
   try {
     await promise;
     throw new Error('Expected RpcException but got success');
@@ -32,9 +29,7 @@ const expectRpcError = async (
     if (expectedMessage) {
       const err = error as Record<string, unknown>;
       const msg =
-        (typeof err.message === 'string' ? err.message : '') ||
-        (typeof err.msg === 'string' ? err.msg : '') ||
-        '';
+        (typeof err.message === 'string' ? err.message : '') || (typeof err.msg === 'string' ? err.msg : '') || '';
       expect(msg).toContain(expectedMessage);
     }
   }
@@ -112,9 +107,7 @@ describe('AddressController (e2e)', () => {
         isDefault: false,
       };
 
-      const result = await firstValueFrom(
-        client.send(EVENTS.ADDRESS.CREATE, { userId: testUserId, dto: createDto }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.ADDRESS.CREATE, { userId: testUserId, dto: createDto }));
 
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
@@ -136,9 +129,7 @@ describe('AddressController (e2e)', () => {
         isDefault: false,
       };
 
-      const result = await firstValueFrom(
-        client.send(EVENTS.ADDRESS.CREATE, { userId: testUserId, dto: createDto }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.ADDRESS.CREATE, { userId: testUserId, dto: createDto }));
 
       // Địa chỉ đầu tiên sẽ tự động trở thành default
       expect(result.isDefault).toBe(true);
@@ -156,9 +147,7 @@ describe('AddressController (e2e)', () => {
       };
 
       await expectRpcError(
-        firstValueFrom(
-          client.send(EVENTS.ADDRESS.CREATE, { userId: 'non-existent-user-id', dto: createDto }),
-        ),
+        firstValueFrom(client.send(EVENTS.ADDRESS.CREATE, { userId: 'non-existent-user-id', dto: createDto })),
         'không tồn tại',
       );
     });
@@ -194,9 +183,7 @@ describe('AddressController (e2e)', () => {
     });
 
     it('should list all addresses for a user', async () => {
-      const result = await firstValueFrom(
-        client.send(EVENTS.ADDRESS.LIST_BY_USER, { userId: testUserId }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.ADDRESS.LIST_BY_USER, { userId: testUserId }));
 
       expect(result).toBeDefined();
       expect(result).toBeInstanceOf(Array);
@@ -211,14 +198,10 @@ describe('AddressController (e2e)', () => {
         password: 'Test@123456',
         fullName: 'No Address User',
       };
-      const newUser: AuthResponse = await firstValueFrom(
-        client.send(EVENTS.AUTH.REGISTER, newUserDto),
-      );
+      const newUser: AuthResponse = await firstValueFrom(client.send(EVENTS.AUTH.REGISTER, newUserDto));
       const newUserId = getUserIdFromToken(newUser.accessToken);
 
-      const result = await firstValueFrom(
-        client.send(EVENTS.ADDRESS.LIST_BY_USER, { userId: newUserId }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.ADDRESS.LIST_BY_USER, { userId: newUserId }));
 
       expect(result).toBeInstanceOf(Array);
       expect(result.length).toBe(0);
@@ -240,9 +223,7 @@ describe('AddressController (e2e)', () => {
         isDefault: false,
       };
 
-      const created = await firstValueFrom(
-        client.send(EVENTS.ADDRESS.CREATE, { userId: testUserId, dto: createDto }),
-      );
+      const created = await firstValueFrom(client.send(EVENTS.ADDRESS.CREATE, { userId: testUserId, dto: createDto }));
       addressId = created.id;
     });
 
@@ -253,9 +234,7 @@ describe('AddressController (e2e)', () => {
         street: 'Updated Street',
       };
 
-      const result = await firstValueFrom(
-        client.send(EVENTS.ADDRESS.UPDATE, { id: addressId, dto: updateDto }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.ADDRESS.UPDATE, { id: addressId, dto: updateDto }));
 
       expect(result.fullName).toBe('Updated Name');
       expect(result.phone).toBe('0987654321');
@@ -269,9 +248,7 @@ describe('AddressController (e2e)', () => {
       };
 
       await expectRpcError(
-        firstValueFrom(
-          client.send(EVENTS.ADDRESS.UPDATE, { id: 'non-existent-id', dto: updateDto }),
-        ),
+        firstValueFrom(client.send(EVENTS.ADDRESS.UPDATE, { id: 'non-existent-id', dto: updateDto })),
         'không tồn tại',
       );
     });
@@ -337,10 +314,7 @@ describe('AddressController (e2e)', () => {
         addressId: 'non-existent-id',
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.ADDRESS.SET_DEFAULT, setDefaultDto)),
-        'không tồn tại',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.ADDRESS.SET_DEFAULT, setDefaultDto)), 'không tồn tại');
     });
   });
 
@@ -393,10 +367,7 @@ describe('AddressController (e2e)', () => {
     });
 
     it('should throw error when deleting non-existent address', async () => {
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.ADDRESS.DELETE, 'non-existent-id')),
-        'không tồn tại',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.ADDRESS.DELETE, 'non-existent-id')), 'không tồn tại');
     });
 
     it('should auto-assign new default when deleting default address with other addresses', async () => {

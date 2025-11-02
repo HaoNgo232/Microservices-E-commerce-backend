@@ -44,9 +44,7 @@ export function validateEnvironment(): void {
  * @returns Chuỗi URL kết nối database cho service
  * @throws Error nếu không tìm thấy biến môi trường tương ứng
  */
-export function getDatabaseUrl(
-  service: 'user' | 'product' | 'cart' | 'order' | 'payment' | 'ar' | 'report',
-): string {
+export function getDatabaseUrl(service: 'user' | 'product' | 'cart' | 'order' | 'payment' | 'ar' | 'report'): string {
   const envKey = `DATABASE_URL_${service.toUpperCase()}`;
   const url = process.env[envKey];
 

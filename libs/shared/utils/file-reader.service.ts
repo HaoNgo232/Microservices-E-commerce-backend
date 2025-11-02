@@ -26,9 +26,7 @@ export class FileReaderService {
     try {
       return await fs.readFile(path, 'utf-8');
     } catch (error) {
-      throw new Error(
-        `Failed to read file at ${path}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      throw new Error(`Failed to read file at ${path}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

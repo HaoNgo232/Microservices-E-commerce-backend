@@ -133,9 +133,7 @@ describe('Gateway (e2e)', () => {
 
       productService.send.mockReturnValue(of(mockProduct));
 
-      const response = await request(app.getHttpServer())
-        .get('/products/slug/test-product')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/products/slug/test-product').expect(200);
 
       expect(response.body).toEqual(mockProduct);
       expect(productService.send).toHaveBeenCalled();
@@ -217,9 +215,7 @@ describe('Gateway (e2e)', () => {
   describe('Error Handling', () => {
     it('should handle microservice timeout errors', async () => {
       // Mock Observable that times out
-      userService.send.mockReturnValue(
-        throwError(() => ({ name: 'TimeoutError', message: 'Timeout' })),
-      );
+      userService.send.mockReturnValue(throwError(() => ({ name: 'TimeoutError', message: 'Timeout' })));
 
       await request(app.getHttpServer())
         .get('/users/user-123')
@@ -251,9 +247,7 @@ describe('Gateway (e2e)', () => {
 
       productService.send.mockReturnValue(of(mockProduct));
 
-      const response = await request(app.getHttpServer())
-        .get('/products/slug/test-product')
-        .expect(200);
+      const response = await request(app.getHttpServer()).get('/products/slug/test-product').expect(200);
 
       expect(response.body).toEqual(mockProduct);
       expect(productService.send).toHaveBeenCalled();
@@ -267,9 +261,7 @@ describe('Gateway (e2e)', () => {
     ];
 
     beforeEach(() => {
-      userService.send.mockReturnValue(
-        of({ users: mockUserList, total: 2, page: 1, pageSize: 10 }),
-      );
+      userService.send.mockReturnValue(of({ users: mockUserList, total: 2, page: 1, pageSize: 10 }));
     });
 
     it('should allow ADMIN to access /users endpoint', async () => {
@@ -277,10 +269,7 @@ describe('Gateway (e2e)', () => {
       const adminPayload = { sub: 'admin-1', email: 'admin@example.com', role: 'ADMIN' };
       jwtService.verifyToken.mockResolvedValueOnce(adminPayload);
 
-      await request(app.getHttpServer())
-        .get('/users')
-        .set('Authorization', `Bearer admin.token`)
-        .expect(200);
+      await request(app.getHttpServer()).get('/users').set('Authorization', `Bearer admin.token`).expect(200);
 
       expect(userService.send).toHaveBeenCalled();
     });
@@ -290,10 +279,7 @@ describe('Gateway (e2e)', () => {
       const customerPayload = { sub: 'user-123', email: 'user@example.com', role: 'CUSTOMER' };
       jwtService.verifyToken.mockResolvedValueOnce(customerPayload);
 
-      await request(app.getHttpServer())
-        .get('/users')
-        .set('Authorization', `Bearer customer.token`)
-        .expect(403);
+      await request(app.getHttpServer()).get('/users').set('Authorization', `Bearer customer.token`).expect(403);
 
       expect(userService.send).not.toHaveBeenCalled();
     });
@@ -320,10 +306,7 @@ describe('Gateway (e2e)', () => {
       const adminPayload = { sub: 'admin-1', email: 'admin@example.com', role: 'ADMIN' };
       jwtService.verifyToken.mockResolvedValueOnce(adminPayload);
 
-      await request(app.getHttpServer())
-        .get('/users/user-123')
-        .set('Authorization', `Bearer admin.token`)
-        .expect(200);
+      await request(app.getHttpServer()).get('/users/user-123').set('Authorization', `Bearer admin.token`).expect(200);
 
       expect(userService.send).toHaveBeenCalled();
     });

@@ -68,9 +68,7 @@ export class JwtService implements OnModuleInit {
       }
     } catch (error) {
       console.error('[JwtService] ❌ Failed to load RSA keys:', error);
-      throw new Error(
-        `JWT key initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      throw new Error(`JWT key initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

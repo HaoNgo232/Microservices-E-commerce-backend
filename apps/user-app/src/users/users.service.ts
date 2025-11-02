@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { UpdateUserDto, ListUsersDto, CreateUserDto } from '@shared/dto/user.dto';
-import { ListUsersResponse, UserResponse } from '@shared/main';
+import { ListUsersResponse, UserResponse } from '@shared/types';
 import { PrismaService } from '@user-app/prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 

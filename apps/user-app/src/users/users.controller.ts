@@ -3,7 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from '@user-app/users/users.service';
 import { EVENTS } from '@shared/events';
 import { UpdateUserDto, ListUsersDto, CreateUserDto } from '@shared/dto/user.dto';
-import { ListUsersResponse, UserResponse } from '@shared/main';
+import { ListUsersResponse, UserResponse } from '@shared/types';
 
 /**
  * Interface cho Users Controller

@@ -91,8 +91,7 @@ export class CategoryValidator {
     if (hasCircularReference) {
       throw new RpcException({
         statusCode: 400,
-        message:
-          'Cannot create circular reference: the new parent is a descendant of this category',
+        message: 'Cannot create circular reference: the new parent is a descendant of this category',
       });
     }
   }
@@ -105,10 +104,7 @@ export class CategoryValidator {
    * @returns Promise<boolean> true if circular reference detected
    * @private
    */
-  private async checkCircularReference(
-    potentialParentId: string,
-    categoryId: string,
-  ): Promise<boolean> {
+  private async checkCircularReference(potentialParentId: string, categoryId: string): Promise<boolean> {
     let currentId: string | null = potentialParentId;
     const visitedIds = new Set<string>([categoryId]);
 
@@ -139,9 +135,7 @@ export class CategoryValidator {
    * Validate category can be deleted (no children, no products)
    * @throws RpcException if category has children or products
    */
-  async validateCanDelete(
-    categoryId: string,
-  ): Promise<{ childrenCount: number; productCount: number }> {
+  async validateCanDelete(categoryId: string): Promise<{ childrenCount: number; productCount: number }> {
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
       include: {

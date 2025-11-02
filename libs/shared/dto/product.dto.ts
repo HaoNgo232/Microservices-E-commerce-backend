@@ -1,15 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsNumber,
-  IsPositive,
-  IsArray,
-  IsUrl,
-  Min,
-  IsObject,
-} from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsNumber, IsPositive, IsArray, IsUrl, Min, IsObject } from 'class-validator';
 
 export class ProductCreateDto {
   @IsNotEmpty()

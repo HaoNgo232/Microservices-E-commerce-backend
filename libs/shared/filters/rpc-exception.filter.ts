@@ -99,9 +99,7 @@ export class AllRpcExceptionsFilter implements RpcExceptionFilter<RpcException> 
         return {
           statusCode,
           message:
-            typeof response === 'string'
-              ? response
-              : (response as { message: string }).message || exception.message,
+            typeof response === 'string' ? response : (response as { message: string }).message || exception.message,
         };
       }
 

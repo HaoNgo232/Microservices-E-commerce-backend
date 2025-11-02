@@ -60,9 +60,7 @@ describe('RolesGuard', () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
 
       expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(
-        'User role not found in token',
-      );
+      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow('User role not found in token');
     });
 
     it('should throw ForbiddenException when user role is missing', () => {
@@ -71,9 +69,7 @@ describe('RolesGuard', () => {
       mockRequest.user = {}; // user without role
 
       expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow(
-        'User role not found in token',
-      );
+      expect(() => guard.canActivate(mockContext as ExecutionContext)).toThrow('User role not found in token');
     });
 
     it('should allow access when user role matches required role', () => {
@@ -85,9 +81,7 @@ describe('RolesGuard', () => {
     });
 
     it('should allow access when user role is in required roles list', () => {
-      jest
-        .spyOn(reflector, 'getAllAndOverride')
-        .mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
 
       mockRequest.user = { role: UserRole.CUSTOMER };
 
@@ -106,9 +100,7 @@ describe('RolesGuard', () => {
     });
 
     it('should include multiple required roles in error message', () => {
-      jest
-        .spyOn(reflector, 'getAllAndOverride')
-        .mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
 
       mockRequest.user = { role: 'INVALID' };
 

@@ -10,12 +10,7 @@ import {
   ValidationRpcException,
   EntityNotFoundRpcException,
 } from '@shared/exceptions/rpc-exceptions';
-import {
-  CartGetDto,
-  CartAddItemDto,
-  CartUpdateItemDto,
-  CartRemoveItemDto,
-} from '@shared/dto/cart.dto';
+import { CartGetDto, CartAddItemDto, CartUpdateItemDto, CartRemoveItemDto } from '@shared/dto/cart.dto';
 import {
   CartResponse,
   CartWithProductsResponse,
@@ -86,10 +81,7 @@ export class CartService implements ICartService {
         totalInt,
       };
     } catch (error) {
-      if (
-        error instanceof InternalServerRpcException ||
-        error instanceof ServiceUnavailableRpcException
-      ) {
+      if (error instanceof InternalServerRpcException || error instanceof ServiceUnavailableRpcException) {
         throw error;
       }
 
@@ -131,11 +123,7 @@ export class CartService implements ICartService {
   async updateItem(dto: CartUpdateItemDto): Promise<CartItemOperationResponse> {
     try {
       const cart = await this.getOrCreateCart(dto.userId);
-      const cartItem = await this.cartItemService.updateQuantity(
-        cart.id,
-        dto.productId,
-        dto.quantity,
-      );
+      const cartItem = await this.cartItemService.updateQuantity(cart.id, dto.productId, dto.quantity);
       return { cartItem };
     } catch (error) {
       if (
@@ -246,10 +234,7 @@ export class CartService implements ICartService {
       if (error instanceof Error && error.name === 'TimeoutError') {
         throw new ServiceUnavailableRpcException('Product service không phản hồi');
       }
-      if (
-        error instanceof ServiceUnavailableRpcException ||
-        error instanceof InternalServerRpcException
-      ) {
+      if (error instanceof ServiceUnavailableRpcException || error instanceof InternalServerRpcException) {
         throw error;
       }
 
@@ -265,10 +250,7 @@ export class CartService implements ICartService {
   /**
    * Enrich cart items với product data
    */
-  private enrichCartItems(
-    items: CartItemResponse[],
-    products: ProductData[],
-  ): CartItemWithProduct[] {
+  private enrichCartItems(items: CartItemResponse[], products: ProductData[]): CartItemWithProduct[] {
     const productMap = new Map(products.map(p => [p.id, p]));
 
     return items.map(item => {

@@ -38,7 +38,8 @@
     "test:run": "dotenv -e .env.test -- jest --config ./jest.e2e.js",
     "test:compose:down": "docker compose -f docker-compose.test.yml down -v",
     "test:full": "pnpm test:compose:up && pnpm test:compose:wait && pnpm test:db:migrate && pnpm test:run; pnpm test:compose:down",
-    "test:compose:wait": "bash -c 'for i in {1..30}; do pg_isready -h localhost -p 5533 -U user && pg_isready -h localhost -p 5534 -U product && pg_isready -h localhost -p 5535 -U cart && pg_isready -h localhost -p 5536 -U order && pg_isready -h localhost -p 5537 -U payment && pg_isready -h localhost -p 5538 -U ar && pg_isready -h localhost -p 5539 -U report && break || sleep 1; done'"
+    "test:compose:wait": "bash -c 'for i in {1..30}; do pg_isready -h localhost -p 5533 -U user && pg_isready -h localhost -p 5534 -U product && pg_isready -h localhost -p 5535 -U cart && pg_isready -h localhost -p 5536 -U order && pg_isready -h localhost -p 5537 -U payment && pg_isready -h localhost -p 5538 -U ar && pg_isready -h localhost -p 5539 -U report && break || sleep 1; done'",
+    "seed": "pnpm db:gen:all && pnpm db:push:all && tsx scripts/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

@@ -1,21 +1,6 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  Inject,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import {
-  CategoryCreateDto,
-  CategoryUpdateDto,
-  CategoryListQueryDto,
-} from '@shared/dto/category.dto';
+import { CategoryCreateDto, CategoryUpdateDto, CategoryListQueryDto } from '@shared/dto/category.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
@@ -40,10 +25,7 @@ export class CategoriesController extends BaseGatewayController {
    */
   @Get()
   list(@Query() query: CategoryListQueryDto): Promise<PaginatedCategoriesResponse> {
-    return this.send<CategoryListQueryDto, PaginatedCategoriesResponse>(
-      EVENTS.CATEGORY.LIST,
-      query,
-    );
+    return this.send<CategoryListQueryDto, PaginatedCategoriesResponse>(EVENTS.CATEGORY.LIST, query);
   }
 
   /**

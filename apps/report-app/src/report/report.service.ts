@@ -3,11 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { SalesSummaryDto, ProductPerformanceDto, UserCohortDto } from '@shared/dto/report.dto';
 import { PrismaService } from '@report-app/prisma/prisma.service';
 import { ValidationRpcException } from '@shared/exceptions/rpc-exceptions';
-import {
-  ProductPerformanceResponse,
-  SalesSummaryResponse,
-  UserCohortResponse,
-} from '@shared/types';
+import { ProductPerformanceResponse, SalesSummaryResponse, UserCohortResponse } from '@shared/types';
 
 /** Interface cho Report Service
  * Định nghĩa các phương thức tạo báo cáo
@@ -101,9 +97,7 @@ export class ReportService implements IReportService {
         },
       });
 
-      console.log(
-        `[ReportService] Generated sales summary: ${fromAt.toISOString()} to ${toAt.toISOString()}`,
-      );
+      console.log(`[ReportService] Generated sales summary: ${fromAt.toISOString()} to ${toAt.toISOString()}`);
       return mockData;
     } catch (error) {
       if (error instanceof ValidationRpcException) {
@@ -170,9 +164,7 @@ export class ReportService implements IReportService {
         },
       });
 
-      console.log(
-        `[ReportService] Generated product performance: ${fromAt.toISOString()} to ${toAt.toISOString()}`,
-      );
+      console.log(`[ReportService] Generated product performance: ${fromAt.toISOString()} to ${toAt.toISOString()}`);
       return mockData;
     } catch (error) {
       if (error instanceof ValidationRpcException) {
@@ -228,9 +220,7 @@ export class ReportService implements IReportService {
         },
       });
 
-      console.log(
-        `[ReportService] Generated user cohort: ${fromAt.toISOString()} to ${toAt.toISOString()}`,
-      );
+      console.log(`[ReportService] Generated user cohort: ${fromAt.toISOString()} to ${toAt.toISOString()}`);
       return mockData;
     } catch (error) {
       if (error instanceof ValidationRpcException) {

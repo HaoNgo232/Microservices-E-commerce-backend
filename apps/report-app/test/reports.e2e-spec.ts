@@ -6,11 +6,7 @@ import { PrismaService } from '@report-app/prisma/prisma.service';
 import { EVENTS } from '@shared/events';
 import { SalesSummaryDto, ProductPerformanceDto, UserCohortDto } from '@shared/dto/report.dto';
 import { firstValueFrom, of } from 'rxjs';
-import {
-  ProductPerformanceResponse,
-  SalesSummaryResponse,
-  UserCohortResponse,
-} from '@shared/types';
+import { ProductPerformanceResponse, SalesSummaryResponse, UserCohortResponse } from '@shared/types';
 import { expectRpcError } from '@shared/testing/rpc-test-helpers';
 
 describe('ReportController (e2e)', () => {
@@ -109,10 +105,7 @@ describe('ReportController (e2e)', () => {
         toAt: '2024-01-01T00:00:00Z',
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.REPORT.SALES_SUMMARY, dto)),
-        'fromAt must be before toAt',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.REPORT.SALES_SUMMARY, dto)), 'fromAt must be before toAt');
     });
 
     it('should handle date range correctly', async () => {
@@ -121,9 +114,7 @@ describe('ReportController (e2e)', () => {
         toAt: '2024-06-30T23:59:59Z',
       };
 
-      const result = await firstValueFrom(
-        client.send<SalesSummaryResponse>(EVENTS.REPORT.SALES_SUMMARY, dto),
-      );
+      const result = await firstValueFrom(client.send<SalesSummaryResponse>(EVENTS.REPORT.SALES_SUMMARY, dto));
 
       expect(result).toBeDefined();
       expect(new Date(result.fromAt).getTime()).toBeLessThan(new Date(result.toAt).getTime());
@@ -137,9 +128,7 @@ describe('ReportController (e2e)', () => {
         toAt: '2024-12-31T23:59:59Z',
       };
 
-      const result = await firstValueFrom(
-        client.send<ProductPerformanceResponse>(EVENTS.REPORT.PRODUCT_PERF, dto),
-      );
+      const result = await firstValueFrom(client.send<ProductPerformanceResponse>(EVENTS.REPORT.PRODUCT_PERF, dto));
 
       expect(result).toBeDefined();
       expect(result.products).toBeDefined();
@@ -158,10 +147,7 @@ describe('ReportController (e2e)', () => {
         toAt: '2024-01-01T00:00:00Z',
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.REPORT.PRODUCT_PERF, dto)),
-        'fromAt must be before toAt',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.REPORT.PRODUCT_PERF, dto)), 'fromAt must be before toAt');
     });
 
     it('should return product data with correct structure', async () => {
@@ -189,9 +175,7 @@ describe('ReportController (e2e)', () => {
         toAt: '2024-12-31T23:59:59Z',
       };
 
-      const result = await firstValueFrom(
-        client.send<UserCohortResponse>(EVENTS.REPORT.USER_COHORT, dto),
-      );
+      const result = await firstValueFrom(client.send<UserCohortResponse>(EVENTS.REPORT.USER_COHORT, dto));
 
       expect(result).toBeDefined();
       expect(result.newUsers).toBeGreaterThanOrEqual(0);
@@ -207,10 +191,7 @@ describe('ReportController (e2e)', () => {
         toAt: '2024-01-01T00:00:00Z',
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.REPORT.USER_COHORT, dto)),
-        'fromAt must be before toAt',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.REPORT.USER_COHORT, dto)), 'fromAt must be before toAt');
     });
 
     it('should return user metrics correctly', async () => {

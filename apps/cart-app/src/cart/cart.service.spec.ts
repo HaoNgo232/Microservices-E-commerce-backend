@@ -5,10 +5,7 @@ import { CartService } from './cart.service';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
 import { CartItemService } from '@cart-app/cart-item/cart-item.service';
 import { CartGetDto } from '@shared/dto/cart.dto';
-import {
-  ServiceUnavailableRpcException,
-  InternalServerRpcException,
-} from '@shared/exceptions/rpc-exceptions';
+import { ServiceUnavailableRpcException, InternalServerRpcException } from '@shared/exceptions/rpc-exceptions';
 
 const mockCart = {
   id: 'cart-123',
@@ -189,9 +186,7 @@ describe('CartService', () => {
       mockProductClient.send.mockReturnValue(throwError(() => timeoutError));
 
       // Act & Assert
-      await expect(service.get({ userId: 'user123' })).rejects.toThrow(
-        ServiceUnavailableRpcException,
-      );
+      await expect(service.get({ userId: 'user123' })).rejects.toThrow(ServiceUnavailableRpcException);
     });
 
     it('should wrap unexpected errors', async () => {
@@ -294,9 +289,7 @@ describe('CartService', () => {
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.addItem.mockRejectedValue(
-        new InternalServerRpcException('Unexpected error'),
-      );
+      mockCartItemService.addItem.mockRejectedValue(new InternalServerRpcException('Unexpected error'));
 
       // Act & Assert
       await expect(
@@ -353,9 +346,7 @@ describe('CartService', () => {
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.updateQuantity.mockRejectedValue(
-        new InternalServerRpcException('Unexpected error'),
-      );
+      mockCartItemService.updateQuantity.mockRejectedValue(new InternalServerRpcException('Unexpected error'));
 
       // Act & Assert
       await expect(
@@ -403,9 +394,7 @@ describe('CartService', () => {
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.removeItem.mockRejectedValue(
-        new InternalServerRpcException('Unexpected error'),
-      );
+      mockCartItemService.removeItem.mockRejectedValue(new InternalServerRpcException('Unexpected error'));
 
       // Act & Assert
       await expect(

@@ -10,12 +10,7 @@
  */
 
 import { Controller, Get, Inject } from '@nestjs/common';
-import {
-  HealthCheckService,
-  HealthCheck,
-  MicroserviceHealthIndicator,
-  HealthCheckResult,
-} from '@nestjs/terminus';
+import { HealthCheckService, HealthCheck, MicroserviceHealthIndicator, HealthCheckResult } from '@nestjs/terminus';
 import { Transport, ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout, catchError, of } from 'rxjs';
 
@@ -134,23 +129,16 @@ export class HealthController {
     services: Record<string, { status: string; latency?: number }>;
   }> {
     // Kiểm tra tất cả service cùng lúc (parallel)
-    const [
-      userHealth,
-      productHealth,
-      orderHealth,
-      arHealth,
-      paymentHealth,
-      cartHealth,
-      reportHealth,
-    ] = await Promise.all([
-      this.checkService(this.userService),
-      this.checkService(this.productService),
-      this.checkService(this.orderService),
-      this.checkService(this.arService),
-      this.checkService(this.paymentService),
-      this.checkService(this.cartService),
-      this.checkService(this.reportService),
-    ]);
+    const [userHealth, productHealth, orderHealth, arHealth, paymentHealth, cartHealth, reportHealth] =
+      await Promise.all([
+        this.checkService(this.userService),
+        this.checkService(this.productService),
+        this.checkService(this.orderService),
+        this.checkService(this.arService),
+        this.checkService(this.paymentService),
+        this.checkService(this.cartService),
+        this.checkService(this.reportService),
+      ]);
 
     return {
       status: 'ok',

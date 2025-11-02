@@ -74,27 +74,21 @@ describe('ProductsController (e2e)', () => {
     });
 
     it('should find product by ID', async () => {
-      const result = await firstValueFrom(
-        client.send(EVENTS.PRODUCT.GET_BY_ID, { id: createdProductId }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.PRODUCT.GET_BY_ID, { id: createdProductId }));
 
       expect(result).toBeDefined();
       expect(result.id).toBe(createdProductId);
     });
 
     it('should find product by slug', async () => {
-      const result = await firstValueFrom(
-        client.send(EVENTS.PRODUCT.GET_BY_SLUG, { slug: productSlug }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.PRODUCT.GET_BY_SLUG, { slug: productSlug }));
 
       expect(result).toBeDefined();
       expect(result.slug).toBe(productSlug);
     });
 
     it('should list products with pagination', async () => {
-      const result = await firstValueFrom(
-        client.send(EVENTS.PRODUCT.LIST, { page: 1, pageSize: 10 }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.PRODUCT.LIST, { page: 1, pageSize: 10 }));
 
       expect(result).toBeDefined();
       expect(result.products).toBeInstanceOf(Array);
@@ -108,9 +102,7 @@ describe('ProductsController (e2e)', () => {
         priceInt: 12999,
       };
 
-      const result = await firstValueFrom(
-        client.send(EVENTS.PRODUCT.UPDATE, { id: createdProductId, dto: updateDto }),
-      );
+      const result = await firstValueFrom(client.send(EVENTS.PRODUCT.UPDATE, { id: createdProductId, dto: updateDto }));
 
       expect(result).toBeDefined();
       expect(result.name).toBe(updateDto.name);

@@ -3,11 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ReportService } from '@report-app/report/report.service';
 import { EVENTS } from '@shared/events';
 import { SalesSummaryDto, ProductPerformanceDto, UserCohortDto } from '@shared/dto/report.dto';
-import {
-  ProductPerformanceResponse,
-  SalesSummaryResponse,
-  UserCohortResponse,
-} from '@shared/types';
+import { ProductPerformanceResponse, SalesSummaryResponse, UserCohortResponse } from '@shared/types';
 
 /**
  * ReportController - NATS Message Handler cho Reports

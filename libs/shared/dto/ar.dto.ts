@@ -1,14 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsNumber,
-  IsUrl,
-  IsPositive,
-  Min,
-  IsObject,
-} from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsNumber, IsUrl, IsPositive, Min, IsObject } from 'class-validator';
 
 export class ARSnapshotCreateDto {
   @IsOptional()

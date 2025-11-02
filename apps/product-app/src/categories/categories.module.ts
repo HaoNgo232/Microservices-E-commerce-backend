@@ -8,13 +8,7 @@ import { CategoryQueryBuilder } from '@product-app/categories/builders/category-
 
 @Module({
   controllers: [CategoriesController],
-  providers: [
-    CategoriesService,
-    PrismaService,
-    CategoryMapper,
-    CategoryValidator,
-    CategoryQueryBuilder,
-  ],
+  providers: [CategoriesService, PrismaService, CategoryMapper, CategoryValidator, CategoryQueryBuilder],
   exports: [CategoriesService],
 })
 export class CategoriesModule {}

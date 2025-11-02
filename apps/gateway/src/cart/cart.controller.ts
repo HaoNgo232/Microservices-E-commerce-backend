@@ -1,19 +1,10 @@
 import { Controller, Get, Post, Patch, Delete, Body, Inject, UseGuards, Req } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthGuard } from '@gateway/auth/auth.guard';
-import {
-  CartGetDto,
-  CartAddItemDto,
-  CartUpdateItemDto,
-  CartRemoveItemDto,
-} from '@shared/dto/cart.dto';
+import { CartGetDto, CartAddItemDto, CartUpdateItemDto, CartRemoveItemDto } from '@shared/dto/cart.dto';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
-import {
-  CartWithProductsResponse,
-  CartItemOperationResponse,
-  CartOperationSuccessResponse,
-} from '@shared/types';
+import { CartWithProductsResponse, CartItemOperationResponse, CartOperationSuccessResponse } from '@shared/types';
 
 /**
  * Cart Controller - Gateway endpoint cho shopping cart

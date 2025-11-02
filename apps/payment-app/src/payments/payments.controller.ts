@@ -9,11 +9,7 @@ import {
   PaymentByOrderDto,
   SePayWebhookDto,
 } from '@shared/dto/payment.dto';
-import {
-  PaymentResponse,
-  PaymentProcessResponse,
-  PaymentVerifyResponse,
-} from '@shared/types/payment.types';
+import { PaymentResponse, PaymentProcessResponse, PaymentVerifyResponse } from '@shared/types/payment.types';
 import { SePayWebhookResponse } from '@shared/types/payment.webhook.types';
 
 /**
@@ -42,6 +38,7 @@ export class PaymentsController {
    */
   @MessagePattern(EVENTS.PAYMENT.WEBHOOK_SEPAY)
   sepayWebhook(@Payload() dto: SePayWebhookDto): Promise<SePayWebhookResponse> {
+    console.log('Received SEPAY webhook:', dto);
     return this.paymentsService.handleSePayWebhook(dto);
   }
 

@@ -7,11 +7,7 @@ import {
   CategorySlugDto,
   CategoryListQueryDto,
 } from '@shared/dto/category.dto';
-import {
-  CategoryResponse,
-  PaginatedCategoriesResponse,
-  CategoryWithRelations,
-} from '@shared/types/product.types';
+import { CategoryResponse, PaginatedCategoriesResponse, CategoryWithRelations } from '@shared/types/product.types';
 import { PrismaService } from '@product-app/prisma/prisma.service';
 import { CategoryMapper } from './mappers/category.mapper';
 import { CategoryValidator } from './validators/category.validator';

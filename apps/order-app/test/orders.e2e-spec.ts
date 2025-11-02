@@ -1,17 +1,10 @@
-import { Order } from './../prisma/generated/client/index.d';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestMicroservice } from '@nestjs/common';
 import { ClientsModule, Transport, ClientProxy } from '@nestjs/microservices';
 import { OrderAppModule } from '../src/order-app.module';
 import { PrismaService } from '@order-app/prisma/prisma.service';
 import { EVENTS } from '@shared/events';
-import {
-  OrderCreateDto,
-  OrderIdDto,
-  OrderListDto,
-  OrderUpdateStatusDto,
-  OrderCancelDto,
-} from '@shared/dto/order.dto';
+import { OrderCreateDto, OrderIdDto, OrderListDto, OrderUpdateStatusDto, OrderCancelDto } from '@shared/dto/order.dto';
 import { firstValueFrom, of } from 'rxjs';
 import { expectRpcError } from '@shared/testing/rpc-test-helpers';
 import { OrderStatus } from '@shared/types';
@@ -73,10 +66,7 @@ describe('OrdersController (e2e)', () => {
     mockProductClient.send.mockImplementation((pattern: string, payload: unknown) => {
       if (pattern === EVENTS.PRODUCT.GET_BY_IDS) {
         const requestPayload = payload as { ids: string[] };
-        if (
-          requestPayload.ids.includes(testProductId) ||
-          requestPayload.ids.includes('product-456')
-        ) {
+        if (requestPayload.ids.includes(testProductId) || requestPayload.ids.includes('product-456')) {
           return of(
             [
               {
@@ -179,10 +169,7 @@ describe('OrdersController (e2e)', () => {
         items: [],
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.ORDER.CREATE, dto)),
-        'must contain at least one item',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.ORDER.CREATE, dto)), 'must contain at least one item');
     });
   });
 
@@ -328,10 +315,7 @@ describe('OrdersController (e2e)', () => {
         status: OrderStatus.PROCESSING,
       };
 
-      await expectRpcError(
-        firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, dto)),
-        'không tồn tại',
-      );
+      await expectRpcError(firstValueFrom(client.send(EVENTS.ORDER.UPDATE_STATUS, dto)), 'không tồn tại');
     });
   });
 

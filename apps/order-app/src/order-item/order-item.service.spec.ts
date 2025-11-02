@@ -6,11 +6,7 @@ import {
   InternalServerRpcException,
   ValidationRpcException,
 } from '@shared/exceptions/rpc-exceptions';
-import {
-  OrderItemListByOrderDto,
-  OrderItemAddDto,
-  OrderItemRemoveDto,
-} from '@shared/dto/order.dto';
+import { OrderItemListByOrderDto, OrderItemAddDto, OrderItemRemoveDto } from '@shared/dto/order.dto';
 
 describe('OrderItemService', () => {
   let service: OrderItemService;
@@ -92,9 +88,9 @@ describe('OrderItemService', () => {
     it('should throw EntityNotFoundRpcException when order does not exist', async () => {
       prisma.order.findUnique.mockResolvedValueOnce(null);
 
-      await expect(
-        service.listByOrder({ orderId: 'non-existent' } as OrderItemListByOrderDto),
-      ).rejects.toThrow(EntityNotFoundRpcException);
+      await expect(service.listByOrder({ orderId: 'non-existent' } as OrderItemListByOrderDto)).rejects.toThrow(
+        EntityNotFoundRpcException,
+      );
     });
 
     it('should return empty array when order has no items', async () => {
@@ -262,9 +258,9 @@ describe('OrderItemService', () => {
     it('should throw EntityNotFoundRpcException when order item does not exist', async () => {
       prisma.orderItem.findUnique.mockResolvedValueOnce(null);
 
-      await expect(
-        service.removeItem({ id: 'non-existent' } as OrderItemRemoveDto),
-      ).rejects.toThrow(EntityNotFoundRpcException);
+      await expect(service.removeItem({ id: 'non-existent' } as OrderItemRemoveDto)).rejects.toThrow(
+        EntityNotFoundRpcException,
+      );
     });
 
     it('should not decrement order total below zero', async () => {
@@ -331,9 +327,9 @@ describe('OrderItemService', () => {
 
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-      await expect(
-        service.removeItem({ id: 'non-existent' } as OrderItemRemoveDto),
-      ).rejects.toThrow(EntityNotFoundRpcException);
+      await expect(service.removeItem({ id: 'non-existent' } as OrderItemRemoveDto)).rejects.toThrow(
+        EntityNotFoundRpcException,
+      );
 
       expect(consoleErrorSpy).not.toHaveBeenCalled();
 

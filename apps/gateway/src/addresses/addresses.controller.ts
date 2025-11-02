@@ -1,15 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-  Req,
-  Inject,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   AddressCreateDto,
@@ -61,10 +50,7 @@ export class AddressesController extends BaseGatewayController {
    * Microservice nhận: { userId: string; dto: AddressCreateDto }
    */
   @Post()
-  create(
-    @Req() req: Request & { user: { userId: string } },
-    @Body() dto: AddressCreateDto,
-  ): Promise<AddressResponse> {
+  create(@Req() req: Request & { user: { userId: string } }, @Body() dto: AddressCreateDto): Promise<AddressResponse> {
     // IMPORTANT: Extract userId from JWT token, NOT from request body
     // This prevents security vulnerability where users could create addresses for other users
     const payload = {
@@ -108,10 +94,7 @@ export class AddressesController extends BaseGatewayController {
    * Microservice nhận: AddressSetDefaultDto
    */
   @Put(':id/set-default')
-  setDefault(
-    @Req() req: Request & { user: { userId: string } },
-    @Param('id') id: string,
-  ): Promise<AddressResponse> {
+  setDefault(@Req() req: Request & { user: { userId: string } }, @Param('id') id: string): Promise<AddressResponse> {
     const payload: AddressSetDefaultDto = {
       userId: req.user.userId,
       addressId: id,

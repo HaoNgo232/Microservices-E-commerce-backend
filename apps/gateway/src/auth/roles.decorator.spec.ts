@@ -83,10 +83,7 @@ describe('@Roles() Decorator', () => {
       }
 
       const adminMetadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.adminMethod);
-      const customerMetadata = Reflect.getMetadata(
-        ROLES_KEY,
-        TestController.prototype.customerMethod,
-      );
+      const customerMetadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.customerMethod);
       const bothMetadata = Reflect.getMetadata(ROLES_KEY, TestController.prototype.bothMethod);
 
       expect(adminMetadata).toEqual([UserRole.ADMIN]);

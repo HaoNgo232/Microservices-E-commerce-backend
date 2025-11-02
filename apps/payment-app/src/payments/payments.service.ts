@@ -8,10 +8,7 @@ import {
   SePayWebhookDto,
 } from '@shared/dto/payment.dto';
 import { PrismaService } from '@payment-app/prisma/prisma.service';
-import {
-  EntityNotFoundRpcException,
-  ValidationRpcException,
-} from '@shared/exceptions/rpc-exceptions';
+import { EntityNotFoundRpcException, ValidationRpcException } from '@shared/exceptions/rpc-exceptions';
 import {
   PaymentResponse,
   PaymentProcessResponse,
@@ -312,9 +309,7 @@ export class PaymentsService implements IPaymentService {
 
       // Validate payment is COD
       if (payment.method !== PaymentMethod.COD) {
-        throw new ValidationRpcException(
-          `Cannot confirm non-COD payment. Payment method: ${payment.method}`,
-        );
+        throw new ValidationRpcException(`Cannot confirm non-COD payment. Payment method: ${payment.method}`);
       }
 
       // Validate payment is not already PAID
@@ -352,9 +347,7 @@ export class PaymentsService implements IPaymentService {
         // Ignore errors (fire-and-forget)
       });
 
-      console.log(
-        `[PaymentsService] COD payment confirmed: orderId=${payment.orderId}, paymentId=${payment.id}`,
-      );
+      console.log(`[PaymentsService] COD payment confirmed: orderId=${payment.orderId}, paymentId=${payment.id}`);
 
       return updatedPayment as PaymentResponse;
     } catch (error: unknown) {
@@ -455,9 +448,7 @@ export class PaymentsService implements IPaymentService {
       });
 
       if (!payment) {
-        console.log(
-          `[PaymentsService] No matching payment found: orderId=${orderId}, amount=${dto.transferAmount}`,
-        );
+        console.log(`[PaymentsService] No matching payment found: orderId=${orderId}, amount=${dto.transferAmount}`);
         return {
           success: true,
           message: 'Transaction saved (no matching unpaid payment)',
@@ -496,12 +487,7 @@ export class PaymentsService implements IPaymentService {
         // Ignore errors (fire-and-forget)
       });
 
-      // Notify frontend via webhook (fire-and-forget)
-      this.notifyFrontend(orderId, payment.id, PaymentStatus.PAID);
-
-      console.log(
-        `[PaymentsService] Payment completed: orderId=${orderId}, paymentId=${payment.id}`,
-      );
+      console.log(`[PaymentsService] Payment completed: orderId=${orderId}, paymentId=${payment.id}`);
 
       return {
         success: true,
@@ -539,9 +525,7 @@ export class PaymentsService implements IPaymentService {
           timeout(5000),
           catchError(error => {
             if (error instanceof Error && error.name === 'TimeoutError') {
-              return throwError(
-                () => new ValidationRpcException('Order service không phản hồi, vui lòng thử lại'),
-              );
+              return throwError(() => new ValidationRpcException('Order service không phản hồi, vui lòng thử lại'));
             }
             return throwError(() => new EntityNotFoundRpcException('Order', orderId));
           }),
@@ -549,9 +533,7 @@ export class PaymentsService implements IPaymentService {
       )) as OrderResponse;
 
       if (order.status !== OrderStatus.PENDING) {
-        throw new ValidationRpcException(
-          `Cannot process payment for order with status: ${order.status}`,
-        );
+        throw new ValidationRpcException(`Cannot process payment for order with status: ${order.status}`);
       }
     } catch (error: unknown) {
       if (error instanceof EntityNotFoundRpcException || error instanceof ValidationRpcException) {
@@ -637,12 +619,8 @@ export class PaymentsService implements IPaymentService {
    * Generate SePay QR URL theo chuẩn docs SePay
    * https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG
    */
-  private generateSePayQRUrl(
-    accountNo: string,
-    bankName: string,
-    amount: number,
-    orderId: string,
-  ): string {
+  private generateSePayQRUrl(accountNo: string, bankName: string, amount: number, orderId: string): string {
     const description = `DH${orderId}`;
     return `https://qr.sepay.vn/img?acc=${accountNo}&bank=${encodeURIComponent(bankName)}&amount=${amount}&des=${encodeURIComponent(description)}`;
   }
+}

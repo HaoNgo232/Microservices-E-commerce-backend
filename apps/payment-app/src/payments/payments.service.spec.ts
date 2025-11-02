@@ -3,10 +3,7 @@ import { PaymentsService } from './payments.service';
 import { PrismaService } from '@payment-app/prisma/prisma.service';
 import { ClientProxy } from '@nestjs/microservices';
 import { of, throwError } from 'rxjs';
-import {
-  EntityNotFoundRpcException,
-  ValidationRpcException,
-} from '@shared/exceptions/rpc-exceptions';
+import { EntityNotFoundRpcException, ValidationRpcException } from '@shared/exceptions/rpc-exceptions';
 import { PaymentMethod, PaymentStatus } from '@shared/types';
 
 describe('PaymentsService', () => {
@@ -288,9 +285,7 @@ describe('PaymentsService', () => {
       mockPrisma.payment.findUnique.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.getById({ id: 'payment-999' })).rejects.toThrow(
-        EntityNotFoundRpcException,
-      );
+      await expect(service.getById({ id: 'payment-999' })).rejects.toThrow(EntityNotFoundRpcException);
     });
   });
 
@@ -315,9 +310,7 @@ describe('PaymentsService', () => {
       mockPrisma.payment.findFirst.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.getByOrder({ orderId: 'order-999' })).rejects.toThrow(
-        EntityNotFoundRpcException,
-      );
+      await expect(service.getByOrder({ orderId: 'order-999' })).rejects.toThrow(EntityNotFoundRpcException);
     });
   });
 

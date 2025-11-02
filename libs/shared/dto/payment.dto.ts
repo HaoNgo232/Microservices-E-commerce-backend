@@ -1,15 +1,6 @@
 import { PaymentMethod } from '@shared/types';
 import { Type } from 'class-transformer';
-import {
-  IsNotEmpty,
-  IsString,
-  IsEnum,
-  IsNumber,
-  IsPositive,
-  IsObject,
-  IsOptional,
-  IsIn,
-} from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, IsNumber, IsPositive, IsObject, IsOptional, IsIn } from 'class-validator';
 
 export class PaymentProcessDto {
   @IsNotEmpty()

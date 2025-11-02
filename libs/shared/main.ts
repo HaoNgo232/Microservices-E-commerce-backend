@@ -4,7 +4,6 @@
  */
 export * from './config/index';
 export * from './dto/index';
-export * from './types/index';
 export * from './filters/index';
 export * from './utils/index';
 
