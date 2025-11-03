@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@gateway/app.module';
 import { ValidationPipe } from '@nestjs/common';
+import type { Request, Response } from 'express';
 
 /**
  * Bootstrap API Gateway Application
@@ -34,6 +35,14 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: process.env.CORS_ORIGIN?.split(',') || '*',
     credentials: true,
+  });
+
+  // Disable caching để tránh race conditions và stale data
+  app.use((req: Request, res: Response, next: () => void) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    next();
   });
 
   const port = process.env.PORT || 3000;
