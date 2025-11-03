@@ -139,11 +139,10 @@ export class PaymentsService implements IPaymentService {
         };
       }
 
-      // SePay: Tạo SePay QR URL động
+      // SePay: Tạo VietQR URL theo chuẩn docs
       const qrCodeUrl = this.generateSePayQRUrl(
         process.env.SEPAY_ACCOUNT_NUMBER!, // Số tài khoản ngân hàng
-        process.env.SEPAY_BANK_NAME!, // Tên ngân hàng đúng chuẩn SePay VD: 'Vietcombank', 'MBBank'
-        process.env.ACCOUNT_NAME!, // Tên tài khoản ảo (bắt buộc cho webhook)
+        process.env.SEPAY_BANK_NAME!, // Tên ngân hàng (BIDV, MBBank, Vietcombank, etc.)
         dto.amountInt,
         dto.orderId,
       );
@@ -617,24 +616,25 @@ export class PaymentsService implements IPaymentService {
   }
 
   /**
-   * Generate SePay QR URL theo chuẩn docs SePay
-   * https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG&template=compact&accountName=TEN_TAI_KHOAN
+   * Generate SePay QR URL theo chuẩn VietQR
+   * Docs: https://sepay.vn/lap-trinh-cong-thanh-toan.html
+   *
+   * URL format: https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG&template=compact
+   *
+   * LƯU Ý:
+   * - KHÔNG có tham số accountName trong URL VietQR
+   * - Tài khoản ảo (subAccount) được cấu hình tại SePay Dashboard
+   * - SePay nhận diện giao dịch qua pattern trong nội dung (DH123)
+   * - Webhook matching dựa vào: orderId + amount + status (không cần accountName)
    *
    * @param accountNo - Số tài khoản ngân hàng
-   * @param bankName - Tên ngân hàng (VD: MBBank, Vietcombank)
-   * @param accountName - Tên tài khoản ảo (bắt buộc để SePay gửi webhook)
+   * @param bankName - Tên ngân hàng (VD: MBBank, BIDV, Vietcombank)
    * @param amount - Số tiền (integer, đơn vị VND)
    * @param orderId - ID đơn hàng (sẽ thêm prefix DH)
    * @returns URL QR code SePay
    */
-  private generateSePayQRUrl(
-    accountNo: string,
-    bankName: string,
-    accountName: string,
-    amount: number,
-    orderId: string,
-  ): string {
+  private generateSePayQRUrl(accountNo: string, bankName: string, amount: number, orderId: string): string {
     const description = `DH${orderId}`;
-    return `https://qr.sepay.vn/img?acc=${accountNo}&bank=${encodeURIComponent(bankName)}&amount=${amount}&des=${encodeURIComponent(description)}&template=compact&accountName=${encodeURIComponent(accountName)}`;
+    return `https://qr.sepay.vn/img?acc=${accountNo}&bank=${encodeURIComponent(bankName)}&amount=${amount}&des=${encodeURIComponent(description)}&template=compact`;
   }
 }
