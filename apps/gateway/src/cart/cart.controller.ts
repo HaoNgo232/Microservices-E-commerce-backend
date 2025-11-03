@@ -77,4 +77,17 @@ export class CartController extends BaseGatewayController {
       userId: req.user.userId,
     });
   }
+
+  /**
+   * DELETE /cart
+   * Xóa toàn bộ giỏ hàng (clear all items)
+   * Dùng sau khi checkout thành công
+   */
+  @Delete()
+  clear(@Req() req: Request & { user: { userId: string } }): Promise<{ success: boolean; message: string }> {
+    const dto: CartGetDto = {
+      userId: req.user.userId,
+    };
+    return this.send<CartGetDto, { success: boolean; message: string }>(EVENTS.CART.CLEAR, dto);
+  }
 }

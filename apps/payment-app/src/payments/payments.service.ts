@@ -139,10 +139,34 @@ export class PaymentsService implements IPaymentService {
         };
       }
 
-      // SePay: Tạo VietQR URL theo chuẩn docs
+      // SePay: Validate env variables trước khi generate QR
+      if (!process.env.SEPAY_ACCOUNT_NUMBER) {
+        throw new ValidationRpcException(
+          'SePay configuration missing: SEPAY_ACCOUNT_NUMBER không được cấu hình. ' +
+            'Với BIDV, bạn PHẢI dùng số tài khoản ảo (VA) thay vì số tài khoản chính. ' +
+            'VD: 96247HAOVA. Đăng ký VA tại https://my.sepay.vn',
+        );
+      }
+
+      if (!process.env.SEPAY_BANK_NAME) {
+        throw new ValidationRpcException(
+          'SePay configuration missing: SEPAY_BANK_NAME không được cấu hình. Vui lòng thêm tên ngân hàng (BIDV, MBBank, etc.) vào file .env',
+        );
+      }
+
+      if (!process.env.ACCOUNT_NAME) {
+        throw new ValidationRpcException(
+          'SePay configuration missing: ACCOUNT_NAME (tên tài khoản ảo) không được cấu hình. ' +
+            'Đây là BẮT BUỘC để webhook hoạt động. ' +
+            'Vui lòng đăng ký tài khoản ảo tại https://my.sepay.vn và thêm ACCOUNT_NAME vào .env',
+        );
+      }
+
+      // SePay: Tạo VietQR URL với accountName (BẮT BUỘC cho webhook)
       const qrCodeUrl = this.generateSePayQRUrl(
-        process.env.SEPAY_ACCOUNT_NUMBER!, // Số tài khoản ngân hàng
-        process.env.SEPAY_BANK_NAME!, // Tên ngân hàng (BIDV, MBBank, Vietcombank, etc.)
+        process.env.SEPAY_ACCOUNT_NUMBER,
+        process.env.SEPAY_BANK_NAME,
+        process.env.ACCOUNT_NAME,
         dto.amountInt,
         dto.orderId,
       );
@@ -424,11 +448,12 @@ export class PaymentsService implements IPaymentService {
       }
 
       // 4. Extract order ID from transaction content using regex
-      // Pattern: DH123 or DH-123 or similar
-      const orderIdMatch = new RegExp(/DH[-_]?(\d+)/i).exec(dto.content);
+      // Pattern: DH{orderId} - orderId có thể là CUID (cmhild03q0004uxjsg6940pjb) hoặc số
+      // Match: DH + bất kỳ ký tự nào sau đó (alphanumeric)
+      const orderIdMatch = /DH([a-zA-Z0-9_-]+)/i.exec(dto.content);
 
       if (!orderIdMatch) {
-        console.log('[PaymentsService] No order ID found in transaction content');
+        console.log('[PaymentsService] No order ID found in transaction content:', dto.content);
         return {
           success: true,
           message: 'Transaction saved (no order ID in content)',
@@ -436,6 +461,7 @@ export class PaymentsService implements IPaymentService {
       }
 
       const orderId = orderIdMatch[1];
+      console.log('[PaymentsService] Extracted order ID from webhook:', orderId);
 
       // 5. Find matching payment
       // Conditions: orderId matches, amount matches, status is UNPAID
@@ -616,25 +642,35 @@ export class PaymentsService implements IPaymentService {
   }
 
   /**
-   * Generate SePay QR URL theo chuẩn VietQR
+   * Generate SePay QR URL theo chuẩn VietQR với accountName
    * Docs: https://sepay.vn/lap-trinh-cong-thanh-toan.html
    *
-   * URL format: https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG&template=compact
+   * URL format: https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG&accountName=TEN_TAI_KHOAN&template=compact
    *
-   * LƯU Ý:
-   * - KHÔNG có tham số accountName trong URL VietQR
-   * - Tài khoản ảo (subAccount) được cấu hình tại SePay Dashboard
-   * - SePay nhận diện giao dịch qua pattern trong nội dung (DH123)
-   * - Webhook matching dựa vào: orderId + amount + status (không cần accountName)
+   * LƯU Ý QUAN TRỌNG CHO BIDV:
+   * - BIDV API KHÔNG thể đồng bộ giao dịch qua tài khoản chính
+   * - PHẢI dùng số tài khoản ảo (VA - Virtual Account)
+   * - Format VA: {SốChính}{Mã} - VD: "96247HAOVA"
+   * - accountName là tên hiển thị trên QR (tên người nhận)
+   * - Tài khoản ảo PHẢI được đăng ký tại https://my.sepay.vn trước
+   * - SePay nhận diện giao dịch qua: số VA + pattern trong nội dung (DH123)
+   * - Webhook sẽ KHÔNG hoạt động nếu thiếu accountName hoặc chưa đăng ký VA
    *
-   * @param accountNo - Số tài khoản ngân hàng
-   * @param bankName - Tên ngân hàng (VD: MBBank, BIDV, Vietcombank)
+   * @param accountNo - Số tài khoản ảo (VA) - VD: "96247HAOVA" (KHÔNG dùng số tài khoản chính)
+   * @param bankName - Tên ngân hàng (VD: "BIDV", "MBBank", "Vietcombank")
+   * @param accountName - Tên hiển thị trên QR (tên tài khoản ảo đã đăng ký với SePay)
    * @param amount - Số tiền (integer, đơn vị VND)
    * @param orderId - ID đơn hàng (sẽ thêm prefix DH)
    * @returns URL QR code SePay
    */
-  private generateSePayQRUrl(accountNo: string, bankName: string, amount: number, orderId: string): string {
+  private generateSePayQRUrl(
+    accountNo: string,
+    bankName: string,
+    accountName: string,
+    amount: number,
+    orderId: string,
+  ): string {
     const description = `DH${orderId}`;
-    return `https://qr.sepay.vn/img?acc=${accountNo}&bank=${encodeURIComponent(bankName)}&amount=${amount}&des=${encodeURIComponent(description)}&template=compact`;
+    return `https://qr.sepay.vn/img?acc=${accountNo}&bank=${encodeURIComponent(bankName)}&amount=${amount}&des=${encodeURIComponent(description)}&accountName=${encodeURIComponent(accountName)}&template=compact`;
   }
 }
