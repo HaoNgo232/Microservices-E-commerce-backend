@@ -133,9 +133,7 @@ Gateway gọi microservices PHẢI có timeout và retry:
 ```typescript
 // ✅ CORRECT
 return firstValueFrom(
-  this.userClient
-    .send(EVENTS.USER.FIND_ONE, { userId })
-    .pipe(timeout(5000), retry({ count: 1, delay: 1000 })),
+  this.userClient.send(EVENTS.USER.FIND_ONE, { userId }).pipe(timeout(5000), retry({ count: 1, delay: 1000 })),
 );
 
 // ❌ WRONG - no error handling
@@ -285,11 +283,7 @@ Dùng helpers từ `@shared/testing/rpc-test-helpers`:
 ```typescript
 import { expectRpcError, expectRpcErrorWithStatus } from '@shared/testing/rpc-test-helpers';
 
-await expectRpcErrorWithStatus(
-  firstValueFrom(client.send(EVENTS.USER.FIND_ONE, 'invalid-id')),
-  404,
-  'không tồn tại',
-);
+await expectRpcErrorWithStatus(firstValueFrom(client.send(EVENTS.USER.FIND_ONE, 'invalid-id')), 404, 'không tồn tại');
 ```
 
 ## Commands to Use

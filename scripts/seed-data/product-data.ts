@@ -43,7 +43,7 @@ export async function createProducts(
           uvProtection: 'UV400',
           frameShape: 'Aviator',
           color: 'Vàng-Xanh lá',
-        } as never,
+        },
         model3dUrl: 'https://example.com/models/rayban-aviator.glb',
       },
     }),
@@ -66,7 +66,7 @@ export async function createProducts(
           uvProtection: 'UV400',
           frameShape: 'Wayfarer',
           color: 'Đen-Xanh',
-        } as never,
+        },
         model3dUrl: 'https://example.com/models/rayban-wayfarer.glb',
       },
     }),
@@ -90,7 +90,7 @@ export async function createProducts(
           frameShape: 'Cat-eye',
           color: 'Vàng-Nâu',
           gender: 'Nữ',
-        } as never,
+        },
       },
     }),
 
@@ -113,7 +113,7 @@ export async function createProducts(
           frameShape: 'Sport Wrap',
           color: 'Đen-Đỏ',
           prizm: true,
-        } as never,
+        },
         model3dUrl: 'https://example.com/models/oakley-radar.glb',
       },
     }),
@@ -137,7 +137,7 @@ export async function createProducts(
           frameShape: 'Pilot',
           color: 'Vàng-Nâu',
           gender: 'Nữ',
-        } as never,
+        },
       },
     }),
 
@@ -159,7 +159,7 @@ export async function createProducts(
           uvProtection: 'UV400',
           frameShape: 'Round Oversized',
           color: 'Đen-Đen',
-        } as never,
+        },
       },
     }),
 
@@ -182,7 +182,7 @@ export async function createProducts(
           frameShape: 'Square Oversized',
           color: 'Nâu Havana',
           gender: 'Unisex',
-        } as never,
+        },
       },
     }),
 
@@ -205,7 +205,7 @@ export async function createProducts(
           frameShape: 'Cat Eye',
           color: 'Đa màu',
           gender: 'Nữ',
-        } as never,
+        },
       },
     }),
 
@@ -228,7 +228,7 @@ export async function createProducts(
           frameShape: 'Rectangle',
           color: 'Xám-Đen',
           polarized: true,
-        } as never,
+        },
       },
     }),
 
@@ -250,7 +250,7 @@ export async function createProducts(
           frameShape: 'Round',
           color: 'Đen',
           blueLight: true,
-        } as never,
+        },
       },
     }),
 
@@ -272,7 +272,7 @@ export async function createProducts(
           frameShape: 'Rectangle',
           color: 'Đa màu',
           strength: '+2.0',
-        } as never,
+        },
       },
     }),
 
@@ -295,7 +295,7 @@ export async function createProducts(
           frameShape: 'Sport Wrap',
           color: 'Trắng-Đỏ',
           photochromic: true,
-        } as never,
+        },
       },
     }),
 
@@ -317,7 +317,7 @@ export async function createProducts(
           frameShape: 'Round',
           color: 'Đa màu',
           age: '5-12',
-        } as never,
+        },
       },
     }),
 
@@ -338,7 +338,7 @@ export async function createProducts(
           frameShape: 'Oval',
           color: 'Vàng/Bạc',
           gender: 'Unisex',
-        } as never,
+        },
       },
     }),
 
@@ -360,7 +360,7 @@ export async function createProducts(
           uvProtection: 'UV400',
           frameShape: 'Rectangle',
           color: 'Đen',
-        } as never,
+        },
       },
     }),
 
@@ -381,7 +381,7 @@ export async function createProducts(
           frameShape: 'Round',
           color: 'Vàng',
           style: 'Vintage',
-        } as never,
+        },
       },
     }),
 
@@ -401,7 +401,7 @@ export async function createProducts(
           frameMaterial: 'Metal',
           frameShape: 'Hexagon',
           color: 'Đen/Vàng',
-        } as never,
+        },
       },
     }),
 
@@ -424,7 +424,7 @@ export async function createProducts(
           frameShape: 'Oversized Square',
           color: 'Đen/Nâu',
           gender: 'Nữ',
-        } as never,
+        },
       },
     }),
 
@@ -445,7 +445,7 @@ export async function createProducts(
           frameShape: 'Wayfarer',
           color: 'Tortoise Shell',
           style: 'Retro',
-        } as never,
+        },
       },
     }),
 
@@ -466,7 +466,7 @@ export async function createProducts(
           frameShape: 'Rectangle',
           color: 'Natural Wood',
           eco: true,
-        } as never,
+        },
       },
     }),
 
@@ -489,7 +489,7 @@ export async function createProducts(
           frameShape: 'Aviator',
           color: 'Bạc-Xanh',
           mirrored: true,
-        } as never,
+        },
       },
     }),
 
@@ -510,7 +510,7 @@ export async function createProducts(
           frameShape: 'Rectangle',
           color: 'Đa màu',
           foldable: true,
-        } as never,
+        },
       },
     }),
 
@@ -532,7 +532,7 @@ export async function createProducts(
           frameShape: 'Rectangle',
           color: 'Đen',
           photochromic: true,
-        } as never,
+        },
       },
     }),
 
@@ -553,7 +553,7 @@ export async function createProducts(
           frameShape: 'Rectangle',
           color: 'Đen/Xanh',
           weight: 'Ultra Light',
-        } as never,
+        },
       },
     }),
 
@@ -575,7 +575,7 @@ export async function createProducts(
           frameShape: 'Rectangle',
           color: 'Đen',
           multifocal: true,
-        } as never,
+        },
       },
     }),
 
@@ -596,7 +596,7 @@ export async function createProducts(
           frameShape: 'Oval',
           color: 'Trong suốt',
           style: 'Minimalist',
-        } as never,
+        },
       },
     }),
 
@@ -616,7 +616,7 @@ export async function createProducts(
           frameMaterial: 'Transparent Plastic',
           frameShape: 'Round/Square',
           color: 'Trong suốt',
-        } as never,
+        },
       },
     }),
 
@@ -638,7 +638,7 @@ export async function createProducts(
           frameShape: 'Rectangle',
           color: 'Đen',
           blueLight: true,
-        } as never,
+        },
       },
     }),
 
@@ -657,7 +657,7 @@ export async function createProducts(
           material: 'Genuine Leather',
           color: 'Nâu/Đen',
           type: 'Hard Case',
-        } as never,
+        },
       },
     }),
 
@@ -676,7 +676,7 @@ export async function createProducts(
           material: 'Metal Chain / Beads',
           color: 'Đa màu',
           type: 'Chain/Strap',
-        } as never,
+        },
       },
     }),
   ]);
