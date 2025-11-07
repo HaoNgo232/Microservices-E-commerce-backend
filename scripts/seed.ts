@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /**
  * Seed script cho toàn bộ microservices
- * - Yêu cầu: đã chạy docker compose up -d (Postgres các service)
+ * - Yêu cầu: đã chạy docker compose up -d (Postgres + MinIO)
  * - Yêu cầu: đã export ENV cho Prisma (DATABASE_URL_USER, ...); xem docker-compose.yml để lấy cổng/credentials
  * - Chạy: pnpm run clean:dbseed
  *
  * Lưu ý:
  * - Script chỉ dùng prisma db push (không migrate) theo yêu cầu
- * - Ảnh dùng URL từ Unsplash, lưu trực tiếp URL vào DB
+ * - Ảnh được upload lên MinIO server local, lưu URL vào DB
  */
 
 import bcrypt from 'bcryptjs';
+import * as path from 'path';
 
 // Prisma clients (đã generate qua: pnpm run db:gen:all)
 import { PrismaClient as UserDB, $Enums as UserEnums } from '../apps/user-app/prisma/generated/client';
@@ -21,6 +22,10 @@ import { PrismaClient as PaymentDB, $Enums as PaymentEnums } from '../apps/payme
 import { PrismaClient as ARDB } from '../apps/ar-app/prisma/generated/client';
 import { PrismaClient as ReportDB } from '../apps/report-app/prisma/generated/client';
 
+// Import helpers
+import { initMinIOBucket, uploadAllImages } from './lib/minio-helper';
+import { createProducts } from './seed-data/product-data';
+
 const userDb = new UserDB();
 const productDb = new ProductDB();
 const cartDb = new CartDB();
@@ -29,8 +34,7 @@ const paymentDb = new PaymentDB();
 const arDb = new ARDB();
 const reportDb = new ReportDB();
 
-const unsplash = (id: string, w = 1200, q = 80) =>
-  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=${q}`;
+const IMAGES_DIR = path.join(__dirname, 'seed-data', 'images');
 
 async function seedUsers() {
   console.log('→ Seeding user-app ...');
@@ -122,7 +126,10 @@ async function seedProducts() {
   await productDb.product.deleteMany({});
   await productDb.category.deleteMany({});
 
-  // Categories cho mắt kính
+  // Upload images to MinIO first
+  const imageUrls = await uploadAllImages(IMAGES_DIR);
+
+  // Create categories
   const catSunglasses = await productDb.category.create({
     data: { name: 'Kính mát', slug: 'kinh-mat', description: 'Kính mát thời trang, chống tia UV' },
   });
@@ -136,321 +143,18 @@ async function seedProducts() {
     data: { name: 'Phụ kiện', slug: 'phu-kien', description: 'Hộp đựng, khăn lau, dây đeo kính' },
   });
 
-  // Products - Kính mát
-  const products = await Promise.all([
-    productDb.product.create({
-      data: {
-        sku: 'RB-AVIATOR-001',
-        name: 'Ray-Ban Aviator Classic',
-        slug: 'ray-ban-aviator-classic',
-        priceInt: 4990000,
-        stock: 45,
-        description: 'Kính mát phi công kinh điển, gọng kim loại vàng, tròng thủy tinh G-15',
-        imageUrls: [unsplash('photo-1511499767150-a48a237f0083'), unsplash('photo-1577803645773-f96470509666')],
-        categoryId: catSunglasses.id,
-        attributes: {
-          brand: 'Ray-Ban',
-          frameMaterial: 'Kim loại',
-          lensMaterial: 'Thủy tinh',
-          uvProtection: 'UV400',
-          frameShape: 'Aviator',
-          color: 'Vàng-Xanh lá',
-        } as never,
-        model3dUrl: 'https://example.com/models/rayban-aviator.glb',
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'RB-WAYFARER-002',
-        name: 'Ray-Ban Wayfarer',
-        slug: 'ray-ban-wayfarer',
-        priceInt: 5290000,
-        stock: 60,
-        description: 'Kính mát vuông cổ điển, phong cách retro, gọng nhựa acetate',
-        imageUrls: [unsplash('photo-1572635196237-14b3f281503f'), unsplash('photo-1509695507497-903c140c43b0')],
-        categoryId: catSunglasses.id,
-        attributes: {
-          brand: 'Ray-Ban',
-          frameMaterial: 'Acetate',
-          lensMaterial: 'Polycarbonate',
-          uvProtection: 'UV400',
-          frameShape: 'Wayfarer',
-          color: 'Đen-Xanh',
-        } as never,
-        model3dUrl: 'https://example.com/models/rayban-wayfarer.glb',
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'GUCCI-GG001',
-        name: 'Gucci GG0061S',
-        slug: 'gucci-gg0061s',
-        priceInt: 8990000,
-        stock: 30,
-        description: 'Kính mát thời trang cao cấp, logo Gucci đặc trưng, gọng kim loại vàng',
-        imageUrls: [unsplash('photo-1574258495973-f010dfbb5371'), unsplash('photo-1556306535-0f09a537f0a3')],
-        categoryId: catSunglasses.id,
-        attributes: {
-          brand: 'Gucci',
-          frameMaterial: 'Kim loại + Acetate',
-          lensMaterial: 'Polycarbonate',
-          uvProtection: 'UV400',
-          frameShape: 'Cat-eye',
-          color: 'Vàng-Nâu',
-          gender: 'Nữ',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'POLICE-SPL001',
-        name: 'Police SPL919',
-        slug: 'police-spl919',
-        priceInt: 3790000,
-        stock: 55,
-        description: 'Kính mát thể thao nam, thiết kế mạnh mẽ, gọng nhựa TR90',
-        imageUrls: [unsplash('photo-1583394838336-acd977736f90'), unsplash('photo-1584036561566-baf8f5f1b144')],
-        categoryId: catSunglasses.id,
-        attributes: {
-          brand: 'Police',
-          frameMaterial: 'TR90',
-          lensMaterial: 'TAC Polarized',
-          uvProtection: 'UV400',
-          frameShape: 'Pilot',
-          color: 'Đen bóng',
-          gender: 'Nam',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
+  // Create 30 products with MinIO images
+  const products = await createProducts(productDb, imageUrls, {
+    catSunglasses,
+    catEyeglasses,
+    catSportsGlasses,
+    catAccessories,
+  });
 
-    // Products - Gọng kính
-    productDb.product.create({
-      data: {
-        sku: 'OAKLEY-OX8156',
-        name: 'Oakley OX8156 Crosslink',
-        slug: 'oakley-ox8156-crosslink',
-        priceInt: 4590000,
-        stock: 40,
-        description: 'Gọng kính cận thể thao, chất liệu nhẹ, thiết kế linh hoạt',
-        imageUrls: [unsplash('photo-1622445275463-afa2ab738c34'), unsplash('photo-1614715838608-dd527c46231d')],
-        categoryId: catEyeglasses.id,
-        attributes: {
-          brand: 'Oakley',
-          frameMaterial: 'O-Matter',
-          frameShape: 'Rectangle',
-          color: 'Đen-Xanh',
-          gender: 'Nam',
-          suitable: 'Cận, Viễn',
-        } as never,
-        model3dUrl: 'https://example.com/models/oakley-crosslink.glb',
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'VERSACE-VE3270',
-        name: 'Versace VE3270',
-        slug: 'versace-ve3270',
-        priceInt: 7290000,
-        stock: 25,
-        description: 'Gọng kính sang trọng, logo Medusa đặc trưng, viền kim loại mạ vàng',
-        imageUrls: [unsplash('photo-1577803645773-f96470509666'), unsplash('photo-1574258495973-f010dfbb5371')],
-        categoryId: catEyeglasses.id,
-        attributes: {
-          brand: 'Versace',
-          frameMaterial: 'Acetate + Kim loại',
-          frameShape: 'Cat-eye',
-          color: 'Nâu-Vàng',
-          gender: 'Nữ',
-          suitable: 'Cận, Viễn, Loạn',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'MOLSION-MS7120',
-        name: 'Molsion MS7120',
-        slug: 'molsion-ms7120',
-        priceInt: 2490000,
-        stock: 70,
-        description: 'Gọng kính titanium siêu nhẹ, chống dị ứng, thiết kế tối giản',
-        imageUrls: [unsplash('photo-1574258495973-f010dfbb5371'), unsplash('photo-1622445275463-afa2ab738c34')],
-        categoryId: catEyeglasses.id,
-        attributes: {
-          brand: 'Molsion',
-          frameMaterial: 'Titanium',
-          frameShape: 'Oval',
-          color: 'Bạc',
-          gender: 'Unisex',
-          suitable: 'Cận, Viễn, Đa tròng',
-          weight: '15g',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'PARIM-PR8801',
-        name: 'Parim PR8801',
-        slug: 'parim-pr8801',
-        priceInt: 1990000,
-        stock: 85,
-        description: 'Gọng kính nhựa TR90, thiết kế Hàn Quốc, nhiều màu sắc',
-        imageUrls: [unsplash('photo-1609778308763-afe5cc0f4e24'), unsplash('photo-1614715838608-dd527c46231d')],
-        categoryId: catEyeglasses.id,
-        attributes: {
-          brand: 'Parim',
-          frameMaterial: 'TR90',
-          frameShape: 'Round',
-          color: 'Xanh trong suốt',
-          gender: 'Nữ',
-          suitable: 'Cận, Viễn',
-          style: 'Hàn Quốc',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
+  console.log('  ✓ categories:', 4);
+  console.log('  ✓ products:', products.length);
 
-    // Products - Kính thể thao
-    productDb.product.create({
-      data: {
-        sku: 'OAKLEY-RADAR-EV',
-        name: 'Oakley Radar EV Path',
-        slug: 'oakley-radar-ev-path',
-        priceInt: 6990000,
-        stock: 35,
-        description: 'Kính thể thao chuyên nghiệp, tròng Prizm, chống tia UV và ánh sáng xanh',
-        imageUrls: [unsplash('photo-1622445275463-afa2ab738c34'), unsplash('photo-1614715838608-dd527c46231d')],
-        categoryId: catSportsGlasses.id,
-        attributes: {
-          brand: 'Oakley',
-          frameMaterial: 'O-Matter',
-          lensMaterial: 'Plutonite',
-          lensType: 'Prizm Road',
-          uvProtection: 'UV400',
-          sport: 'Đạp xe, Chạy bộ',
-          features: 'Chống bám mồ hôi, Chống trầy',
-        } as never,
-        model3dUrl: 'https://example.com/models/oakley-radar.glb',
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'JULBO-SHIELD',
-        name: 'Julbo Shield Alti Arc 4',
-        slug: 'julbo-shield-alti-arc-4',
-        priceInt: 5490000,
-        stock: 20,
-        description: 'Kính leo núi chuyên dụng, tròng photochromic tự điều chỉnh, chống tuyết',
-        imageUrls: [unsplash('photo-1583394838336-acd977736f90'), unsplash('photo-1584036561566-baf8f5f1b144')],
-        categoryId: catSportsGlasses.id,
-        attributes: {
-          brand: 'Julbo',
-          frameMaterial: 'Grilamid',
-          lensMaterial: 'NXT',
-          lensType: 'Photochromic',
-          uvProtection: 'UV400',
-          sport: 'Leo núi, Trượt tuyết',
-          features: 'Chống sương mù, Chống trầy, Tự động điều chỉnh',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
-
-    // Products - Phụ kiện
-    productDb.product.create({
-      data: {
-        sku: 'CASE-HARD-001',
-        name: 'Hộp đựng kính cứng cao cấp',
-        slug: 'hop-dung-kinh-cung',
-        priceInt: 199000,
-        stock: 200,
-        description: 'Hộp đựng kính cứng, chống va đập, lót nhung mềm',
-        imageUrls: [unsplash('photo-1580979259381-e91bf183fd02')],
-        categoryId: catAccessories.id,
-        attributes: {
-          type: 'Hộp đựng',
-          material: 'Nhựa cứng + Nhung',
-          color: 'Đen',
-          size: '16x6x6cm',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'CLOTH-MICRO-001',
-        name: 'Khăn lau kính microfiber (Bộ 3)',
-        slug: 'khan-lau-kinh-microfiber-bo-3',
-        priceInt: 79000,
-        stock: 500,
-        description: 'Khăn lau kính siêu mềm, không trầy xước, hút bụi tốt',
-        imageUrls: [unsplash('photo-1627483262769-36cb1e508278')],
-        categoryId: catAccessories.id,
-        attributes: {
-          type: 'Khăn lau',
-          material: 'Microfiber',
-          quantity: '3 chiếc',
-          size: '15x15cm',
-          colors: 'Xám, Xanh, Hồng',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'STRAP-SPORT-001',
-        name: 'Dây đeo kính thể thao',
-        slug: 'day-deo-kinh-the-thao',
-        priceInt: 149000,
-        stock: 150,
-        description: 'Dây đeo kính chống trượt, co giãn, phù hợp với hoạt động thể thao',
-        imageUrls: [unsplash('photo-1606933248010-ef2c83c31ca1')],
-        categoryId: catAccessories.id,
-        attributes: {
-          type: 'Dây đeo',
-          material: 'Nylon + Silicon',
-          adjustable: true,
-          color: 'Đen',
-          suitable: 'Thể thao, Du lịch',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
-    productDb.product.create({
-      data: {
-        sku: 'SPRAY-CLEAN-001',
-        name: 'Xịt rửa kính chuyên dụng 50ml',
-        slug: 'xit-rua-kinh-50ml',
-        priceInt: 129000,
-        stock: 300,
-        description: 'Dung dịch rửa kính an toàn, không gây hại cho tròng phủ đa lớp',
-        imageUrls: [unsplash('photo-1619451334792-150fd785ee74')],
-        categoryId: catAccessories.id,
-        attributes: {
-          type: 'Dung dịch vệ sinh',
-          volume: '50ml',
-          features: 'Không cồn, Không mùi, An toàn với tròng phủ',
-          origin: 'Đức',
-        } as never,
-        model3dUrl: null,
-      },
-    }),
-  ]);
-
-  console.log('  ✓ categories:', [catSunglasses.slug, catEyeglasses.slug, catSportsGlasses.slug, catAccessories.slug]);
-  console.log('  ✓ products:', products.length, 'items created');
-  console.log('    - Kính mát:', products.slice(0, 4).length);
-  console.log('    - Gọng kính:', products.slice(4, 8).length);
-  console.log('    - Kính thể thao:', products.slice(8, 10).length);
-  console.log('    - Phụ kiện:', products.slice(10, 14).length);
-
-  return {
-    categories: { catSunglasses, catEyeglasses, catSportsGlasses, catAccessories },
-    products,
-  };
+  return { products, imageUrls };
 }
 
 async function seedOrders(
@@ -502,7 +206,6 @@ async function seedPayments(order: { id: string; totalInt: number }) {
       method: PaymentEnums.PaymentMethod.COD,
       amountInt: order.totalInt,
       status: PaymentEnums.PaymentStatus.UNPAID,
-      payload: null,
     },
   });
 
@@ -510,16 +213,19 @@ async function seedPayments(order: { id: string; totalInt: number }) {
   return payment;
 }
 
-async function seedAR(userId: string | null, productId: string) {
+async function seedAR(userId: string | null, productId: string, imageUrls: Map<string, string>) {
   console.log('→ Seeding ar-app ...');
 
   await arDb.aRSnapshot.deleteMany({});
+
+  // Use first image from MinIO as AR demo
+  const demoImageUrl = Array.from(imageUrls.values())[0] || 'https://via.placeholder.com/800';
 
   const snap = await arDb.aRSnapshot.create({
     data: {
       userId,
       productId,
-      imageUrl: unsplash('photo-1526170375885-4d8ecf77b99f'), // ảnh demo
+      imageUrl: demoImageUrl,
       metadata: {
         rotation: 30,
         position: { x: 0, y: 0, z: 0 },
@@ -540,7 +246,7 @@ async function seedReport() {
   await reportDb.reportEntry.create({
     data: {
       type: 'SEED_INFO',
-      payload: { note: 'Initial seed completed' } as never,
+      payload: { note: 'Initial seed completed with MinIO images' } as never,
       fromAt: new Date(),
       toAt: new Date(),
     },
@@ -560,11 +266,14 @@ async function main() {
   try {
     console.log('=== SEED START ===\n');
 
+    // 0) Initialize MinIO bucket
+    await initMinIOBucket();
+
     // 1) Users + Address
     const { customer1, addr1 } = await seedUsers();
 
-    // 2) Products + Categories
-    const { products } = await seedProducts();
+    // 2) Products + Categories (with MinIO images)
+    const { products, imageUrls } = await seedProducts();
 
     // 3) Orders (cho customer1)
     const order = await seedOrders({ userId: customer1.id, addressId: addr1.id }, products);
@@ -573,7 +282,7 @@ async function main() {
     await seedPayments(order);
 
     // 5) AR Snapshots (liên kết user + 1 sản phẩm)
-    await seedAR(customer1.id, products[0].id);
+    await seedAR(customer1.id, products[0].id, imageUrls);
 
     // 6) Cart (clear để sạch sẽ)
     await seedCart();
@@ -582,19 +291,25 @@ async function main() {
     await seedReport();
 
     console.log('\n=== SEED DONE ===');
-    console.log('\n📊 SUMMARY:');
-    console.log('👤 Users:', 4, '(2 admins, 2 customers)');
-    console.log('� Products:', products.length, '(Kính mát, Gọng kính, Kính thể thao, Phụ kiện)');
-    console.log('🏷️  Categories:', 4, '(Kính mát, Gọng kính, Kính thể thao, Phụ kiện)');
-    console.log('🛒 Orders:', 1);
-    console.log('💳 Payments:', 1);
-    console.log('📸 AR Snapshots:', 1);
-    console.log('\n🔑 LOGIN CREDENTIALS:');
+    console.log('\n��� SUMMARY:');
+    console.log('��� Users:', 4, '(2 admins, 2 customers)');
+    console.log('���️  Products:', products.length, '(Kính mát, Gọng kính, Kính thể thao, Phụ kiện)');
+    console.log('���️  Categories:', 4, '(Kính mát, Gọng kính, Kính thể thao, Phụ kiện)');
+    console.log('���️  Images:', imageUrls.size, '(uploaded to MinIO)');
+    console.log('��� Orders:', 1);
+    console.log('��� Payments:', 1);
+    console.log('��� AR Snapshots:', 1);
+    console.log('\n��� LOGIN CREDENTIALS:');
     console.log('  Admin 1:   admin@example.com / Password123!');
     console.log('  Admin 2:   haongo@admin.com / Password123!');
     console.log('  Customer1: customer1@example.com / Password123!');
     console.log('  Customer2: customer2@example.com / Password123!');
-    console.log('\n🌐 Prisma Studio URLs:');
+    console.log('\n��� MINIO CONSOLE:');
+    console.log('  URL:      http://localhost:9001');
+    console.log('  Username: minio');
+    console.log('  Password: supersecret');
+    console.log('  Bucket:   web-ban-kinh');
+    console.log('\n��� Prisma Studio URLs:');
     console.log('  User DB:    npx prisma studio --schema=apps/user-app/prisma/schema.prisma');
     console.log('  Product DB: npx prisma studio --schema=apps/product-app/prisma/schema.prisma');
     console.log('  Order DB:   npx prisma studio --schema=apps/order-app/prisma/schema.prisma');
@@ -614,5 +329,7 @@ async function main() {
     ]);
   }
 }
+
+void main();
 
 void main();
