@@ -42,6 +42,15 @@ export class AddressesController extends BaseGatewayController {
   }
 
   /**
+   * GET /addresses/:id
+   * Lấy chi tiết address theo ID
+   */
+  @Get(':id')
+  getById(@Param('id') id: string): Promise<AddressResponse> {
+    return this.send<string, AddressResponse>(EVENTS.ADDRESS.GET, id);
+  }
+
+  /**
    * POST /addresses
    * Tạo address mới
    *

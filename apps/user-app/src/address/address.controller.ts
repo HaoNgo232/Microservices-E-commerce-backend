@@ -21,6 +21,11 @@ export interface IAddressController {
   listByUser(dto: AddressListByUserDto): Promise<AddressResponse[]>;
 
   /**
+   * Lấy chi tiết address theo ID
+   */
+  get(id: string): Promise<AddressResponse>;
+
+  /**
    * Tạo address mới
    */
   create(payload: { userId: string; dto: AddressCreateDto }): Promise<AddressResponse>;
@@ -68,6 +73,18 @@ export class AddressController implements IAddressController {
   listByUser(@Payload() dto: AddressListByUserDto): Promise<AddressResponse[]> {
     console.log('AddressController.listByUser called with dto:', dto);
     return this.addressService.listByUser(dto);
+  }
+
+  /**
+   * NATS Handler: Lấy chi tiết address theo ID
+   *
+   * Pattern: address.get
+   * @param id - Address ID
+   * @returns Address details
+   */
+  @MessagePattern(EVENTS.ADDRESS.GET)
+  get(@Payload() id: string): Promise<AddressResponse> {
+    return this.addressService.getById(id);
   }
 
   /**

@@ -15,6 +15,7 @@ export const EVENTS = {
   },
   ADDRESS: {
     LIST_BY_USER: 'address.listByUser',
+    GET: 'address.get',
     CREATE: 'address.create',
     UPDATE: 'address.update',
     DELETE: 'address.delete',

@@ -20,6 +20,11 @@ export interface IAddressService {
   listByUser(dto: AddressListByUserDto): Promise<AddressResponse[]>;
 
   /**
+   * Lấy chi tiết address theo ID
+   */
+  getById(id: string): Promise<AddressResponse>;
+
+  /**
    * Tạo address mới
    */
   create(payload: { userId: string; dto: AddressCreateDto }): Promise<AddressResponse>;
@@ -83,6 +88,39 @@ export class AddressService implements IAddressService {
       throw new RpcException({
         statusCode: 400,
         message: 'Không thể lấy danh sách địa chỉ',
+      });
+    }
+  }
+
+  /**
+   * Lấy chi tiết address theo ID
+   *
+   * @param id - Address ID
+   * @returns Address details
+   * @throws RpcException nếu address không tồn tại hoặc có lỗi database
+   */
+  async getById(id: string): Promise<AddressResponse> {
+    try {
+      const address = await this.prisma.address.findUnique({
+        where: { id },
+      });
+
+      if (!address) {
+        throw new RpcException({
+          statusCode: 404,
+          message: `Địa chỉ ${id} không tồn tại`,
+        });
+      }
+
+      return address;
+    } catch (error) {
+      if (error instanceof RpcException) {
+        throw error;
+      }
+      console.error('[AddressService] getById error:', error);
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Không thể lấy thông tin địa chỉ',
       });
     }
   }
