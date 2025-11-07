@@ -117,8 +117,8 @@ export class OrdersService implements IOrdersService {
       throw new ValidationRpcException('Order must contain at least one item');
     }
 
-    // Step 2: Validate products exist and have sufficient stock
-    await this.validateProductsAndStock(dto.items);
+    // Step 2: Validate products exist and have sufficient stock + fetch product details
+    const products = await this.validateProductsAndStock(dto.items);
 
     // Step 3: Calculate total amount from items
     const totalInt = dto.items.reduce((sum, item) => sum + item.priceInt * item.quantity, 0);
@@ -132,32 +132,20 @@ export class OrdersService implements IOrdersService {
         paymentStatus: PaymentStatus.UNPAID,
         totalInt,
         items: {
-          create: dto.items.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            priceInt: item.priceInt,
-          })),
+          create: dto.items.map(item => {
+            const product = products.find(p => p.id === item.productId);
+            return {
+              productId: item.productId,
+              productName: product?.name || 'Unknown Product',
+              imageUrls: product?.imageUrls || [],
+              quantity: item.quantity,
+              priceInt: item.priceInt,
+            };
+          }),
         },
       },
-      select: {
-        id: true,
-        userId: true,
-        addressId: true,
-        paymentStatus: true,
-        status: true,
-        totalInt: true,
-        createdAt: true,
-        updatedAt: true,
-        items: {
-          select: {
-            id: true,
-            productId: true,
-            quantity: true,
-            priceInt: true,
-            orderId: true,
-            createdAt: true,
-          },
-        },
+      include: {
+        items: true,
       },
     });
 
@@ -181,25 +169,8 @@ export class OrdersService implements IOrdersService {
   async get(dto: OrderIdDto): Promise<OrderResponse> {
     const order = await this.prisma.order.findUnique({
       where: { id: dto.id },
-      select: {
-        id: true,
-        userId: true,
-        addressId: true,
-        paymentStatus: true,
-        status: true,
-        totalInt: true,
-        createdAt: true,
-        updatedAt: true,
-        items: {
-          select: {
-            id: true,
-            productId: true,
-            quantity: true,
-            priceInt: true,
-            orderId: true,
-            createdAt: true,
-          },
-        },
+      include: {
+        items: true,
       },
     });
 
@@ -376,19 +347,23 @@ export class OrdersService implements IOrdersService {
   }
 
   /**
-   * Kiểm tra sản phẩm tồn tại và đủ tồn kho
+   * Kiểm tra sản phẩm tồn tại và đủ tồn kho + trả về product details
    *
    * Quy trình:
    * 1. Lấy danh sách productIds từ items
    * 2. Gọi Product Service để lấy thông tin sản phẩm (timeout 5s)
    * 3. Kiểm tra tất cả sản phẩm đều tồn tại
    * 4. Kiểm tra từng sản phẩm có đủ tồn kho
+   * 5. Trả về danh sách products (để dùng product details như name, imageUrls)
    *
    * @param items - Danh sách items cần validate
+   * @returns Danh sách products với đầy đủ thông tin
    * @throws ValidationRpcException nếu sản phẩm không tồn tại hoặc không đủ tồn kho
    * @private
    */
-  private async validateProductsAndStock(items: Array<{ productId: string; quantity: number }>): Promise<void> {
+  private async validateProductsAndStock(
+    items: Array<{ productId: string; quantity: number }>,
+  ): Promise<ProductResponse[]> {
     try {
       // Get all product IDs
       const productIds = items.map(item => item.productId);
@@ -431,6 +406,8 @@ export class OrdersService implements IOrdersService {
           );
         }
       }
+
+      return products;
     } catch (error) {
       if (error instanceof ValidationRpcException) {
         throw error;

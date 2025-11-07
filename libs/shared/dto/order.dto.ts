@@ -17,6 +17,15 @@ export class OrderItemDto {
   @IsString()
   productId: string;
 
+  @IsOptional()
+  @IsString()
+  productName?: string; // Product name snapshot (optional in DTO, required in response)
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageUrls?: string[]; // Product image URLs snapshot (optional in DTO, required in response)
+
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)

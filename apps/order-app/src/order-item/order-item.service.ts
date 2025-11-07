@@ -238,6 +238,8 @@ export class OrderItemService implements IOderItemService {
     id: string;
     orderId: string;
     productId: string;
+    productName: string;
+    imageUrls: string[];
     quantity: number;
     priceInt: number;
     createdAt: Date;
@@ -246,6 +248,8 @@ export class OrderItemService implements IOderItemService {
       id: item.id,
       orderId: item.orderId,
       productId: item.productId,
+      productName: item.productName,
+      imageUrls: item.imageUrls,
       quantity: item.quantity,
       priceInt: item.priceInt,
       createdAt: item.createdAt,

@@ -13,6 +13,8 @@ export type OrderItemResponse = {
   id: string;
   orderId: string;
   productId: string;
+  productName: string; // Product name snapshot at order time
+  imageUrls: string[]; // Product image URLs snapshot
   quantity: number;
   priceInt: number; // Giá tại thời điểm đặt hàng (cents) - match Prisma field name
   createdAt: Date;

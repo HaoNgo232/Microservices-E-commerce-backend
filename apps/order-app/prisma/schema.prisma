@@ -9,15 +9,15 @@ generator client {
 }
 
 model Order {
-  id         String     @id @default(cuid())
-  userId     String
-  addressId  String?
-  status     OrderStatus @default(PENDING)
+  id            String        @id @default(cuid())
+  userId        String
+  addressId     String?
+  status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(UNPAID)
-  totalInt   Int        @default(0)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  items      OrderItem[]
+  totalInt      Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  items         OrderItem[]
 }
 
 enum PaymentStatus {
@@ -26,14 +26,16 @@ enum PaymentStatus {
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  priceInt  Int
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String
+  productName String   @default("Unknown Product") // Product name snapshot at order time
+  imageUrls   String[] @default([]) // Product image URLs snapshot (JSON array)
+  quantity    Int
+  priceInt    Int
+  createdAt   DateTime @default(now())
 
-  order     Order    @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
 }
 
 enum OrderStatus {
