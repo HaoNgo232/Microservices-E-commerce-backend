@@ -1,13 +1,4 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-/**
- * Health Check Controller
- *
- * Cung cấp các endpoint để kiểm tra tính khả dụng của gateway và các microservices
- * - GET /health - Kiểm tra NATS connection
- * - GET /health/ready - Readiness probe (Kubernetes)
- * - GET /health/live - Liveness probe (Kubernetes)
- * - GET /health/services - Chi tiết sức khỏe từng service
- */
 
 import { Controller, Get, Inject } from '@nestjs/common';
 import { HealthCheckService, HealthCheck, MicroserviceHealthIndicator, HealthCheckResult } from '@nestjs/terminus';

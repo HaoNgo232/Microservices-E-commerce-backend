@@ -787,50 +787,33 @@
                             "query": [
                                 {
                                     "key": "page",
-                                    "value": "1"
+                                    "value": "1",
+                                    "description": "Page number (min: 1)"
                                 },
                                 {
                                     "key": "pageSize",
-                                    "value": "10"
+                                    "value": "10",
+                                    "description": "Items per page"
                                 },
                                 {
                                     "key": "search",
-                                    "value": ""
+                                    "value": "",
+                                    "description": "Search by product name"
                                 },
                                 {
                                     "key": "categorySlug",
-                                    "value": ""
+                                    "value": "",
+                                    "description": "Filter by category slug"
                                 },
                                 {
                                     "key": "minPriceInt",
-                                    "value": ""
+                                    "value": "",
+                                    "description": "Minimum price in cents"
                                 },
                                 {
                                     "key": "maxPriceInt",
-                                    "value": ""
-                                }
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "Get Product by ID",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{baseUrl}}/products/:productId",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "products",
-                                ":productId"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "productId",
-                                    "value": ""
+                                    "value": "",
+                                    "description": "Maximum price in cents"
                                 }
                             ]
                         }
@@ -855,6 +838,29 @@
                                 {
                                     "key": "slug",
                                     "value": "iphone-15-pro"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Product by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/products/:productId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "products",
+                                ":productId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "productId",
+                                    "value": ""
                                 }
                             ]
                         }
@@ -1018,7 +1024,7 @@
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"productId\": \"product-123\",\n  \"quantity\": 2\n}",
+                            "raw": "{\n  \"productId\": \"product-123\",\n  \"quantity\": 2\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -1034,7 +1040,8 @@
                                 "cart",
                                 "items"
                             ]
-                        }
+                        },
+                        "description": "Add item to cart. userId is automatically extracted from JWT token."
                     }
                 },
                 {
@@ -1054,7 +1061,7 @@
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"productId\": \"product-123\",\n  \"quantity\": 5\n}",
+                            "raw": "{\n  \"productId\": \"product-123\",\n  \"quantity\": 5\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -1070,7 +1077,8 @@
                                 "cart",
                                 "items"
                             ]
-                        }
+                        },
+                        "description": "Update cart item quantity. Set quantity to 0 to remove item. userId is automatically extracted from JWT token."
                     }
                 },
                 {
@@ -1090,7 +1098,7 @@
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"productId\": \"product-123\"\n}",
+                            "raw": "{\n  \"productId\": \"product-123\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -1106,7 +1114,35 @@
                                 "cart",
                                 "items"
                             ]
-                        }
+                        },
+                        "description": "Remove item from cart. userId is automatically extracted from JWT token."
+                    }
+                },
+                {
+                    "name": "Clear Cart",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{accessToken}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/cart",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "cart"
+                            ]
+                        },
+                        "description": "Clear all items from cart. Used after successful checkout."
                     }
                 }
             ]
@@ -1175,14 +1211,17 @@
                             "query": [
                                 {
                                     "key": "page",
-                                    "value": "1"
+                                    "value": "1",
+                                    "description": "Page number"
                                 },
                                 {
                                     "key": "pageSize",
-                                    "value": "10"
+                                    "value": "10",
+                                    "description": "Items per page"
                                 }
                             ]
-                        }
+                        },
+                        "description": "List orders for current user. userId is automatically extracted from JWT token."
                     }
                 },
                 {
