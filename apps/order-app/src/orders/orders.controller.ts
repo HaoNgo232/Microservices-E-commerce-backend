@@ -6,6 +6,7 @@ import {
   OrderCreateDto,
   OrderIdDto,
   OrderListDto,
+  OrderAdminListDto,
   OrderUpdateStatusDto,
   OrderCancelDto,
   OrderUpdatePaymentStatusDto,
@@ -67,6 +68,18 @@ export class OrdersController {
   @MessagePattern(EVENTS.ORDER.LIST)
   list(@Payload() query: OrderListDto): Promise<PaginatedOrdersResponse> {
     return this.ordersService.listByUser(query);
+  }
+
+  /**
+   * NATS Handler: Lấy tất cả orders (Admin only)
+   *
+   * Pattern: order.listAll
+   * @param dto - { page?, pageSize?, status?, paymentStatus?, search?, startDate?, endDate? }
+   * @returns Danh sách tất cả orders với pagination và filters
+   */
+  @MessagePattern(EVENTS.ORDER.LIST_ALL)
+  listAll(@Payload() query: OrderAdminListDto): Promise<PaginatedOrdersResponse> {
+    return this.ordersService.listAll(query);
   }
 
   /**

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@gateway/app.module';
 import { ValidationPipe } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { HttpExceptionFilter } from '@gateway/filters/http-exception.filter';
 
 /**
  * Bootstrap API Gateway Application
@@ -18,6 +19,9 @@ import type { Request, Response } from 'express';
  */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+
+  // Enable exception filter để log errors chi tiết
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Enable validation globally
   app.useGlobalPipes(

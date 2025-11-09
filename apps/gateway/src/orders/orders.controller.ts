@@ -1,10 +1,19 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { OrderCreateDto, OrderUpdateStatusDto, OrderListDto } from '@shared/dto/order.dto';
+import {
+  OrderCreateDto,
+  OrderUpdateStatusDto,
+  OrderUpdateStatusRequestDto,
+  OrderListDto,
+  OrderAdminListDto,
+} from '@shared/dto/order.dto';
 import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '@shared/dto/user.dto';
 import { EVENTS } from '@shared/events';
 import { BaseGatewayController } from '../base.controller';
-import { OrderResponse, OrderStatus, PaginatedOrdersResponse } from '@shared/types/order.types';
+import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
 
 /**
  * Orders Controller
@@ -12,7 +21,7 @@ import { OrderResponse, OrderStatus, PaginatedOrdersResponse } from '@shared/typ
  * Tất cả endpoints require authentication
  */
 @Controller('orders')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 export class OrdersController extends BaseGatewayController {
   constructor(@Inject('ORDER_SERVICE') protected readonly client: ClientProxy) {
     super(client);
@@ -37,6 +46,16 @@ export class OrdersController extends BaseGatewayController {
   }
 
   /**
+   * GET /orders/admin/all
+   * Lấy tất cả orders (admin only) với filters
+   */
+  @Get('admin/all')
+  @Roles(UserRole.ADMIN)
+  list_all(@Query() query: OrderAdminListDto): Promise<PaginatedOrdersResponse> {
+    return this.send<OrderAdminListDto, PaginatedOrdersResponse>(EVENTS.ORDER.LIST_ALL, query);
+  }
+
+  /**
    * GET /orders/:id
    * Lấy chi tiết order theo ID
    */
@@ -47,15 +66,34 @@ export class OrdersController extends BaseGatewayController {
   }
 
   /**
-   * PUT /orders/:id/status
+   * PATCH /orders/:id/status
    * Cập nhật trạng thái order (admin only)
+   *
+   * Note: ValidationPipe với transform: true đảm bảo dto đã được validate và transform
+   * TypeScript không thể infer type từ decorator tại compile time, nhưng runtime đã được đảm bảo
    */
-  @Put(':id/status')
-  updateStatus(@Param('id') id: string, @Body() dto: { status: string }): Promise<OrderResponse> {
+  @Patch(':id/status')
+  updateStatus(@Param('id') id: string, @Body() dto: OrderUpdateStatusRequestDto): Promise<OrderResponse> {
+    // Debug: Log để kiểm tra dto nhận được
+    console.log('[OrdersController] updateStatus - Received DTO:', JSON.stringify(dto));
+    console.log(
+      '[OrdersController] updateStatus - DTO type:',
+      typeof dto,
+      'status:',
+      dto.status,
+      'paymentStatus:',
+      dto.paymentStatus,
+    );
+
     const payload: OrderUpdateStatusDto = {
       id,
-      status: dto.status as OrderStatus,
+      status: dto.status,
     };
+
+    if (dto.paymentStatus !== undefined) {
+      payload.paymentStatus = dto.paymentStatus;
+    }
+
     return this.send<OrderUpdateStatusDto, OrderResponse>(EVENTS.ORDER.UPDATE_STATUS, payload);
   }
 

@@ -79,6 +79,50 @@ export class OrderListDto {
   pageSize?: number;
 }
 
+export class OrderAdminListDto {
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @IsPositive()
+  pageSize?: number;
+
+  @IsOptional()
+  @IsEnum(OrderStatus)
+  status?: OrderStatus;
+
+  @IsOptional()
+  @IsEnum(PaymentStatus)
+  paymentStatus?: PaymentStatus;
+
+  @IsOptional()
+  @IsString()
+  search?: string; // Search by order ID or user ID
+
+  @IsOptional()
+  @IsString()
+  startDate?: string; // ISO date string
+
+  @IsOptional()
+  @IsString()
+  endDate?: string; // ISO date string
+}
+
+export class OrderUpdateStatusRequestDto {
+  @IsNotEmpty()
+  @IsEnum(OrderStatus)
+  status: OrderStatus;
+
+  @IsOptional()
+  @IsEnum(PaymentStatus)
+  paymentStatus?: PaymentStatus;
+}
+
 export class OrderUpdateStatusDto {
   @IsNotEmpty()
   @IsString()

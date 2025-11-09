@@ -52,6 +52,7 @@ export const EVENTS = {
     CREATE: 'order.create',
     GET: 'order.get',
     LIST: 'order.list',
+    LIST_ALL: 'order.listAll',
     UPDATE_STATUS: 'order.updateStatus',
     UPDATE_PAYMENT_STATUS: 'order.updatePaymentStatus',
     CANCEL: 'order.cancel',

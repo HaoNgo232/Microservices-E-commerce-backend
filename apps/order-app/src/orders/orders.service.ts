@@ -6,9 +6,11 @@ import {
   OrderUpdateStatusDto,
   OrderCancelDto,
   OrderListDto,
+  OrderAdminListDto,
   OrderUpdatePaymentStatusDto,
 } from '@shared/dto/order.dto';
 import { PrismaService } from '@order-app/prisma/prisma.service';
+import { Prisma } from '@order-app/prisma/generated/client';
 import {
   EntityNotFoundRpcException,
   ValidationRpcException,
@@ -46,6 +48,13 @@ export interface IOrdersService {
    * @returns Danh sách orders có phân trang
    */
   listByUser(dto: OrderListDto): Promise<PaginatedOrdersResponse>;
+
+  /**
+   * Lấy tất cả orders (Admin only) với filters
+   * @param dto - Query filters: page, status, paymentStatus, search, dateRange
+   * @returns Danh sách orders có phân trang
+   */
+  listAll(dto: OrderAdminListDto): Promise<PaginatedOrdersResponse>;
 
   /**
    * Cập nhật trạng thái order
@@ -218,6 +227,68 @@ export class OrdersService implements IOrdersService {
   }
 
   /**
+   * Lấy tất cả orders (Admin only) với filters
+   * Filters: status, paymentStatus, search (orderId/userId), date range
+   */
+  async listAll(query: OrderAdminListDto): Promise<PaginatedOrdersResponse> {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 10;
+    const skip = (page - 1) * pageSize;
+
+    // Build where clause with filters - type-safe với Prisma.OrderWhereInput
+    const where: Prisma.OrderWhereInput = {};
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.paymentStatus) {
+      where.paymentStatus = query.paymentStatus;
+    }
+
+    if (query.search) {
+      // Search by order ID or user ID
+      where.OR = [
+        { id: { contains: query.search, mode: 'insensitive' } },
+        { userId: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query.startDate || query.endDate) {
+      const dateFilter: Prisma.DateTimeFilter = {};
+      if (query.startDate) {
+        dateFilter.gte = new Date(query.startDate);
+      }
+      if (query.endDate) {
+        dateFilter.lte = new Date(query.endDate);
+      }
+      where.createdAt = dateFilter;
+    }
+
+    // Get total count
+    const total = await this.prisma.order.count({ where });
+
+    // Get paginated orders
+    const orders = await this.prisma.order.findMany({
+      where,
+      include: {
+        items: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+    });
+
+    return {
+      orders: orders as OrderResponse[],
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+  /**
    * Cập nhật trạng thái order
    *
    * Quy trình:
@@ -242,27 +313,48 @@ export class OrdersService implements IOrdersService {
       throw new EntityNotFoundRpcException('Order', dto.id);
     }
 
-    // Validate status transition
-    this.validateStatusTransition(existingOrder.status, dto.status);
+    // Chỉ validate status transition nếu status thực sự thay đổi
+    const statusChanged = existingOrder.status !== dto.status;
+    if (statusChanged) {
+      this.validateStatusTransition(existingOrder.status, dto.status);
+    }
 
-    // Update order status
+    // Build update data
+    const updateData: {
+      status?: OrderStatus;
+      paymentStatus?: PaymentStatus;
+      updatedAt: Date;
+    } = {
+      updatedAt: new Date(),
+    };
+
+    // Chỉ cập nhật status nếu nó thay đổi
+    if (statusChanged) {
+      updateData.status = dto.status;
+    }
+
+    // Cập nhật paymentStatus nếu có trong DTO
+    if (dto.paymentStatus !== undefined) {
+      updateData.paymentStatus = dto.paymentStatus;
+    }
+
+    // Update order
     const updatedOrder = await this.prisma.order.update({
       where: { id: dto.id },
-      data: {
-        status: dto.status,
-        updatedAt: new Date(),
-      },
+      data: updateData,
       include: {
         items: true,
       },
     });
 
     // If cancelled, restore stock (fire-and-forget)
-    if (dto.status === OrderStatus.CANCELLED) {
+    if (statusChanged && dto.status === OrderStatus.CANCELLED) {
       this.restoreProductStock(existingOrder.items);
     }
 
-    console.log(`[OrdersService] Updated order ${dto.id} status to ${dto.status}`);
+    console.log(
+      `[OrdersService] Updated order ${dto.id}${statusChanged ? ` status to ${dto.status}` : ''}${dto.paymentStatus !== undefined ? ` paymentStatus to ${dto.paymentStatus}` : ''}`,
+    );
     return updatedOrder as OrderResponse;
   }
 

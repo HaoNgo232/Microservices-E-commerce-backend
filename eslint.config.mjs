@@ -36,6 +36,10 @@ export default [
     files: ['**/*.controller.ts', '**/main.ts'],
     rules: {
       '@typescript-eslint/explicit-function-return-type': 'off',
+      // ValidationPipe với transform: true đảm bảo DTO đã được validate và transform tại runtime
+      // TypeScript không thể infer type từ decorator tại compile time, nhưng runtime đã được đảm bảo
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
     },
   },
   {
