@@ -20,7 +20,8 @@ export class UsersController extends BaseGatewayController {
 
   /**
    * GET /users
-   * Lấy danh sách users (admin only)
+   * Lấy danh sách users với pagination và filters (admin only)
+   * Query params: page?, pageSize?, search?, role?
    */
   @Get()
   @UseGuards(AuthGuard, RolesGuard)

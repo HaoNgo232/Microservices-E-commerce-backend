@@ -318,7 +318,7 @@ export class UsersService implements IUserService {
    * **Performance Optimization:**
    * - Chạy song song findMany và count bằng Promise.all
    *
-   * @param query - { page?, pageSize?, search? }
+   * @param query - { page?, pageSize?, search?, role? }
    * @returns Danh sách users với pagination metadata
    * @throws RpcException nếu có lỗi database
    */
@@ -329,24 +329,30 @@ export class UsersService implements IUserService {
       const pageSize = query.pageSize || 10;
       const skip = (page - 1) * pageSize; // skip = số record bỏ qua
 
+      // Build where clause với search và role filters
+      const where: Record<string, unknown> = {};
+
+      // Role filter: Filter theo role nếu được cung cấp
+      if (query.role) {
+        where.role = query.role;
+      }
+
       // Search filter: Tìm kiếm trong email HOẶC fullName
       // 'insensitive': không phân biệt hoa/thường (case-insensitive)
       // 'contains': tìm chuỗi con (giống LIKE '%search%' trong SQL)
-      const where = query.search
-        ? {
-            OR: [
-              {
-                email: { contains: query.search, mode: 'insensitive' as const },
-              },
-              {
-                fullName: {
-                  contains: query.search,
-                  mode: 'insensitive' as const,
-                },
-              },
-            ],
-          }
-        : {}; // Nếu không có search → lấy tất cả
+      if (query.search) {
+        where.OR = [
+          {
+            email: { contains: query.search, mode: 'insensitive' as const },
+          },
+          {
+            fullName: {
+              contains: query.search,
+              mode: 'insensitive' as const,
+            },
+          },
+        ];
+      }
 
       // Promise.all: Chạy song song 2 query để tối ưu performance
       // - findMany: lấy data cho trang hiện tại

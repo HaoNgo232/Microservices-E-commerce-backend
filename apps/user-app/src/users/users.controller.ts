@@ -122,7 +122,7 @@ export class UsersController implements IUsersController {
    * NATS Handler: Lấy danh sách users
    *
    * Pattern: user.list
-   * @param query - { page?, pageSize?, search? }
+   * @param query - { page?, pageSize?, search?, role? }
    * @returns Danh sách users với pagination
    */
   @MessagePattern(EVENTS.USER.LIST)
