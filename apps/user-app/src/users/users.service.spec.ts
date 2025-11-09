@@ -334,22 +334,32 @@ describe('UsersService', () => {
 
   describe('deactivate', () => {
     it('should deactivate user successfully', async () => {
+      const mockUser: UserResponse = {
+        id: '1',
+        email: 'test@example.com',
+        fullName: 'Test User',
+        phone: null,
+        role: UserRole.CUSTOMER,
+        isActive: false,
+        createdAt: new Date('2024-01-01T00:00:00Z'),
+        updatedAt: new Date('2024-01-01T00:00:00Z'),
+      };
+      
       prisma.user.findUnique.mockResolvedValue({
         id: '1',
         email: 'test@example.com',
         isActive: true,
       });
-      prisma.user.update.mockResolvedValue({
-        id: '1',
-        isActive: false,
-      });
+      prisma.user.update.mockResolvedValue(mockUser);
 
       const result = await service.deactivate('1');
 
-      expect(result).toEqual({ message: 'User 1 deactivated successfully' });
+      expect(result).toEqual(mockUser);
+      expect(result.isActive).toBe(false);
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: '1' },
         data: { isActive: false },
+        select: expect.any(Object),
       });
     });
 

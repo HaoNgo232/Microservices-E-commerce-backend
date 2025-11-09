@@ -228,7 +228,9 @@ describe('UsersController (e2e)', () => {
       const result = await firstValueFrom(client.send(EVENTS.USER.DEACTIVATE, created.id));
 
       expect(result).toBeDefined();
-      expect(result.message).toContain('deactivated');
+      expect(result.id).toBe(created.id);
+      expect(result.isActive).toBe(false);
+      expect(result.email).toBe(created.email);
 
       // Verify trong database
       const dbUser = await prisma.user.findUnique({

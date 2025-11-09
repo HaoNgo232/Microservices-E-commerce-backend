@@ -156,14 +156,17 @@ describe('UsersController', () => {
   describe('deactivate', () => {
     it('nên vô hiệu hóa user thành công', async () => {
       const userId = 'user-123';
-      const deactivateResponse = {
-        message: `User ${userId} deactivated successfully`,
+      const deactivatedUser: UserResponse = {
+        ...mockUserResponse,
+        id: userId,
+        isActive: false,
       };
-      mockUsersService.deactivate.mockResolvedValue(deactivateResponse);
+      mockUsersService.deactivate.mockResolvedValue(deactivatedUser);
 
       const result = await controller.deactivate(userId);
 
-      expect(result).toEqual(deactivateResponse);
+      expect(result).toEqual(deactivatedUser);
+      expect(result.isActive).toBe(false);
       expect(service.deactivate).toHaveBeenCalledWith(userId);
       expect(service.deactivate).toHaveBeenCalledTimes(1);
     });

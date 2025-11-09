@@ -33,7 +33,7 @@ export interface IUserService {
   /**
    * Vô hiệu hóa user account
    */
-  deactivate(id: string): Promise<{ message: string }>;
+  deactivate(id: string): Promise<UserResponse>;
 
   /**
    * Lấy danh sách users với phân trang
@@ -274,19 +274,29 @@ export class UsersService implements IUserService {
    * User không thể login sau khi bị deactivate
    *
    * @param id - User ID
-   * @returns Success message
+   * @returns Deactivated user object
    * @throws RpcException nếu user không tồn tại hoặc có lỗi database
    */
-  async deactivate(id: string): Promise<{ message: string }> {
+  async deactivate(id: string): Promise<UserResponse> {
     try {
       await this.validateUserExists(id);
 
-      await this.prisma.user.update({
+      const user = await this.prisma.user.update({
         where: { id },
         data: { isActive: false },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          phone: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       });
 
-      return { message: `User ${id} deactivated successfully` };
+      return user as UserResponse;
     } catch (error) {
       if (error instanceof RpcException) throw error;
       console.error('[UsersService] deactivate error:', error);

@@ -33,7 +33,7 @@ export interface IUsersController {
   /**
    * Vô hiệu hóa user account
    */
-  deactivate(id: string): Promise<{ message: string }>;
+  deactivate(id: string): Promise<UserResponse>;
 
   /**
    * Lấy danh sách users với phân trang
@@ -111,12 +111,10 @@ export class UsersController implements IUsersController {
    *
    * Pattern: user.deactivate
    * @param id - User ID
-   * @returns Success message
+   * @returns Deactivated user object
    */
   @MessagePattern(EVENTS.USER.DEACTIVATE)
-  deactivate(@Payload() id: string): Promise<{
-    message: string;
-  }> {
+  deactivate(@Payload() id: string): Promise<UserResponse> {
     return this.usersService.deactivate(id);
   }
 
