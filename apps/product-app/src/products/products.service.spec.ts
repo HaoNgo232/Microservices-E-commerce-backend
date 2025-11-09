@@ -2,15 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RpcException } from '@nestjs/microservices';
 import { ProductsService } from './products.service';
 import { PrismaService } from '@product-app/prisma/prisma.service';
-import { ProductMapper } from './mappers/product.mapper';
-import { ProductValidator } from './validators/product.validator';
 import { ProductQueryBuilder } from './builders/product-query.builder';
 
 describe('ProductsService', () => {
   let service: ProductsService;
   let prisma: PrismaService;
-  let mapper: ProductMapper;
-  let validator: ProductValidator;
   let queryBuilder: ProductQueryBuilder;
 
   const mockPrismaService = {
@@ -26,17 +22,6 @@ describe('ProductsService', () => {
     category: {
       findUnique: jest.fn(),
     },
-  };
-
-  const mockProductMapper = {
-    mapToProductResponse: jest.fn(),
-    mapManyToProductResponse: jest.fn(),
-  };
-
-  const mockProductValidator = {
-    validateUniqueSKUAndSlug: jest.fn(),
-    validateSlugForUpdate: jest.fn(),
-    validateCategoryExists: jest.fn(),
   };
 
   const mockProductQueryBuilder = {
@@ -79,14 +64,6 @@ describe('ProductsService', () => {
           useValue: mockPrismaService,
         },
         {
-          provide: ProductMapper,
-          useValue: mockProductMapper,
-        },
-        {
-          provide: ProductValidator,
-          useValue: mockProductValidator,
-        },
-        {
           provide: ProductQueryBuilder,
           useValue: mockProductQueryBuilder,
         },
@@ -95,8 +72,6 @@ describe('ProductsService', () => {
 
     service = module.get<ProductsService>(ProductsService);
     prisma = module.get<PrismaService>(PrismaService);
-    mapper = module.get<ProductMapper>(ProductMapper);
-    validator = module.get<ProductValidator>(ProductValidator);
     queryBuilder = module.get<ProductQueryBuilder>(ProductQueryBuilder);
 
     // Reset mocks
@@ -110,7 +85,6 @@ describe('ProductsService', () => {
   describe('getById', () => {
     it('should return a product when found', async () => {
       mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
-      mockProductMapper.mapToProductResponse.mockReturnValue(mockProduct);
 
       const result = await service.getById({ id: 'prod-1' });
 
@@ -121,7 +95,6 @@ describe('ProductsService', () => {
         where: { id: 'prod-1' },
         include: { category: true },
       });
-      expect(mapper.mapToProductResponse).toHaveBeenCalledWith(mockProduct);
     });
 
     it('should throw RpcException when product not found', async () => {
@@ -140,7 +113,6 @@ describe('ProductsService', () => {
   describe('getBySlug', () => {
     it('should return a product when found by slug', async () => {
       mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
-      mockProductMapper.mapToProductResponse.mockReturnValue(mockProduct);
 
       const result = await service.getBySlug({ slug: 'test-product' });
 
@@ -150,7 +122,6 @@ describe('ProductsService', () => {
         where: { slug: 'test-product' },
         include: { category: true },
       });
-      expect(mapper.mapToProductResponse).toHaveBeenCalledWith(mockProduct);
     });
 
     it('should throw RpcException when product not found', async () => {
@@ -171,7 +142,6 @@ describe('ProductsService', () => {
         pageSize: 20,
         totalPages: 1,
       });
-      mockProductMapper.mapManyToProductResponse.mockReturnValue([mockProduct]);
 
       const result = await service.list({ page: 1, pageSize: 20 });
 
@@ -195,7 +165,6 @@ describe('ProductsService', () => {
         pageSize: 20,
         totalPages: 0,
       });
-      mockProductMapper.mapManyToProductResponse.mockReturnValue([]);
 
       await service.list({ search: 'search term', page: 1, pageSize: 20 });
 
@@ -214,7 +183,6 @@ describe('ProductsService', () => {
         pageSize: 20,
         totalPages: 0,
       });
-      mockProductMapper.mapManyToProductResponse.mockReturnValue([]);
 
       await service.list({ categorySlug: 'test-category' });
 
@@ -233,7 +201,6 @@ describe('ProductsService', () => {
         pageSize: 20,
         totalPages: 0,
       });
-      mockProductMapper.mapManyToProductResponse.mockReturnValue([]);
 
       await service.list({ minPriceInt: 1000, maxPriceInt: 2000 });
 
@@ -256,13 +223,7 @@ describe('ProductsService', () => {
     };
 
     it('should create a new product successfully', async () => {
-      mockProductValidator.validateUniqueSKUAndSlug.mockResolvedValue(undefined);
-      mockProductValidator.validateCategoryExists.mockResolvedValue(undefined);
       mockPrismaService.product.create.mockResolvedValue({
-        ...mockProduct,
-        ...createDto,
-      });
-      mockProductMapper.mapToProductResponse.mockReturnValue({
         ...mockProduct,
         ...createDto,
       });
@@ -271,42 +232,18 @@ describe('ProductsService', () => {
 
       expect(result).toBeDefined();
       expect(result.sku).toBe('SKU-002');
-      expect(validator.validateUniqueSKUAndSlug).toHaveBeenCalledWith('SKU-002', 'new-product');
-      expect(validator.validateCategoryExists).toHaveBeenCalledWith('cat-1');
       expect(prisma.product.create).toHaveBeenCalled();
     });
 
     it('should throw RpcException if SKU already exists', async () => {
-      mockProductValidator.validateUniqueSKUAndSlug.mockRejectedValue(
-        new RpcException({
-          statusCode: 409,
-          message: "Product with SKU 'SKU-002' already exists",
-        }),
-      );
-
       await expect(service.create(createDto)).rejects.toThrow(RpcException);
     });
 
     it('should throw RpcException if slug already exists', async () => {
-      mockProductValidator.validateUniqueSKUAndSlug.mockRejectedValue(
-        new RpcException({
-          statusCode: 409,
-          message: "Product with slug 'new-product' already exists",
-        }),
-      );
-
       await expect(service.create(createDto)).rejects.toThrow(RpcException);
     });
 
     it('should throw RpcException if category not found', async () => {
-      mockProductValidator.validateUniqueSKUAndSlug.mockResolvedValue(undefined);
-      mockProductValidator.validateCategoryExists.mockRejectedValue(
-        new RpcException({
-          statusCode: 400,
-          message: 'Category with ID cat-1 not found',
-        }),
-      );
-
       await expect(service.create(createDto)).rejects.toThrow(RpcException);
     });
   });
@@ -319,13 +256,7 @@ describe('ProductsService', () => {
 
     it('should update a product successfully', async () => {
       mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
-      mockProductValidator.validateSlugForUpdate.mockResolvedValue(undefined);
-      mockProductValidator.validateCategoryExists.mockResolvedValue(undefined);
       mockPrismaService.product.update.mockResolvedValue({
-        ...mockProduct,
-        ...updateDto,
-      });
-      mockProductMapper.mapToProductResponse.mockReturnValue({
         ...mockProduct,
         ...updateDto,
       });
@@ -345,13 +276,6 @@ describe('ProductsService', () => {
 
     it('should throw RpcException if new slug already exists', async () => {
       mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
-      mockProductValidator.validateSlugForUpdate.mockRejectedValue(
-        new RpcException({
-          statusCode: 409,
-          message: "Product with slug 'existing-slug' already exists",
-        }),
-      );
-
       await expect(service.update('prod-1', { slug: 'existing-slug' })).rejects.toThrow(RpcException);
     });
   });

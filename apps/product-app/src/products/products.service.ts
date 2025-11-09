@@ -8,7 +8,7 @@ import {
   ProductIdsDto,
   ProductSlugDto,
 } from '@shared/dto/product.dto';
-import { ProductResponse, PaginatedProductsResponse } from '@shared/types/product.types';
+import { ProductResponse, PaginatedProductsResponse, ProductAttributes } from '@shared/types/product.types';
 import { PrismaService } from '@product-app/prisma/prisma.service';
 import { EntityNotFoundRpcException, InternalServerRpcException } from '@shared/main';
 import { ProductQueryBuilder } from '@product-app/products/builders/product-query.builder';
@@ -51,7 +51,7 @@ export class ProductsService implements IProductsService {
 
       return {
         ...product,
-        attributes: (product.attributes as Record<string, unknown>) || null,
+        attributes: product.attributes as ProductAttributes,
       };
     } catch (error) {
       if (error instanceof RpcException) throw error;
@@ -83,7 +83,7 @@ export class ProductsService implements IProductsService {
 
       const results = products.map(product => ({
         ...product,
-        attributes: (product.attributes as Record<string, unknown>) || null,
+        attributes: product.attributes as ProductAttributes,
       }));
 
       return results;
@@ -118,7 +118,7 @@ export class ProductsService implements IProductsService {
 
       const results = {
         ...product,
-        attributes: (product.attributes as Record<string, unknown>) || null,
+        attributes: product.attributes as ProductAttributes,
       };
 
       return results;
@@ -169,7 +169,7 @@ export class ProductsService implements IProductsService {
 
       const formattedProducts = products.map(p => ({
         ...p,
-        attributes: (p.attributes as Record<string, unknown>) || null,
+        attributes: p.attributes as ProductAttributes,
       }));
 
       return {
@@ -239,7 +239,7 @@ export class ProductsService implements IProductsService {
       console.log(`[ProductsService] Created product: ${product.id}`);
       return {
         ...product,
-        attributes: (product.attributes as Record<string, unknown>) || null,
+        attributes: product.attributes as ProductAttributes,
       };
     } catch (error) {
       if (error instanceof RpcException) {
@@ -294,7 +294,7 @@ export class ProductsService implements IProductsService {
       console.log(`[ProductsService] Updated product: ${id}`);
       return {
         ...product,
-        attributes: (product.attributes as Record<string, unknown>) || null,
+        attributes: product.attributes as ProductAttributes,
       };
     } catch (error) {
       if (error instanceof RpcException) {
@@ -413,7 +413,7 @@ export class ProductsService implements IProductsService {
 
       return {
         ...updated,
-        attributes: (updated.attributes as Record<string, unknown>) || null,
+        attributes: updated.attributes as ProductAttributes,
       };
     } catch (error) {
       if (error instanceof RpcException) throw error;
@@ -449,7 +449,7 @@ export class ProductsService implements IProductsService {
 
       return {
         ...updated,
-        attributes: (updated.attributes as Record<string, unknown>) || null,
+        attributes: updated.attributes as ProductAttributes,
       };
     } catch (error) {
       if (error instanceof RpcException) throw error;

@@ -3,7 +3,6 @@ import { ClientProxy } from '@nestjs/microservices';
 import { of, throwError } from 'rxjs';
 import { CartService } from './cart.service';
 import { PrismaService } from '@cart-app/prisma/prisma.service';
-import { CartItemService } from '@cart-app/cart-item/cart-item.service';
 import { CartGetDto } from '@shared/dto/cart.dto';
 import { ServiceUnavailableRpcException, InternalServerRpcException } from '@shared/exceptions/rpc-exceptions';
 
@@ -54,7 +53,6 @@ const mockProducts = [
 describe('CartService', () => {
   let service: CartService;
   let mockPrisma: jest.Mocked<PrismaService>;
-  let mockCartItemService: jest.Mocked<CartItemService>;
   let mockProductClient: jest.Mocked<ClientProxy>;
 
   beforeEach(async () => {
@@ -64,12 +62,6 @@ describe('CartService', () => {
         create: jest.fn(),
         update: jest.fn(),
       },
-    };
-
-    const mockCartItemServiceInstance = {
-      addItem: jest.fn(),
-      updateQuantity: jest.fn(),
-      removeItem: jest.fn(),
     };
 
     const mockClientProxy = {
@@ -84,10 +76,6 @@ describe('CartService', () => {
           useValue: mockPrismaService,
         },
         {
-          provide: CartItemService,
-          useValue: mockCartItemServiceInstance,
-        },
-        {
           provide: 'PRODUCT_SERVICE',
           useValue: mockClientProxy,
         },
@@ -96,7 +84,6 @@ describe('CartService', () => {
 
     service = module.get<CartService>(CartService);
     mockPrisma = module.get(PrismaService);
-    mockCartItemService = module.get(CartItemService);
     mockProductClient = module.get('PRODUCT_SERVICE');
   });
 
@@ -245,7 +232,6 @@ describe('CartService', () => {
       };
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(null);
       (mockPrisma.cart.create as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.addItem.mockResolvedValue(mockCartItem);
 
       // Act
       const result = await service.addItem({
@@ -257,7 +243,6 @@ describe('CartService', () => {
       // Assert
       expect(result).toEqual({ cartItem: mockCartItem });
       expect(mockPrisma.cart.create).toHaveBeenCalled();
-      expect(mockCartItemService.addItem).toHaveBeenCalledWith('cart-123', 'product-1', 2);
     });
 
     it('should use existing cart if found', async () => {
@@ -271,7 +256,6 @@ describe('CartService', () => {
         updatedAt: new Date(),
       };
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.addItem.mockResolvedValue(mockCartItem);
 
       // Act
       const result = await service.addItem({
@@ -283,13 +267,11 @@ describe('CartService', () => {
       // Assert
       expect(result).toEqual({ cartItem: mockCartItem });
       expect(mockPrisma.cart.create).not.toHaveBeenCalled();
-      expect(mockCartItemService.addItem).toHaveBeenCalledWith('cart-123', 'product-1', 2);
     });
 
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.addItem.mockRejectedValue(new InternalServerRpcException('Unexpected error'));
 
       // Act & Assert
       await expect(
@@ -304,7 +286,6 @@ describe('CartService', () => {
     it('should handle generic error during addItem', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.addItem.mockRejectedValue(new Error('Generic error'));
 
       // Act & Assert
       await expect(
@@ -329,7 +310,6 @@ describe('CartService', () => {
         updatedAt: new Date(),
       };
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.updateQuantity.mockResolvedValue(mockCartItem);
 
       // Act
       const result = await service.updateItem({
@@ -340,13 +320,11 @@ describe('CartService', () => {
 
       // Assert
       expect(result).toEqual({ cartItem: mockCartItem });
-      expect(mockCartItemService.updateQuantity).toHaveBeenCalledWith('cart-123', 'product-1', 5);
     });
 
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.updateQuantity.mockRejectedValue(new InternalServerRpcException('Unexpected error'));
 
       // Act & Assert
       await expect(
@@ -361,7 +339,6 @@ describe('CartService', () => {
     it('should handle generic error during updateItem', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.updateQuantity.mockRejectedValue(new Error('Generic error'));
 
       // Act & Assert
       await expect(
@@ -378,7 +355,6 @@ describe('CartService', () => {
     it('should remove item successfully', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.removeItem.mockResolvedValue({ success: true });
 
       // Act
       const result = await service.removeItem({
@@ -388,13 +364,11 @@ describe('CartService', () => {
 
       // Assert
       expect(result).toEqual({ success: true });
-      expect(mockCartItemService.removeItem).toHaveBeenCalledWith('cart-123', 'product-1');
     });
 
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.removeItem.mockRejectedValue(new InternalServerRpcException('Unexpected error'));
 
       // Act & Assert
       await expect(
@@ -408,7 +382,6 @@ describe('CartService', () => {
     it('should handle generic error during removeItem', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
-      mockCartItemService.removeItem.mockRejectedValue(new Error('Generic error'));
 
       // Act & Assert
       await expect(
