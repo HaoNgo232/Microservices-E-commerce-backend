@@ -30,6 +30,8 @@ model Product {
   stock      Int      @default(0)
   description String?
   imageUrls  String[]
+  imageUrl   String?   // Single image URL from MinIO
+  imageFilename String? // Filename for deletion
   categoryId String?
   attributes Json?
   model3dUrl String?

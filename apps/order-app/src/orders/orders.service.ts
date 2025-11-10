@@ -314,9 +314,10 @@ export class OrdersService implements IOrdersService {
     }
 
     // Chỉ validate status transition nếu status thực sự thay đổi
-    const statusChanged = existingOrder.status !== dto.status;
+    const existingStatus = existingOrder.status as OrderStatus;
+    const statusChanged = existingStatus !== dto.status;
     if (statusChanged) {
-      this.validateStatusTransition(existingOrder.status, dto.status);
+      this.validateStatusTransition(existingStatus, dto.status);
     }
 
     // Build update data

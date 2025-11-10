@@ -9,6 +9,8 @@ import {
   ProductIdDto,
   ProductIdsDto,
   ProductSlugDto,
+  AdminCreateProductDto,
+  AdminUpdateProductDto,
 } from '@shared/dto/product.dto';
 import { PaginatedProductsResponse, ProductResponse } from '@shared/types';
 
@@ -70,5 +72,20 @@ export class ProductsController implements IProductsController {
   @MessagePattern(EVENTS.PRODUCT.INC_STOCK)
   incrementStock(@Payload() payload: { productId: string; quantity: number }): Promise<ProductResponse> {
     return this.productsService.incrementStock(payload.productId, payload.quantity);
+  }
+
+  @MessagePattern(EVENTS.PRODUCT.ADMIN_CREATE)
+  adminCreate(@Payload() dto: AdminCreateProductDto): Promise<ProductResponse> {
+    return this.productsService.adminCreate(dto);
+  }
+
+  @MessagePattern(EVENTS.PRODUCT.ADMIN_UPDATE)
+  adminUpdate(@Payload() payload: { id: string; dto: AdminUpdateProductDto }): Promise<ProductResponse> {
+    return this.productsService.adminUpdate(payload.id, payload.dto);
+  }
+
+  @MessagePattern(EVENTS.PRODUCT.ADMIN_DELETE)
+  adminDelete(@Payload() id: string): Promise<{ success: boolean; id: string }> {
+    return this.productsService.adminDelete(id);
   }
 }

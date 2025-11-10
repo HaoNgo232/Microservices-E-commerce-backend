@@ -31,6 +31,10 @@ export const EVENTS = {
     DELETE: 'product.delete',
     INC_STOCK: 'product.incrementStock',
     DEC_STOCK: 'product.decrementStock',
+    // Admin events
+    ADMIN_CREATE: 'product.admin.create',
+    ADMIN_UPDATE: 'product.admin.update',
+    ADMIN_DELETE: 'product.admin.delete',
   },
   CATEGORY: {
     GET_BY_ID: 'category.getById',
@@ -79,7 +83,7 @@ export const EVENTS = {
     SNAPSHOT_CREATE: 'ar.snapshotCreate',
     SNAPSHOT_LIST: 'ar.snapshotList',
   },
-} as const;
+};
 
 export const NATS_SERVICES = {
   USER: 'user-service',

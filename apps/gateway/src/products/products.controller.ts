@@ -1,6 +1,26 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Inject,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
-import { ProductCreateDto, ProductUpdateDto, ProductListQueryDto } from '@shared/dto/product.dto';
+import {
+  ProductCreateDto,
+  ProductUpdateDto,
+  ProductListQueryDto,
+  AdminCreateProductDto,
+  AdminUpdateProductDto,
+} from '@shared/dto/product.dto';
 import { AuthGuard } from '@gateway/auth/auth.guard';
 import { RolesGuard } from '@gateway/auth/roles.guard';
 import { Roles } from '@gateway/auth/roles.decorator';
@@ -103,5 +123,82 @@ export class ProductsController extends BaseGatewayController {
   @Roles(UserRole.ADMIN)
   delete(@Param('id') id: string): Promise<SuccessResponse> {
     return this.send<string, SuccessResponse>(EVENTS.PRODUCT.DELETE, id);
+  }
+
+  /**
+   * POST /products/admin
+   * Create product with image upload (admin only)
+   */
+  @Post('admin')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('image'))
+  async adminCreate(
+    @Body() dto: AdminCreateProductDto,
+    @UploadedFile() image?: Express.Multer.File,
+  ): Promise<ProductResponse> {
+    const payload: AdminCreateProductDto = {
+      ...dto,
+      // Convert numbers from string (form-data)
+      priceInt: Number(dto.priceInt),
+      stock: dto.stock ? Number(dto.stock) : undefined,
+    };
+
+    // Serialize file for NATS if present
+    if (image && image.buffer) {
+      const buffer = Buffer.isBuffer(image.buffer) ? image.buffer : Buffer.from(image.buffer as ArrayLike<number>);
+      payload.fileBuffer = buffer.toString('base64');
+      payload.fileOriginalname = image.originalname;
+      payload.fileMimetype = image.mimetype;
+      payload.fileSize = image.size;
+    }
+
+    return this.send<AdminCreateProductDto, ProductResponse>(EVENTS.PRODUCT.ADMIN_CREATE, payload);
+  }
+
+  /**
+   * PUT /products/admin/:id
+   * Update product with optional image upload (admin only)
+   */
+  @Put('admin/:id')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('image'))
+  async adminUpdate(
+    @Param('id') id: string,
+    @Body() dto: AdminUpdateProductDto,
+    @UploadedFile() image?: Express.Multer.File,
+  ): Promise<ProductResponse> {
+    const payload: AdminUpdateProductDto = {
+      ...dto,
+      // Convert numbers from string (form-data)
+      priceInt: dto.priceInt ? Number(dto.priceInt) : undefined,
+      stock: dto.stock ? Number(dto.stock) : undefined,
+    };
+
+    // Serialize file for NATS if present
+    if (image && image.buffer) {
+      const buffer = Buffer.isBuffer(image.buffer) ? image.buffer : Buffer.from(image.buffer as ArrayLike<number>);
+      payload.fileBuffer = buffer.toString('base64');
+      payload.fileOriginalname = image.originalname;
+      payload.fileMimetype = image.mimetype;
+      payload.fileSize = image.size;
+    }
+
+    return this.send<{ id: string; dto: AdminUpdateProductDto }, ProductResponse>(EVENTS.PRODUCT.ADMIN_UPDATE, {
+      id,
+      dto: payload,
+    });
+  }
+
+  /**
+   * DELETE /products/admin/:id
+   * Delete product and image (admin only)
+   */
+  @Delete('admin/:id')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async adminDelete(@Param('id') id: string): Promise<SuccessResponse> {
+    return this.send<string, SuccessResponse>(EVENTS.PRODUCT.ADMIN_DELETE, id);
   }
 }

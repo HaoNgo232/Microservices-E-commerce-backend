@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
+import type { Prisma } from '../../prisma/generated/client';
 import {
   ProductCreateDto,
   ProductUpdateDto,
@@ -7,11 +8,14 @@ import {
   ProductIdDto,
   ProductIdsDto,
   ProductSlugDto,
+  AdminCreateProductDto,
+  AdminUpdateProductDto,
 } from '@shared/dto/product.dto';
 import { ProductResponse, PaginatedProductsResponse, ProductAttributes } from '@shared/types/product.types';
 import { PrismaService } from '@product-app/prisma/prisma.service';
 import { EntityNotFoundRpcException, InternalServerRpcException } from '@shared/main';
 import { ProductQueryBuilder } from '@product-app/products/builders/product-query.builder';
+import { MinioService, BufferedFile } from '@product-app/minio/minio.service';
 
 export interface IProductsService {
   getById(dto: ProductIdDto): Promise<ProductResponse>;
@@ -30,6 +34,7 @@ export class ProductsService implements IProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly queryBuilder: ProductQueryBuilder,
+    private readonly minioService: MinioService,
   ) {}
 
   /**
@@ -455,6 +460,191 @@ export class ProductsService implements IProductsService {
       if (error instanceof RpcException) throw error;
       console.error('[ProductsService] incrementStock error:', error);
       throw new InternalServerRpcException('Failed to increment stock');
+    }
+  }
+
+  /**
+   * Admin: Create product with image upload support
+   */
+  async adminCreate(dto: AdminCreateProductDto): Promise<ProductResponse> {
+    try {
+      let imageUrl: string | undefined;
+      let imageFilename: string | undefined;
+
+      // Handle file upload if present
+      if (dto.fileBuffer && dto.fileOriginalname && dto.fileMimetype) {
+        const file: BufferedFile = {
+          fieldname: 'image',
+          originalname: dto.fileOriginalname,
+          encoding: '7bit',
+          mimetype: dto.fileMimetype,
+          size: dto.fileSize || 0,
+          buffer: Buffer.from(dto.fileBuffer, 'base64'),
+        };
+
+        const uploaded = await this.minioService.uploadImage(file);
+        imageUrl = uploaded.url;
+        imageFilename = uploaded.filename;
+      }
+
+      // Auto-generate sku and slug if not provided
+      const sku = dto.sku || `SKU-${Date.now()}`;
+      const slug = dto.slug || dto.name.toLowerCase().replaceAll(' ', '-');
+
+      const product = await this.prisma.product.create({
+        data: {
+          name: dto.name,
+          sku,
+          slug,
+          priceInt: dto.priceInt,
+          description: dto.description,
+          categoryId: dto.categoryId,
+          stock: dto.stock || 0,
+          imageUrl,
+          imageFilename,
+          imageUrls: imageUrl ? [imageUrl] : [], // Also add to imageUrls for compatibility
+          attributes: dto.attributes as Prisma.InputJsonValue | undefined,
+          model3dUrl: dto.model3dUrl,
+        },
+        include: { category: true },
+      });
+
+      return {
+        ...product,
+        attributes: product.attributes as ProductAttributes,
+      };
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      console.error('[ProductsService] adminCreate error:', error);
+      throw new InternalServerRpcException('Failed to create product');
+    }
+  }
+
+  /**
+   * Admin: Update product with optional image upload
+   */
+  async adminUpdate(id: string, dto: AdminUpdateProductDto): Promise<ProductResponse> {
+    try {
+      const existing = await this.prisma.product.findUnique({ where: { id } });
+      if (!existing) {
+        throw new EntityNotFoundRpcException('Product', id);
+      }
+
+      const imageData = await this.handleImageUploadIfNeeded(dto, (existing.imageFilename as string) ?? null);
+      const updateData = this.buildAdminUpdateData(dto, imageData);
+
+      return await this.updateProductAndReturn(id, updateData);
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      console.error('[ProductsService] adminUpdate error:', error);
+      throw new InternalServerRpcException('Failed to update product');
+    }
+  }
+
+  /**
+   * Handle image upload if file is provided in DTO
+   * @private
+   */
+  private async handleImageUploadIfNeeded(
+    dto: AdminUpdateProductDto,
+    existingImageFilename: string | null,
+  ): Promise<{ imageUrl: string; imageFilename: string } | null> {
+    if (!dto.fileBuffer || !dto.fileOriginalname || !dto.fileMimetype) {
+      return null;
+    }
+
+    if (existingImageFilename) {
+      await this.minioService.deleteImage(existingImageFilename);
+    }
+
+    const file: BufferedFile = {
+      fieldname: 'image',
+      originalname: dto.fileOriginalname,
+      encoding: '7bit',
+      mimetype: dto.fileMimetype,
+      size: dto.fileSize || 0,
+      buffer: Buffer.from(dto.fileBuffer, 'base64'),
+    };
+
+    const uploaded = await this.minioService.uploadImage(file);
+    return {
+      imageUrl: uploaded.url,
+      imageFilename: uploaded.filename,
+    };
+  }
+
+  /**
+   * Build update data object from DTO and optional image data
+   * @private
+   */
+  private buildAdminUpdateData(
+    dto: AdminUpdateProductDto,
+    imageData: { imageUrl: string; imageFilename: string } | null,
+  ): Prisma.ProductUncheckedUpdateInput {
+    const updateData: Prisma.ProductUncheckedUpdateInput = {};
+
+    if (imageData) {
+      updateData.imageUrl = imageData.imageUrl;
+      updateData.imageFilename = imageData.imageFilename;
+      updateData.imageUrls = [imageData.imageUrl];
+    }
+
+    if (dto.name) updateData.name = dto.name;
+    if (dto.slug) updateData.slug = dto.slug;
+    if (dto.priceInt !== undefined) updateData.priceInt = dto.priceInt;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.categoryId !== undefined) updateData.categoryId = dto.categoryId;
+    if (dto.sku) updateData.sku = dto.sku;
+    if (dto.stock !== undefined) updateData.stock = dto.stock;
+    if (dto.attributes) updateData.attributes = dto.attributes as Prisma.InputJsonValue;
+    if (dto.model3dUrl !== undefined) updateData.model3dUrl = dto.model3dUrl;
+
+    return updateData;
+  }
+
+  /**
+   * Update product and return formatted response
+   * @private
+   */
+  private async updateProductAndReturn(
+    id: string,
+    updateData: Prisma.ProductUncheckedUpdateInput,
+  ): Promise<ProductResponse> {
+    const product = await this.prisma.product.update({
+      where: { id },
+      data: updateData,
+      include: { category: true },
+    });
+
+    return {
+      ...product,
+      attributes: product.attributes as ProductAttributes,
+    };
+  }
+
+  /**
+   * Admin: Delete product and image
+   */
+  async adminDelete(id: string): Promise<{ success: boolean; id: string }> {
+    try {
+      const product = await this.prisma.product.findUnique({ where: { id } });
+      if (!product) {
+        throw new EntityNotFoundRpcException('Product', id);
+      }
+
+      // Delete image from MinIO if exists
+      if (product.imageFilename) {
+        await this.minioService.deleteImage(product.imageFilename);
+      }
+
+      // Soft delete (or hard delete - adjust as needed)
+      await this.prisma.product.delete({ where: { id } });
+
+      return { success: true, id };
+    } catch (error) {
+      if (error instanceof RpcException) throw error;
+      console.error('[ProductsService] adminDelete error:', error);
+      throw new InternalServerRpcException('Failed to delete product');
     }
   }
 }
