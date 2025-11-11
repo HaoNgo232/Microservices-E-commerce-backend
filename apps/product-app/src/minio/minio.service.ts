@@ -88,4 +88,78 @@ export class MinioService implements OnModuleInit {
       // Don't throw - allow operation to continue even if delete fails
     }
   }
+
+  /**
+   * Upload GLB model file to glasses-models bucket
+   */
+  async uploadGlassesModel(file: BufferedFile, bucketName: string = 'glasses-models'): Promise<UploadedFileResponse> {
+    // Validate file type (GLB files)
+    if (file.mimetype !== 'model/gltf-binary' && !file.originalname.endsWith('.glb')) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Invalid file type. Only GLB files are allowed.',
+      });
+    }
+
+    // Validate file size (50MB max for 3D models)
+    if (file.size > 50 * 1024 * 1024) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'File size exceeds 50MB limit.',
+      });
+    }
+
+    // Ensure bucket exists
+    const exists = await this.minioClient.bucketExists(bucketName);
+    if (!exists) {
+      await this.minioClient.makeBucket(bucketName, 'us-east-1');
+      // Set public read policy
+      const policy = {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { AWS: ['*'] },
+            Action: ['s3:GetObject'],
+            Resource: [`arn:aws:s3:::${bucketName}/*`],
+          },
+        ],
+      };
+      await this.minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const ext = file.originalname.split('.').pop() ?? 'glb';
+    const filename = `models/${timestamp}-${Math.random().toString(36).substring(7)}.${ext}`;
+
+    // Upload to MinIO
+    await this.minioClient.putObject(bucketName, filename, file.buffer, file.size, {
+      'Content-Type': 'model/gltf-binary',
+    });
+
+    // Return public URL
+    const url = `http://${MINIO_CONFIG.endPoint}:${MINIO_CONFIG.port}/${bucketName}/${filename}`;
+    return { url, filename };
+  }
+
+  /**
+   * Upload thumbnail image for glasses model
+   */
+  async uploadGlassesThumbnail(file: BufferedFile, bucketName: string = 'glasses-models'): Promise<UploadedFileResponse> {
+    // Use same validation as image upload
+    return this.uploadImage(file);
+  }
+
+  /**
+   * Delete GLB model file from glasses-models bucket
+   */
+  async deleteGlassesModel(filename: string, bucketName: string = 'glasses-models'): Promise<void> {
+    try {
+      await this.minioClient.removeObject(bucketName, filename);
+    } catch (error) {
+      console.error('Failed to delete glasses model from MinIO:', error);
+      // Don't throw - allow operation to continue even if delete fails
+    }
+  }
 }

@@ -35,8 +35,24 @@ model Product {
   categoryId String?
   attributes Json?
   model3dUrl String?
+  glassesModelId String? // Optional link to GlassesModel
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   category   Category? @relation(fields: [categoryId], references: [id])
+  glassesModel GlassesModel? @relation(fields: [glassesModelId], references: [id])
+}
+
+model GlassesModel {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  thumbnailUrl String?  // Thumbnail image URL from MinIO
+  model3dUrl  String?  // GLB model file URL from MinIO
+  thumbnailFilename String? // Filename for deletion
+  model3dFilename String?   // Filename for deletion
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products    Product[] // Products using this glasses model
 }

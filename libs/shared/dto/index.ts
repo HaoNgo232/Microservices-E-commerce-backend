@@ -8,3 +8,4 @@ export * from './order.dto';
 export * from './payment.dto';
 export * from './report.dto';
 export * from './ar.dto';
+export * from './glasses.dto';

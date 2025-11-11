@@ -83,6 +83,11 @@ export const EVENTS = {
     SNAPSHOT_CREATE: 'ar.snapshotCreate',
     SNAPSHOT_LIST: 'ar.snapshotList',
   },
+  GLASSES: {
+    LIST_MODELS: 'glasses.listModels',
+    GET_MODEL: 'glasses.getModel',
+    DOWNLOAD_MODEL: 'glasses.downloadModel',
+  },
 };
 
 export const NATS_SERVICES = {

@@ -33,6 +33,9 @@ export * from './payment.types';
 // AR types
 export * from './ar.types';
 
+// Glasses types
+export * from './glasses.types';
+
 // Common response types
 export * from './response.types';
 
