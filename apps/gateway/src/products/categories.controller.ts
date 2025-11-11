@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Inject, Patch } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CategoryCreateDto, CategoryUpdateDto, CategoryListQueryDto } from '@shared/dto/category.dto';
 import { AuthGuard } from '../auth/auth.guard';
@@ -61,14 +61,14 @@ export class CategoriesController extends BaseGatewayController {
   }
 
   /**
-   * PUT /categories/:id
+   * PATCH /categories/:id
    * Cập nhật category (admin only)
    *
    * Pattern: Combine path param + body DTO
    * Gateway gửi: { id: string; dto: CategoryUpdateDto }
    * Microservice nhận: { id: string; dto: CategoryUpdateDto }
    */
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   update(@Param('id') id: string, @Body() dto: CategoryUpdateDto): Promise<CategoryResponse> {

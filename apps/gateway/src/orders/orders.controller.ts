@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   OrderCreateDto,
@@ -98,10 +98,10 @@ export class OrdersController extends BaseGatewayController {
   }
 
   /**
-   * PUT /orders/:id/cancel
+   * PATCH /orders/:id/cancel
    * Hủy order
    */
-  @Put(':id/cancel')
+  @Patch(':id/cancel')
   cancel(@Param('id') id: string): Promise<OrderResponse> {
     const payload = { id };
     return this.send<typeof payload, OrderResponse>(EVENTS.ORDER.CANCEL, payload);

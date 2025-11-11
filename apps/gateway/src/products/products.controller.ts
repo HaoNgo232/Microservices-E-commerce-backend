@@ -11,7 +11,9 @@ import {
   Inject,
   UploadedFile,
   UseInterceptors,
+  Patch,
 } from '@nestjs/common';
+// Note: Put is still used for adminUpdate endpoint (line 164)
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -98,14 +100,14 @@ export class ProductsController extends BaseGatewayController {
   }
 
   /**
-   * PUT /products/:id
+   * PATCH /products/:id
    * Cập nhật product (admin only)
    *
    * Pattern: Combine path param + body DTO
    * Gateway gửi: { id: string; dto: ProductUpdateDto }
    * Microservice nhận: { id: string; dto: ProductUpdateDto }
    */
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   update(@Param('id') id: string, @Body() dto: ProductUpdateDto): Promise<ProductResponse> {
