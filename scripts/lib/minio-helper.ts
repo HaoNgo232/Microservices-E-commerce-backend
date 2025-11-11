@@ -1,6 +1,6 @@
 import * as Minio from 'minio';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 // MinIO Configuration
 export const MINIO_CONFIG = {
@@ -24,7 +24,9 @@ export async function initMinIOBucket(): Promise<void> {
 
   try {
     const bucketExists = await minioClient.bucketExists(BUCKET_NAME);
-    if (!bucketExists) {
+    if (bucketExists) {
+      console.log(`  ✓ Bucket ${BUCKET_NAME} already exists`);
+    } else {
       await minioClient.makeBucket(BUCKET_NAME, 'us-east-1');
       console.log(`  ✓ Created bucket: ${BUCKET_NAME}`);
 
@@ -42,8 +44,6 @@ export async function initMinIOBucket(): Promise<void> {
       };
       await minioClient.setBucketPolicy(BUCKET_NAME, JSON.stringify(policy));
       console.log('  ✓ Set public read policy');
-    } else {
-      console.log(`  ✓ Bucket ${BUCKET_NAME} already exists`);
     }
   } catch (error) {
     console.error('  ✗ MinIO initialization error:', error);
@@ -94,4 +94,103 @@ export async function uploadAllImages(imagesDir: string): Promise<Map<string, st
 
   console.log(`  ✓ Total uploaded: ${imageUrls.size} images`);
   return imageUrls;
+}
+
+/**
+ * Upload GLB/GLTF model file lên MinIO (glasses-models bucket)
+ */
+export async function uploadGlassesModelToMinIO(
+  filePath: string,
+  fileName: string,
+  bucketName: string = 'glasses-models',
+): Promise<{ url: string; filename: string }> {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
+
+  // Ensure bucket exists
+  const bucketExists = await minioClient.bucketExists(bucketName);
+  if (!bucketExists) {
+    await minioClient.makeBucket(bucketName, 'us-east-1');
+    console.log(`  ✓ Created bucket: ${bucketName}`);
+
+    // Set public read policy
+    const policy = {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Principal: { AWS: ['*'] },
+          Action: ['s3:GetObject'],
+          Resource: [`arn:aws:s3:::${bucketName}/*`],
+        },
+      ],
+    };
+    await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
+    console.log(`  ✓ Set public read policy for ${bucketName}`);
+  }
+
+  const fileStream = fs.createReadStream(filePath);
+  const stats = fs.statSync(filePath);
+
+  // Determine content type based on extension
+  const ext = path.extname(filePath).toLowerCase();
+  const contentType = ext === '.glb' ? 'model/gltf-binary' : 'model/gltf+json';
+
+  // Upload file
+  await minioClient.putObject(bucketName, fileName, fileStream, stats.size, {
+    'Content-Type': contentType,
+  });
+
+  // Return public URL and filename
+  const url = `http://${MINIO_CONFIG.endPoint}:${MINIO_CONFIG.port}/${bucketName}/${fileName}`;
+  return { url, filename: fileName };
+}
+
+/**
+ * Upload thumbnail image lên MinIO (glasses-models bucket)
+ */
+export async function uploadGlassesThumbnailToMinIO(
+  filePath: string,
+  fileName: string,
+  bucketName: string = 'glasses-models',
+): Promise<{ url: string; filename: string }> {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
+
+  // Ensure bucket exists
+  const bucketExists = await minioClient.bucketExists(bucketName);
+  if (!bucketExists) {
+    await minioClient.makeBucket(bucketName, 'us-east-1');
+    console.log(`  ✓ Created bucket: ${bucketName}`);
+
+    // Set public read policy
+    const policy = {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Principal: { AWS: ['*'] },
+          Action: ['s3:GetObject'],
+          Resource: [`arn:aws:s3:::${bucketName}/*`],
+        },
+      ],
+    };
+    await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
+    console.log(`  ✓ Set public read policy for ${bucketName}`);
+  }
+
+  const fileStream = fs.createReadStream(filePath);
+  const stats = fs.statSync(filePath);
+  const contentType = 'image/png';
+
+  // Upload file
+  await minioClient.putObject(bucketName, fileName, fileStream, stats.size, {
+    'Content-Type': contentType,
+  });
+
+  // Return public URL and filename
+  const url = `http://${MINIO_CONFIG.endPoint}:${MINIO_CONFIG.port}/${bucketName}/${fileName}`;
+  return { url, filename: fileName };
 }

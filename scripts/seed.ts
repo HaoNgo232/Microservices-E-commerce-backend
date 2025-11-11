@@ -11,7 +11,8 @@
  */
 
 import bcrypt from 'bcryptjs';
-import * as path from 'path';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
 
 // Prisma clients (đã generate qua: pnpm run db:gen:all)
 import { PrismaClient as UserDB, $Enums as UserEnums } from '../apps/user-app/prisma/generated/client';
@@ -23,7 +24,12 @@ import { PrismaClient as ARDB } from '../apps/ar-app/prisma/generated/client';
 import { PrismaClient as ReportDB } from '../apps/report-app/prisma/generated/client';
 
 // Import helpers
-import { initMinIOBucket, uploadAllImages } from './lib/minio-helper';
+import {
+  initMinIOBucket,
+  uploadAllImages,
+  uploadGlassesModelToMinIO,
+  uploadGlassesThumbnailToMinIO,
+} from './lib/minio-helper';
 import { createProducts } from './seed-data/product-data';
 
 const userDb = new UserDB();
@@ -35,6 +41,8 @@ const arDb = new ARDB();
 const reportDb = new ReportDB();
 
 const IMAGES_DIR = path.join(__dirname, 'seed-data', 'images');
+const MODELS_DIR = path.join(__dirname, 'seed-data', '3dmodel');
+const MODELS_GLB_DIR = path.join(__dirname, 'seed-data', '3dmodel-glb');
 
 async function seedUsers() {
   console.log('→ Seeding user-app ...');
@@ -262,6 +270,96 @@ async function seedCart() {
   await cartDb.cart.deleteMany({});
 }
 
+async function seedGlassesModels() {
+  console.log('→ Seeding glasses models...');
+
+  await productDb.glassesModel.deleteMany({});
+
+  // Check if GLB directory exists (preferred)
+  const useGlb = fs.existsSync(MODELS_GLB_DIR);
+  const sourceDir = useGlb ? MODELS_GLB_DIR : MODELS_DIR;
+
+  if (useGlb) {
+    console.log('  ℹ️  Using GLB files (recommended)');
+  } else {
+    console.warn('  ⚠️  GLB directory not found, using GLTF files');
+    console.warn('  ⚠️  Note: GLTF files may not load correctly without textures');
+    console.warn('  ⚠️  Run: pnpm tsx scripts/convert-gltf-to-glb.ts to convert to GLB');
+  }
+
+  // Read all glasses folders (glasses-01, glasses-02, etc.)
+  const modelFolders = fs
+    .readdirSync(sourceDir)
+    .filter(f => {
+      const fullPath = path.join(sourceDir, f);
+      return fs.statSync(fullPath).isDirectory() && f.startsWith('glasses-');
+    })
+    .sort((a, b) => a.localeCompare(b));
+
+  const glassesModels: Array<{ id: string; name: string }> = [];
+
+  for (const folder of modelFolders) {
+    try {
+      const folderPath = path.join(sourceDir, folder);
+      const files = fs.readdirSync(folderPath);
+
+      // Find model file (GLB preferred, fallback to GLTF)
+      const glbFile = files.find(f => f.endsWith('.glb'));
+      const gltfFile = files.find(f => f.endsWith('.gltf'));
+      const modelFile = glbFile || gltfFile;
+
+      // Find thumbnail
+      const thumbnailFile = files.find(f => f.endsWith('.png') && !f.includes('textures'));
+
+      if (!modelFile) {
+        console.warn(`  ⚠️  Skipping ${folder}: No model file (.glb or .gltf) found`);
+        continue;
+      }
+
+      if (!thumbnailFile) {
+        console.warn(`  ⚠️  Skipping ${folder}: No thumbnail found`);
+        continue;
+      }
+
+      // Upload model to MinIO
+      const modelPath = path.join(folderPath, modelFile);
+      const ext = path.extname(modelFile);
+      const modelFileName = `models/${folder}-${Date.now()}${ext}`;
+      const { url: modelUrl, filename: modelFilename } = await uploadGlassesModelToMinIO(modelPath, modelFileName);
+
+      // Upload thumbnail to MinIO
+      const thumbnailPath = path.join(folderPath, thumbnailFile);
+      const thumbnailFileName = `thumbnails/${folder}-${Date.now()}.png`;
+      const { url: thumbnailUrl, filename: thumbnailFilename } = await uploadGlassesThumbnailToMinIO(
+        thumbnailPath,
+        thumbnailFileName,
+      );
+
+      // Create GlassesModel record
+      const modelName = folder.replace('glasses-', 'Glasses Model ').replaceAll('-', ' ');
+      const glassesModel = await productDb.glassesModel.create({
+        data: {
+          name: modelName,
+          description: `3D model for ${modelName}`,
+          model3dUrl: modelUrl,
+          model3dFilename: modelFilename,
+          thumbnailUrl: thumbnailUrl,
+          thumbnailFilename: thumbnailFilename,
+        },
+      });
+
+      glassesModels.push(glassesModel);
+      const format = glbFile ? 'GLB' : 'GLTF';
+      console.log(`  ✓ Created: ${glassesModel.name} (${format})`);
+    } catch (error) {
+      console.error(`  ✗ Failed to seed ${folder}:`, error);
+    }
+  }
+
+  console.log(`  ✓ Total glasses models: ${glassesModels.length}`);
+  return glassesModels;
+}
+
 async function main() {
   try {
     console.log('=== SEED START ===\n');
@@ -290,12 +388,16 @@ async function main() {
     // 7) Report (tạo 1 entry lưu dấu seed)
     await seedReport();
 
+    // 8) Glasses Models (upload 3D models to MinIO)
+    const glassesModels = await seedGlassesModels();
+
     console.log('\n=== SEED DONE ===');
     console.log('\n��� SUMMARY:');
     console.log('��� Users:', 4, '(2 admins, 2 customers)');
     console.log('���️  Products:', products.length, '(Kính mát, Gọng kính, Kính thể thao, Phụ kiện)');
     console.log('���️  Categories:', 4, '(Kính mát, Gọng kính, Kính thể thao, Phụ kiện)');
     console.log('���️  Images:', imageUrls.size, '(uploaded to MinIO)');
+    console.log('��� Glasses Models:', glassesModels.length, '(3D models uploaded to MinIO)');
     console.log('��� Orders:', 1);
     console.log('��� Payments:', 1);
     console.log('��� AR Snapshots:', 1);
