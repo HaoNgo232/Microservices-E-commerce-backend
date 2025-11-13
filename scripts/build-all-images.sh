@@ -4,10 +4,10 @@ set -e
 # Build script for all Docker images
 # Usage: ./scripts/build-all-images.sh
 # Environment variables:
-#   DOCKER_USERNAME: Docker registry username (default: yourusername)
+#   DOCKER_USERNAME: Docker registry username (default: haongo123)
 #   VERSION: Image version tag (default: latest)
 
-REGISTRY_USER=${DOCKER_USERNAME:-"yourusername"}
+REGISTRY_USER=${DOCKER_USERNAME:-"haongo123"}
 VERSION=${VERSION:-"latest"}
 
 echo "=================================="
@@ -21,7 +21,7 @@ echo ""
 echo " Building gateway..."
 docker build \
   -t $REGISTRY_USER/lv-gateway:$VERSION \
-  -f Dockerfile.gateway \
+  -f docker/gateway/Dockerfile \
   .
 
 if [ $? -ne 0 ]; then
@@ -38,7 +38,7 @@ for app in "${apps[@]}"; do
   echo " Building $app..."
   docker build \
     -t $REGISTRY_USER/lv-$app:$VERSION \
-    -f Dockerfile.$app \
+    -f docker/microservices/$app/Dockerfile \
     .
   
   if [ $? -ne 0 ]; then

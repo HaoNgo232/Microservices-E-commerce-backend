@@ -135,7 +135,7 @@ export class KeyDistributorService implements OnModuleInit {
       this.publicKey = publicKeyPEM;
 
       // Publish public key qua NATS
-      await this.publishPublicKey(publicKeyPEM);
+      this.publishPublicKey(publicKeyPEM);
     } catch (error) {
       this.logger.error('Failed to initialize and publish keys:', error);
       throw error;
@@ -146,7 +146,7 @@ export class KeyDistributorService implements OnModuleInit {
    * Publish public key qua NATS subject: auth.public-key
    * Payload: { publicKey, algorithm, issuedAt }
    */
-  private async publishPublicKey(publicKeyPEM: string): Promise<void> {
+  private publishPublicKey(publicKeyPEM: string): void {
     try {
       const payload = {
         publicKey: publicKeyPEM,

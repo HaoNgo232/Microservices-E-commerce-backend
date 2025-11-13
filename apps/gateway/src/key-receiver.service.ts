@@ -3,6 +3,12 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Inject } from '@nestjs/common';
 import { firstValueFrom, timeout } from 'rxjs';
 
+interface PublicKeyMessage {
+  publicKey: string;
+  algorithm: string;
+  issuedAt: string;
+}
+
 /**
  * KeyReceiverService - Gateway
  *
@@ -25,7 +31,7 @@ export class KeyReceiverService implements OnModuleInit {
   private publicKey: string | null = null;
   private keyReceived: Promise<string>;
   private resolveKeyReceived!: (value: string) => void;
-  private rejectKeyReceived!: (reason?: any) => void;
+  private rejectKeyReceived!: (reason?: Error | string) => void;
 
   constructor(@Inject('NATS_CLIENT') private client: ClientProxy) {
     // Tạo promise để wait public key
@@ -62,15 +68,16 @@ export class KeyReceiverService implements OnModuleInit {
         this.logger.log(`Waiting for public key (attempt ${attempt}/${maxRetries})...`);
 
         // Subscribe and wait for message
-        const message$ = this.client.send('auth.public-key', {});
+        const message$ = this.client.send<PublicKeyMessage>('auth.public-key', {});
 
         // Apply timeout
-        const publicKey = await firstValueFrom(message$.pipe(timeout(timeoutMs)), { defaultValue: null });
+        const publicKey = await firstValueFrom(message$.pipe(timeout(timeoutMs)), {
+          defaultValue: null as PublicKeyMessage | null,
+        });
 
         if (publicKey && typeof publicKey === 'object' && 'publicKey' in publicKey) {
-          const receivedKey = (publicKey as any).publicKey;
-          this.publicKey = receivedKey;
-          this.resolveKeyReceived(receivedKey);
+          this.publicKey = publicKey.publicKey;
+          this.resolveKeyReceived(publicKey.publicKey);
           return;
         }
 
@@ -92,27 +99,9 @@ export class KeyReceiverService implements OnModuleInit {
   }
 
   /**
-   * Subscribe to auth.public-key updates
-   * Sử dụng để update public key nếu có key rotation
+   * Note: Key rotation support can be added later if needed
+   * Currently we receive key once on startup and cache it
    */
-  private subscribeToKeyUpdates(): void {
-    try {
-      this.client.subscribe('auth.public-key').subscribe(
-        (message: any) => {
-          if (message && message.publicKey) {
-            this.logger.log('📝 Public key update received');
-            this.publicKey = message.publicKey;
-            this.logger.log(' Public key updated in cache');
-          }
-        },
-        error => {
-          this.logger.error('Error subscribing to key updates:', error);
-        },
-      );
-    } catch (error) {
-      this.logger.error('Failed to subscribe to key updates:', error);
-    }
-  }
 
   /**
    * Sleep utility
