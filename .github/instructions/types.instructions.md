@@ -10,26 +10,26 @@ applyTo: 'libs/shared/types/**/*.types.ts,apps/*/src/**/*.types.ts'
 
 ---
 
-## 📋 TYPE NAMING CONVENTIONS
+## TYPE NAMING CONVENTIONS
 
 ### Response Types
 
 ```typescript
-// ✅ CORRECT - Suffix with "Response"
+//  CORRECT - Suffix with "Response"
 export type UserResponse = {
   id: string;
   email: string;
   fullName: string | null;
 };
 
-// ❌ WRONG - Generic name
+//  WRONG - Generic name
 export type User = { ... };
 ```
 
 ### Request/DTO Types
 
 ```typescript
-// ✅ CORRECT - Use DTO suffix (already in dto/ folder)
+//  CORRECT - Use DTO suffix (already in dto/ folder)
 export class CreateUserDto { ... }
 
 // Types for internal use
@@ -39,7 +39,7 @@ export type UserCreatePayload = { ... };
 ### Utility Types
 
 ```typescript
-// ✅ CORRECT - Descriptive names
+//  CORRECT - Descriptive names
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
 export type WithTimestamps<T> = T & {
@@ -55,21 +55,21 @@ export type WithTimestamps<T> = T & {
 ### 1. Use `type` for Simple Shapes
 
 ```typescript
-// ✅ CORRECT - Simple object shapes
+//  CORRECT - Simple object shapes
 export type UserResponse = {
   id: string;
   email: string;
   role: string;
 };
 
-// ✅ CORRECT - Union types
+//  CORRECT - Union types
 export type UserRole = 'ADMIN' | 'CUSTOMER';
 ```
 
 ### 2. Use `interface` for Extensible Contracts
 
 ```typescript
-// ✅ CORRECT - When inheritance is expected
+//  CORRECT - When inheritance is expected
 export interface IPaymentGateway {
   processPayment(amount: number): Promise<PaymentResult>;
   refund(transactionId: string): Promise<void>;
@@ -84,7 +84,7 @@ export interface ISePayGateway extends IPaymentGateway {
 ### 3. Required vs Optional Fields
 
 ```typescript
-// ✅ CORRECT - Clear optionality
+//  CORRECT - Clear optionality
 export type ProductResponse = {
   id: string; // Required
   name: string; // Required
@@ -92,7 +92,7 @@ export type ProductResponse = {
   model3dUrl?: string; // Optional field
 };
 
-// ❌ WRONG - Ambiguous
+//  WRONG - Ambiguous
 export type ProductResponse = {
   id: string;
   name: string;
@@ -108,7 +108,7 @@ export type ProductResponse = {
 ### Handle Prisma Nullable Fields
 
 ```typescript
-// ✅ CORRECT - Match Prisma schema
+//  CORRECT - Match Prisma schema
 // Prisma schema: fullName String?
 export type UserResponse = {
   id: string;
@@ -137,7 +137,7 @@ type User = {
 
 ---
 
-## 📦 TYPE ORGANIZATION
+## TYPE ORGANIZATION
 
 ### File Structure
 
@@ -171,12 +171,12 @@ export * from './order.types';
 ### 1. Using `any`
 
 ```typescript
-// ❌ WRONG
+//  WRONG
 export type ApiResponse = {
   data: any; // No type safety!
 };
 
-// ✅ CORRECT
+//  CORRECT
 export type ApiResponse<T> = {
   data: T;
   status: number;
@@ -186,14 +186,14 @@ export type ApiResponse<T> = {
 ### 2. Mixing Domain Concerns
 
 ```typescript
-// ❌ WRONG - Product type with cart logic
+//  WRONG - Product type with cart logic
 export type Product = {
   id: string;
   name: string;
   cartQuantity: number; // Cart concern in product type!
 };
 
-// ✅ CORRECT - Separate concerns
+//  CORRECT - Separate concerns
 export type ProductResponse = {
   id: string;
   name: string;
@@ -208,10 +208,10 @@ export type CartItemResponse = {
 ### 3. Overly Permissive Types
 
 ```typescript
-// ❌ WRONG
+//  WRONG
 export type Config = Record<string, any>;
 
-// ✅ CORRECT
+//  CORRECT
 export type Config = {
   apiUrl: string;
   timeout: number;
@@ -226,7 +226,7 @@ export type Config = {
 ### When to Use Generics
 
 ```typescript
-// ✅ CORRECT - Reusable pagination wrapper
+//  CORRECT - Reusable pagination wrapper
 export type PaginatedResponse<T> = {
   items: T[];
   total: number;
@@ -242,12 +242,12 @@ type ProductListResponse = PaginatedResponse<ProductResponse>;
 ### Constraining Generics
 
 ```typescript
-// ✅ CORRECT - Constrained generic
+//  CORRECT - Constrained generic
 export type WithId<T extends { id: string }> = T & {
   createdAt: Date;
 };
 
-// ❌ WRONG - Too permissive
+//  WRONG - Too permissive
 export type WithId<T> = T & { createdAt: Date };
 ```
 
@@ -278,7 +278,7 @@ export type RequiredUser = Required<Pick<UserResponse, 'fullName' | 'phone'>>;
 ### Implementing Type Guards
 
 ```typescript
-// ✅ CORRECT - Runtime type checking
+//  CORRECT - Runtime type checking
 export function isUserResponse(obj: unknown): obj is UserResponse {
   return (
     typeof obj === 'object' &&

@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  order-app:
+    image: ${DOCKER_USERNAME}/lv-order-app:${VERSION:-latest}
+    container_name: order-app
+    
+    environment:
+      - DATABASE_URL_ORDER=${DATABASE_URL_ORDER}
+      - NODE_ENV=production
+      - NATS_URL=${NATS_URL:-nats://localhost:4222}
+      - LOG_LEVEL=debug
+      - APP_NAME=order-app
+    
+    restart: unless-stopped
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

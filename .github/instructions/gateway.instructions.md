@@ -17,11 +17,11 @@ Gateway là single entry point cho toàn bộ hệ thống:
 
 Gateway controllers PHẢI:
 
-✅ Sử dụng REST decorators (`@Get`, `@Post`, `@Put`, `@Delete`)
-✅ Có `@UseGuards(AuthGuard)` cho protected endpoints
-✅ Inject NATS clients qua `@Inject('SERVICE_NAME')`
-✅ Sử dụng `firstValueFrom` với `timeout` và `retry`
-✅ Handle errors và convert thành HTTP exceptions
+Sử dụng REST decorators (`@Get`, `@Post`, `@Put`, `@Delete`)
+Có `@UseGuards(AuthGuard)` cho protected endpoints
+Inject NATS clients qua `@Inject('SERVICE_NAME')`
+Sử dụng `firstValueFrom` với `timeout` và `retry`
+Handle errors và convert thành HTTP exceptions
 
 ```typescript
 @Controller('users')

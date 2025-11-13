@@ -842,10 +842,10 @@ code: string;
 Prisma automatically prevents SQL injection via parameterized queries. Always use Prisma query builder:
 
 ```typescript
-// ✅ SAFE
+//  SAFE
 await this.prisma.discountCode.findUnique({ where: { code } });
 
-// ❌ UNSAFE (don't do this)
+//  UNSAFE (don't do this)
 await this.prisma.$queryRaw`SELECT * FROM "DiscountCode" WHERE code = '${code}'`;
 ```
 

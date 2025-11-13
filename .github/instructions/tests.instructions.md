@@ -417,17 +417,17 @@ it('should rollback on error', async () => {
 
 ## Best Practices
 
-- ✅ Write tests alongside code (TDD encouraged)
-- ✅ Test both success and error paths
-- ✅ Clean up test data after each test
-- ✅ Use meaningful test descriptions
-- ✅ Mock external dependencies
-- ✅ Keep tests isolated and independent
-- ✅ Use `beforeEach` for common setup
-- ✅ Use `afterEach` for cleanup
-- ✅ Test edge cases and boundary conditions
-- ✅ Verify mock calls with `toHaveBeenCalledWith`
-- ❌ Don't test implementation details
-- ❌ Don't write overly complex tests
-- ❌ Don't skip error case testing
-- ❌ Don't leave test data in database
+- Write tests alongside code (TDD encouraged)
+- Test both success and error paths
+- Clean up test data after each test
+- Use meaningful test descriptions
+- Mock external dependencies
+- Keep tests isolated and independent
+- Use `beforeEach` for common setup
+- Use `afterEach` for cleanup
+- Test edge cases and boundary conditions
+- Verify mock calls with `toHaveBeenCalledWith`
+- Don't test implementation details
+- Don't write overly complex tests
+- Don't skip error case testing
+- Don't leave test data in database

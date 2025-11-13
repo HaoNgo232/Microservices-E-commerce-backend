@@ -24,7 +24,7 @@ export class CreateEntityDto {
 
 ---
 
-## 📋 VALIDATION CHECKLIST
+## VALIDATION CHECKLIST
 
 When user creates/modifies DTO, **AI MUST CHECK:**
 
@@ -43,7 +43,7 @@ Required fields have `@IsNotEmpty()`
 ### Missing Validation
 
 ```typescript
-// ❌ WRONG - FLAG IMMEDIATELY
+//  WRONG - FLAG IMMEDIATELY
 export class CreateUserDto {
   email: string; // No validation!
   password: string; // No validation!
@@ -65,7 +65,7 @@ export class CreateUserDto {
 ### Missing @Type() for Numbers
 
 ```typescript
-// ❌ WRONG
+//  WRONG
 export class ProductDto {
   @IsNumber()
   price: number; // Query params come as strings!
@@ -95,7 +95,7 @@ export class ProductDto {
   priceInt: number; //  1999 = $19.99
 }
 
-// ❌ NEVER use:
+//  NEVER use:
 // price: number;  // Floating point errors!
 ```
 

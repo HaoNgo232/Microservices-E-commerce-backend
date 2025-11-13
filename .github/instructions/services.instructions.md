@@ -11,7 +11,7 @@ applyTo: 'apps/*/src/**/*.service.ts'
 **EVERY service method MUST have explicit return type.**
 
 ```typescript
-// ❌ WRONG - Will be flagged
+//  WRONG - Will be flagged
 async findById(id: string) {
   return this.prisma.user.findUnique({ where: { id } });
 }
@@ -57,7 +57,7 @@ Found unrelated method: sendEmail()
 **NO direct instantiations allowed.**
 
 ```typescript
-// ❌ WRONG
+//  WRONG
 class UserService {
   private prisma = new PrismaClient(); // FLAG THIS
 }
@@ -98,7 +98,7 @@ async update(id: string, dto: UpdateDto): Promise<Response> {
 ### Never Expose Sensitive Fields
 
 ```typescript
-// ❌ DANGEROUS
+//  DANGEROUS
 async findById(id: string): Promise<User> {
   return prisma.user.findUnique({ where: { id } });
   // Exposes passwordHash!

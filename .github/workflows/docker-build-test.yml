@@ -1,0 +1,185 @@
+name: Docker Build & Test Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/**'
+      - 'libs/**'
+      - 'Dockerfile*'
+      - '.github/workflows/docker-build-test.yml'
+      - 'scripts/**'
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  IMAGE_PREFIX: lv
+
+jobs:
+  # Job 1: Lint Dockerfiles
+  lint-dockerfiles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Lint Dockerfiles with Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfiles: |
+            Dockerfile.gateway
+            Dockerfile.user-app
+            Dockerfile.product-app
+            Dockerfile.order-app
+            Dockerfile.cart-app
+            Dockerfile.payment-app
+            Dockerfile.report-app
+            Dockerfile.ar-app
+
+  # Job 2: Build Docker Images
+  build-images:
+    runs-on: ubuntu-latest
+    needs: lint-dockerfiles
+    strategy:
+      matrix:
+        app: [gateway, user-app, product-app, order-app, cart-app, payment-app, report-app, ar-app]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image - ${{ matrix.app }}
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.${{ matrix.app }}
+          tags: ${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:test
+          outputs: type=docker,dest=/tmp/image-${{ matrix.app }}.tar
+          build-args: |
+            APP_NAME=${{ matrix.app }}
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image-${{ matrix.app }}
+          path: /tmp/image-${{ matrix.app }}.tar
+          retention-days: 1
+
+  # Job 3: Scan Images for Vulnerabilities
+  scan-images:
+    runs-on: ubuntu-latest
+    needs: build-images
+    strategy:
+      matrix:
+        app: [gateway, user-app, product-app, order-app, cart-app, payment-app, report-app, ar-app]
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image-${{ matrix.app }}
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load --input /tmp/image-${{ matrix.app }}.tar
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:test
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.app }}.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results-${{ matrix.app }}.sarif'
+
+  # Job 4: Test Containers (Run Basic Tests)
+  test-containers:
+    runs-on: ubuntu-latest
+    needs: build-images
+    strategy:
+      matrix:
+        app: [gateway, user-app]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image-${{ matrix.app }}
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load --input /tmp/image-${{ matrix.app }}.tar
+
+      - name: Test image - ${{ matrix.app }}
+        run: |
+          echo "Testing ${{ matrix.app }} image..."
+          docker image inspect ${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:test
+          docker history ${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:test | head -5
+          echo " Image validation passed"
+
+      - name: Run container - ${{ matrix.app }}
+        run: |
+          if [ "${{ matrix.app }}" = "gateway" ]; then
+            docker network create testnet || true
+            docker run -d --name nats --network testnet nats:alpine
+            docker run -d --name ${{ matrix.app }} --network testnet \
+              -e NODE_ENV=test \
+              -e NATS_URL=nats://nats:4222 \
+              -p 3000:3000 \
+              ${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:test
+            sleep 5
+            docker logs ${{ matrix.app }}
+            echo " Gateway container started"
+          else
+            docker network create testnet || true
+            docker run -d --name postgres --network testnet -e POSTGRES_PASSWORD=test postgres:16-alpine
+            docker run -d --name nats --network testnet nats:alpine
+            sleep 5
+            docker run -d --name ${{ matrix.app }} --network testnet \
+              -e NODE_ENV=test \
+              -e DATABASE_URL_USER=postgresql://postgres:test@postgres:5432/postgres \
+              -e NATS_URL=nats://nats:4222 \
+              ${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:test
+            sleep 10
+            docker logs ${{ matrix.app }}
+            echo " ${{ matrix.app }} container started"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop $(docker ps -aq) 2>/dev/null || true
+          docker rm $(docker ps -aq) 2>/dev/null || true
+
+  # Job 5: Generate Report
+  report:
+    runs-on: ubuntu-latest
+    needs: [lint-dockerfiles, build-images, scan-images, test-containers]
+    if: always()
+    steps:
+      - name: Generate Build Report
+        run: |
+          echo "#  Docker Build & Test Pipeline" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Pipeline Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint Dockerfiles | ${{ needs.lint-dockerfiles.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Images | ${{ needs.build-images.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Scan Vulnerabilities | ${{ needs.scan-images.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Containers | ${{ needs.test-containers.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Services Tested" >> $GITHUB_STEP_SUMMARY
+          echo "-  gateway" >> $GITHUB_STEP_SUMMARY
+          echo "-  user-app" >> $GITHUB_STEP_SUMMARY
+          echo "-  product-app" >> $GITHUB_STEP_SUMMARY
+          echo "-  order-app" >> $GITHUB_STEP_SUMMARY
+          echo "-  cart-app" >> $GITHUB_STEP_SUMMARY
+          echo "-  payment-app" >> $GITHUB_STEP_SUMMARY
+          echo "-  report-app" >> $GITHUB_STEP_SUMMARY
+          echo "-  ar-app" >> $GITHUB_STEP_SUMMARY

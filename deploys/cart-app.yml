@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  cart-app:
+    image: ${DOCKER_USERNAME}/lv-cart-app:${VERSION:-latest}
+    container_name: cart-app
+    
+    environment:
+      - DATABASE_URL_CART=${DATABASE_URL_CART}
+      - NODE_ENV=production
+      - NATS_URL=${NATS_URL:-nats://localhost:4222}
+      - LOG_LEVEL=debug
+      - APP_NAME=cart-app
+    
+    restart: unless-stopped
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  user-app:
+    image: ${DOCKER_USERNAME}/lv-user-app:${VERSION:-latest}
+    container_name: user-app
+    
+    # Environment variables
+    environment:
+      - DATABASE_URL_USER=${DATABASE_URL_USER}
+      - NODE_ENV=production
+      - NATS_URL=${NATS_URL:-nats://localhost:4222}
+      - LOG_LEVEL=debug
+      - APP_NAME=user-app
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Health check (optional - NATS services may not have HTTP health endpoint)
+    # healthcheck:
+    #   test: ["CMD", "nc", "-z", "localhost", "4222"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
+    
+    # Resource limits (optional)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+

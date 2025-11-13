@@ -1,6 +1,6 @@
-# 🚀 Setup Guide - E-Commerce Microservices
+# Setup Guide - E-Commerce Microservices
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **Node.js**: v20+ (recommended: v20.11.0)
 - **pnpm**: v8+ (`npm install -g pnpm`)
@@ -128,7 +128,7 @@ pnpm test:run
 pnpm test:compose:down
 ```
 
-## 📦 Database Management
+## Database Management
 
 ### Reset All Databases
 
@@ -228,7 +228,7 @@ docker compose restart nats
 
 1.  Setup complete → Start implementing business logic
 2.  📖 Read `docs/ai/design/README.md` for architecture details
-3.  🔨 Run `/new-requirement` command to add features
+3.  Run `/new-requirement` command to add features
 4.  🧪 Write tests with `/writing-test` command
 5.  🔍 Review code with `/code-review` command
 

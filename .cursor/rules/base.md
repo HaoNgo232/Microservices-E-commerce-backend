@@ -74,41 +74,41 @@ ServiceUnavailableRpcException; // 503
 InternalServerRpcException; // 500
 ```
 
-## ✅ Code Quality Rules
+## Code Quality Rules
 
 ### 1. Always Use Explicit Prisma Select
 
 ```typescript
-// ✅ ĐÚNG
+//  ĐÚNG
 const user = await prisma.user.findUnique({
   where: { id },
   select: {
     id: true,
     email: true,
-    // ❌ NEVER select passwordHash
+    //  NEVER select passwordHash
   },
 });
 
-// ❌ SAI
+//  SAI
 const user = await prisma.user.findUnique({ where: { id } });
 ```
 
 ### 2. NATS Communication Must Have Timeout & Retry
 
 ```typescript
-// ✅ ĐÚNG
+//  ĐÚNG
 return firstValueFrom(
   this.userClient.send(EVENTS.USER.FIND_ONE, { userId }).pipe(timeout(5000), retry({ count: 1, delay: 1000 })),
 );
 
-// ❌ SAI
+//  SAI
 return firstValueFrom(this.userClient.send(EVENTS.USER.FIND_ONE, { userId }));
 ```
 
 ### 3. DTOs Must Have Validation
 
 ```typescript
-// ✅ ĐÚNG
+//  ĐÚNG
 export class CreateUserDto {
   @IsEmail()
   @IsNotEmpty()
@@ -119,7 +119,7 @@ export class CreateUserDto {
   password: string;
 }
 
-// ❌ SAI
+//  SAI
 export class CreateUserDto {
   email: string;
   password: string;
@@ -129,7 +129,7 @@ export class CreateUserDto {
 ### 4. Controllers in Microservices: No Guards
 
 ```typescript
-// ✅ ĐÚNG - Microservice controller
+//  ĐÚNG - Microservice controller
 @Controller()
 export class UsersController {
   @MessagePattern(EVENTS.USER.FIND_ONE)
@@ -138,7 +138,7 @@ export class UsersController {
   }
 }
 
-// ✅ ĐÚNG - Gateway controller
+//  ĐÚNG - Gateway controller
 @Controller('users')
 export class UsersController {
   @Get('me')
@@ -152,7 +152,7 @@ export class UsersController {
 ### 5. Error Handling
 
 ```typescript
-// ✅ ĐÚNG
+//  ĐÚNG
 if (!user) {
   throw new EntityNotFoundRpcException('User', userId);
 }
@@ -161,7 +161,7 @@ if (existingEmail) {
   throw new ConflictRpcException('Email đã được sử dụng');
 }
 
-// ❌ SAI
+//  SAI
 throw new Error('User not found');
 throw new RpcException('Email exists');
 ```
@@ -231,7 +231,7 @@ pnpm test:full      # Full test suite with Docker
 
 ## 🚫 Common Mistakes to Avoid
 
-### ❌ DON'T
+### DON'T
 
 1. Share database between services
 2. Put guards in microservice controllers
@@ -242,7 +242,7 @@ pnpm test:full      # Full test suite with Docker
 7. Skip input validation
 8. Commit without tests
 
-### ✅ DO
+### DO
 
 1. Each service has own database
 2. Only Gateway has guards

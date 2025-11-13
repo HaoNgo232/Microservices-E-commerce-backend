@@ -1,14 +1,14 @@
 # API Gateway Refactoring - Pattern Documentation
 
-## 📋 Tổng Quan
+## Tổng Quan
 
 API Gateway đã được refactor theo **Perimeter Security Pattern** với các cải tiến:
 
-1. ✅ **Loại bỏ Service Layer không cần thiết** - Controllers gửi message trực tiếp qua NATS
-2. ✅ **Type Safety hoàn toàn** - Tất cả methods có explicit return types
-3. ✅ **BaseGatewayController cải tiến** - Generic type support, better error handling
-4. ✅ **Perimeter Security Middleware** - Rate limiting và audit logging
-5. ✅ **Type Definitions tổ chức tốt** - Tất cả types trong `libs/shared/types/`
+1.  **Loại bỏ Service Layer không cần thiết** - Controllers gửi message trực tiếp qua NATS
+2.  **Type Safety hoàn toàn** - Tất cả methods có explicit return types
+3.  **BaseGatewayController cải tiến** - Generic type support, better error handling
+4.  **Perimeter Security Middleware** - Rate limiting và audit logging
+5.  **Type Definitions tổ chức tốt** - Tất cả types trong `libs/shared/types/`
 
 ## 🏗️ Kiến Trúc
 
@@ -33,19 +33,19 @@ apps/gateway/src/
 │   ├── rate-limit.middleware.ts    # Rate limiting cho DDoS protection
 │   └── audit-log.middleware.ts     # Audit logging cho security monitoring
 ├── auth/
-│   ├── auth.controller.ts          # ✅ Refactored - loại bỏ AuthService
+│   ├── auth.controller.ts          #  Refactored - loại bỏ AuthService
 │   ├── auth.guard.ts
 │   └── auth.module.ts
 ├── users/
-│   └── users.controller.ts         # ✅ Refactored với return types
+│   └── users.controller.ts         #  Refactored với return types
 ├── products/
-│   └── products.controller.ts      # ✅ Refactored với return types
+│   └── products.controller.ts      #  Refactored với return types
 ├── cart/
-│   └── cart.controller.ts          # ✅ Refactored với return types
+│   └── cart.controller.ts          #  Refactored với return types
 ├── orders/
-│   └── orders.controller.ts        # ✅ Refactored với return types
+│   └── orders.controller.ts        #  Refactored với return types
 └── addresses/
-    └── addresses.controller.ts     # ✅ Refactored với return types
+    └── addresses.controller.ts     #  Refactored với return types
 ```
 
 ### Type Definitions
@@ -107,7 +107,7 @@ export class ProductsController extends BaseGatewayController {
 }
 ```
 
-### ✅ Best Practices Implemented
+### Best Practices Implemented
 
 1. **Explicit Return Types** - Mọi method đều có return type rõ ràng
 2. **Generic Type Parameters** - `send<TRequest, TResponse>` đảm bảo type safety
@@ -226,7 +226,7 @@ async list(@Query() query: ProductListQueryDto): Promise<PaginatedProductsRespon
 
 ## 🚫 Anti-Patterns Eliminated
 
-### ❌ BEFORE: Service Layer Trùng Lặp
+### BEFORE: Service Layer Trùng Lặp
 
 ```typescript
 // auth.service.ts (KHÔNG CẦN THIẾT)
@@ -244,7 +244,7 @@ async login(@Body() dto: LoginDto) {
 }
 ```
 
-### ✅ AFTER: Direct Communication
+### AFTER: Direct Communication
 
 ```typescript
 // auth.controller.ts
@@ -254,7 +254,7 @@ async login(@Body() dto: LoginDto): Promise<AuthResponse> {
 }
 ```
 
-### ❌ BEFORE: Missing Return Types
+### BEFORE: Missing Return Types
 
 ```typescript
 async findById(@Param('id') id: string) {
@@ -262,7 +262,7 @@ async findById(@Param('id') id: string) {
 }
 ```
 
-### ✅ AFTER: Explicit Return Types
+### AFTER: Explicit Return Types
 
 ```typescript
 async findById(@Param('id') id: string): Promise<UserResponse> {
@@ -389,20 +389,20 @@ describe('ProductsController', () => {
 - Perimeter Security Pattern: Design pattern cho API Gateway security
 - SOLID Principles: Clean architecture cho maintainable code
 
-## ✅ Status
+## Status
 
 **Hoàn thành:**
 
-- ✅ BaseGatewayController refactored
-- ✅ AuthController refactored (removed AuthService)
-- ✅ ProductsController refactored
-- ✅ CartController refactored
-- ✅ OrdersController refactored
-- ✅ UsersController refactored
-- ✅ AddressesController refactored
-- ✅ Type definitions organized
-- ✅ Perimeter Security middleware implemented
-- ✅ AppModule configured
+- BaseGatewayController refactored
+- AuthController refactored (removed AuthService)
+- ProductsController refactored
+- CartController refactored
+- OrdersController refactored
+- UsersController refactored
+- AddressesController refactored
+- Type definitions organized
+- Perimeter Security middleware implemented
+- AppModule configured
 
 **Cần làm tiếp (nếu cần):**
 

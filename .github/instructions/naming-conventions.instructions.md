@@ -15,7 +15,7 @@ applyTo: '**/*.ts,**/*.prisma'
 ### TypeScript Files
 
 ```
-✅ CORRECT
+ CORRECT
 users.service.ts          // Service implementation
 users.controller.ts       // Controller
 users.service.spec.ts     // Unit tests
@@ -23,7 +23,7 @@ users.e2e-spec.ts         // E2E tests
 user.dto.ts               // DTOs
 user.types.ts             // Type definitions
 
-❌ WRONG
+ WRONG
 UsersService.ts           // PascalCase filename
 users-service.ts          // Inconsistent separator
 user.service.test.ts      // Wrong test suffix
@@ -32,12 +32,12 @@ user.service.test.ts      // Wrong test suffix
 ### Directories
 
 ```
-✅ CORRECT
+ CORRECT
 apps/user-app/            // Kebab-case
 libs/shared/              // Kebab-case
 apps/user-app/src/users/  // Feature folder
 
-❌ WRONG
+ WRONG
 apps/UserApp/             // PascalCase
 apps/user_app/            // Snake_case
 ```
@@ -49,12 +49,12 @@ apps/user_app/            // Snake_case
 ### Classes
 
 ```typescript
-// ✅ CORRECT - PascalCase
+//  CORRECT - PascalCase
 export class UsersService {}
 export class AuthGuard {}
 export class PrismaService {}
 
-// ❌ WRONG
+//  WRONG
 export class usersService {}
 export class Users_Service {}
 ```
@@ -62,14 +62,14 @@ export class Users_Service {}
 ### Interfaces
 
 ```typescript
-// ✅ CORRECT - PascalCase with descriptive name
+//  CORRECT - PascalCase with descriptive name
 export interface PaymentGateway {}
 export interface OrderRepository {}
 
 // ⚠️ OPTIONAL - I prefix (old convention)
 export interface IPaymentGateway {}
 
-// ❌ WRONG
+//  WRONG
 export interface paymentGateway {}
 export interface Ipaymentgateway {}
 ```
@@ -77,12 +77,12 @@ export interface Ipaymentgateway {}
 ### Types
 
 ```typescript
-// ✅ CORRECT - PascalCase with "Response", "Dto", "Payload" suffix
+//  CORRECT - PascalCase with "Response", "Dto", "Payload" suffix
 export type UserResponse = { ... };
 export type CreateUserDto = { ... };
 export type OrderPayload = { ... };
 
-// ❌ WRONG
+//  WRONG
 export type user = { ... };
 export type UserType = { ... };  // Redundant "Type"
 ```
@@ -90,7 +90,7 @@ export type UserType = { ... };  // Redundant "Type"
 ### Enums
 
 ```typescript
-// ✅ CORRECT - PascalCase enum, UPPER_SNAKE_CASE values
+//  CORRECT - PascalCase enum, UPPER_SNAKE_CASE values
 export enum UserRole {
   ADMIN = 'ADMIN',
   CUSTOMER = 'CUSTOMER',
@@ -102,7 +102,7 @@ export enum OrderStatus {
   SHIPPED = 'SHIPPED',
 }
 
-// ❌ WRONG
+//  WRONG
 export enum userRole { ... }
 export enum UserRole {
   Admin = 'Admin',      // Not uppercase
@@ -113,13 +113,13 @@ export enum UserRole {
 ### Variables & Functions
 
 ```typescript
-// ✅ CORRECT - camelCase
+//  CORRECT - camelCase
 const userName = 'John';
 let totalAmount = 0;
 function calculateTotal() {}
 async function fetchUserData() {}
 
-// ❌ WRONG
+//  WRONG
 const UserName = 'John'; // PascalCase
 const user_name = 'John'; // Snake_case
 function CalculateTotal() {} // PascalCase
@@ -128,35 +128,35 @@ function CalculateTotal() {} // PascalCase
 ### Constants
 
 ```typescript
-// ✅ CORRECT - UPPER_SNAKE_CASE for true constants
+//  CORRECT - UPPER_SNAKE_CASE for true constants
 const MAX_RETRY_ATTEMPTS = 3;
 const DEFAULT_PAGE_SIZE = 10;
 const JWT_EXPIRY_SECONDS = 900;
 
-// ✅ CORRECT - camelCase for config objects
+//  CORRECT - camelCase for config objects
 const config = {
   apiUrl: process.env.API_URL,
   timeout: 5000,
 };
 
-// ❌ WRONG
+//  WRONG
 const maxRetryAttempts = 3; // Should be uppercase
 const APIURL = '...'; // Hard to read
 ```
 
 ---
 
-## 📦 PRISMA NAMING
+## PRISMA NAMING
 
 ### Model Names
 
 ```prisma
-✅ CORRECT - PascalCase, singular
+ CORRECT - PascalCase, singular
 model User { }
 model Product { }
 model OrderItem { }
 
-❌ WRONG
+ WRONG
 model users { }          // Lowercase
 model Products { }       // Plural
 model order_items { }    // Snake_case
@@ -165,7 +165,7 @@ model order_items { }    // Snake_case
 ### Field Names
 
 ```prisma
-✅ CORRECT - camelCase
+ CORRECT - camelCase
 model User {
   id            String
   fullName      String?
@@ -174,7 +174,7 @@ model User {
   passwordHash  String
 }
 
-❌ WRONG
+ WRONG
 model User {
   Id           String    // PascalCase
   full_name    String?   // Snake_case
@@ -185,7 +185,7 @@ model User {
 ### Special Field Suffixes
 
 ```prisma
-✅ CORRECT - Descriptive suffixes
+ CORRECT - Descriptive suffixes
 model Product {
   priceInt      Int       // Money in cents
   imageUrls     String[]  // Array
@@ -206,13 +206,13 @@ model Payment {
 ### DTO Classes
 
 ```typescript
-// ✅ CORRECT - Descriptive prefix + "Dto" suffix
+//  CORRECT - Descriptive prefix + "Dto" suffix
 export class CreateUserDto {}
 export class UpdateUserDto {}
 export class LoginDto {}
 export class UserResponse {} // Response type (not DTO)
 
-// ❌ WRONG
+//  WRONG
 export class UserDto {} // Too generic
 export class User {} // Confusing with entity
 export class CreateUserRequest {} // "Dto" is standard
@@ -221,24 +221,24 @@ export class CreateUserRequest {} // "Dto" is standard
 ### Query DTOs
 
 ```typescript
-// ✅ CORRECT - Descriptive query names
+//  CORRECT - Descriptive query names
 export class ListUsersDto {}
 export class ProductListQueryDto {}
 export class SearchProductsDto {}
 
-// ❌ WRONG
+//  WRONG
 export class UsersQuery {}
 export class GetUsersDto {} // Verb not needed
 ```
 
 ---
 
-## 🚀 SERVICE & CONTROLLER NAMING
+## SERVICE & CONTROLLER NAMING
 
 ### Services
 
 ```typescript
-// ✅ CORRECT - Plural entity + "Service"
+//  CORRECT - Plural entity + "Service"
 export class UsersService {}
 export class ProductsService {}
 export class OrdersService {}
@@ -247,7 +247,7 @@ export class OrdersService {}
 export class AuthService {}
 export class PaymentService {}
 
-// ❌ WRONG
+//  WRONG
 export class UserService {} // Singular (unless specialized)
 export class UsersServices {} // Double plural
 export class UserBusinessLogic {} // Too verbose
@@ -256,12 +256,12 @@ export class UserBusinessLogic {} // Too verbose
 ### Controllers
 
 ```typescript
-// ✅ CORRECT - Match service name + "Controller"
+//  CORRECT - Match service name + "Controller"
 export class UsersController {}
 export class ProductsController {}
 export class AuthController {}
 
-// ❌ WRONG
+//  WRONG
 export class UserController {}
 export class UsersControllers {}
 ```
@@ -273,7 +273,7 @@ export class UsersControllers {}
 ### CRUD Operations
 
 ```typescript
-// ✅ CORRECT - Standard CRUD names
+//  CORRECT - Standard CRUD names
 class UsersService {
   async findById(id: string) { }
   async findByEmail(email: string) { }
@@ -283,7 +283,7 @@ class UsersService {
   async list(query: ListUsersDto) { }
 }
 
-// ❌ WRONG
+//  WRONG
 class UsersService {
   async getUserById(id: string) { }    // Redundant "get"
   async createNewUser(dto: ...) { }    // Redundant "New"
@@ -295,12 +295,12 @@ class UsersService {
 ### Boolean Methods
 
 ```typescript
-// ✅ CORRECT - Prefix with "is", "has", "can"
+//  CORRECT - Prefix with "is", "has", "can"
 function isActive(user: User): boolean {}
 function hasPermission(user: User, action: string): boolean {}
 function canAccess(resource: string): boolean {}
 
-// ❌ WRONG
+//  WRONG
 function active(user: User): boolean {} // Not clear
 function permission(user: User): boolean {} // Not boolean-like
 ```
@@ -312,7 +312,7 @@ function permission(user: User): boolean {} // Not boolean-like
 ### NATS Events
 
 ```typescript
-// ✅ CORRECT - Domain.Action pattern
+//  CORRECT - Domain.Action pattern
 export const EVENTS = {
   USER: {
     FIND_BY_ID: 'user.findById',
@@ -325,7 +325,7 @@ export const EVENTS = {
   },
 };
 
-// ❌ WRONG
+//  WRONG
 export const EVENTS = {
   USER: {
     GET_USER: 'getUser', // No domain prefix
@@ -340,13 +340,13 @@ export const EVENTS = {
 ## 🔧 ENVIRONMENT VARIABLES
 
 ```bash
-✅ CORRECT - UPPER_SNAKE_CASE
+ CORRECT - UPPER_SNAKE_CASE
 DATABASE_URL_USER=postgresql://...
 JWT_SECRET_KEY=...
 JWT_EXPIRES_IN=15m
 NATS_URL=nats://localhost:4222
 
-❌ WRONG
+ WRONG
 databaseUrlUser=...     # camelCase
 database-url-user=...   # Kebab-case
 db_url=...              # Abbreviated
@@ -354,20 +354,20 @@ db_url=...              # Abbreviated
 
 ---
 
-## 📦 PACKAGE & MODULE NAMING
+## PACKAGE & MODULE NAMING
 
 ### NPM Scripts
 
 ```json
 {
   "scripts": {
-    "dev": "...", // ✅ Short, clear
-    "dev:all": "...", // ✅ Namespace with colon
-    "test:e2e": "...", // ✅ Test category
-    "db:gen:all": "...", // ✅ Multiple namespaces
+    "dev": "...", //  Short, clear
+    "dev:all": "...", //  Namespace with colon
+    "test:e2e": "...", //  Test category
+    "db:gen:all": "...", //  Multiple namespaces
 
-    "development": "...", // ❌ Too verbose
-    "test_e2e": "..." // ❌ Underscore separator
+    "development": "...", //  Too verbose
+    "test_e2e": "..." //  Underscore separator
   }
 }
 ```
@@ -379,10 +379,10 @@ db_url=...              # Abbreviated
 ### Acceptable Abbreviations
 
 ```typescript
-✅ ALLOWED
+ ALLOWED
 dto, id, url, api, db, jwt, ar
 
-✅ CORRECT USAGE
+ CORRECT USAGE
 CreateUserDto
 DATABASE_URL_USER
 API_KEY
@@ -391,14 +391,14 @@ API_KEY
 ### Avoid Over-Abbreviation
 
 ```typescript
-❌ WRONG
-usr      // Use "user"
-prod     // Use "product"
-addr     // Use "address"
-qty      // Use "quantity"
+WRONG;
+usr; // Use "user"
+prod; // Use "product"
+addr; // Use "address"
+qty; // Use "quantity"
 
-✅ CORRECT
-user, product, address, quantity
+CORRECT;
+(user, product, address, quantity);
 ```
 
 ---
@@ -423,16 +423,16 @@ user, product, address, quantity
 🚨 NAMING CONVENTION VIOLATION
 
 File: UsersService.ts
-❌ Should be: users.service.ts
+ Should be: users.service.ts
 
 Class: usersService
-❌ Should be: UsersService
+ Should be: UsersService
 
 Variable: UserName
-❌ Should be: userName
+ Should be: userName
 
 Enum value: Pending
-❌ Should be: PENDING
+ Should be: PENDING
 ```
 
 ---

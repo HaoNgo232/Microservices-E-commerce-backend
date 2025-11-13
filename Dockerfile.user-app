@@ -1,0 +1,34 @@
+# Dockerfile for user-app microservice
+# Includes: User management, authentication, address management
+# Key feature: Generates and publishes JWT public key via NATS
+
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+COPY . .
+RUN pnpm build user-app
+RUN pnpm exec prisma generate --schema=apps/user-app/prisma/schema.prisma
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/user-app/prisma ./apps/user-app/prisma
+COPY --from=builder /app/package.json ./
+COPY scripts/docker-entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+
+ENV NODE_ENV=production
+ENV APP_NAME=user-app
+
+ENTRYPOINT ["/entrypoint.sh"]
+

@@ -10,7 +10,7 @@ applyTo: 'apps/*/src/**/*.service.ts,apps/*/src/**/*.controller.ts'
 
 ---
 
-## 📋 NESTJS EXCEPTION HIERARCHY
+## NESTJS EXCEPTION HIERARCHY
 
 ```
 RpcException (Microservices)
@@ -27,7 +27,7 @@ HttpException (Gateway/HTTP)
 
 ---
 
-## ✅ SERVICE LAYER ERROR HANDLING - MICROSERVICES
+## SERVICE LAYER ERROR HANDLING - MICROSERVICES
 
 ### 🚨 CRITICAL: Use RpcException for Microservices!
 
@@ -36,13 +36,13 @@ HttpException (Gateway/HTTP)
 ```typescript
 import { RpcException } from '@nestjs/microservices';
 
-// ✅ CORRECT for Microservices
+//  CORRECT for Microservices
 throw new RpcException({
   statusCode: 404,
   message: `User ${id} not found`,
 });
 
-// ❌ WRONG for Microservices (use only in Gateway/HTTP)
+//  WRONG for Microservices (use only in Gateway/HTTP)
 throw new NotFoundException(`User ${id} not found`);
 ```
 
@@ -61,7 +61,7 @@ async findById(id: string): Promise<UserResponse> {
     });
 
     if (!user) {
-      // ✅ Use RpcException with statusCode
+      //  Use RpcException with statusCode
       throw new RpcException({
         statusCode: 404,
         message: `User with ID ${id} not found`,
@@ -96,7 +96,7 @@ async create(dto: CreateUserDto): Promise<UserResponse> {
     });
 
     if (existingUser) {
-      // ✅ Use RpcException
+      //  Use RpcException
       throw new RpcException({
         statusCode: 400,
         message: 'Email already exists',
@@ -143,31 +143,31 @@ async create(dto: CreateUserDto): Promise<UserResponse> {
 ### Usage Examples
 
 ```typescript
-// ✅ Business rule violation
+//  Business rule violation
 throw new RpcException({
   statusCode: 400,
   message: 'Email already exists',
 });
 
-// ✅ Not found
+//  Not found
 throw new RpcException({
   statusCode: 404,
   message: `User with ID ${id} not found`,
 });
 
-// ✅ Authentication failure
+//  Authentication failure
 throw new RpcException({
   statusCode: 401,
   message: 'Invalid email or password',
 });
 
-// ✅ Authorization failure
+//  Authorization failure
 throw new RpcException({
   statusCode: 403,
   message: 'Admin access required',
 });
 
-// ✅ Conflict state
+//  Conflict state
 throw new RpcException({
   statusCode: 409,
   message: 'Cannot cancel shipped order',
@@ -176,7 +176,7 @@ throw new RpcException({
 
 ---
 
-## 📋 NESTJS EXCEPTION HIERARCHY (REFERENCE)
+## NESTJS EXCEPTION HIERARCHY (REFERENCE)
 
 ```
 RpcException (Microservices) ← USE THIS FOR MICROSERVICES
@@ -199,12 +199,12 @@ HttpException (Gateway/HTTP) ← USE ONLY FOR GATEWAY
 ### 1. Using HttpException in Microservices
 
 ```typescript
-// ❌ WRONG - HttpException không work trong microservices
+//  WRONG - HttpException không work trong microservices
 if (!user) {
   throw new NotFoundException(`User ${id} not found`);
 }
 
-// ✅ CORRECT - Use RpcException
+//  CORRECT - Use RpcException
 if (!user) {
   throw new RpcException({
     statusCode: 404,
@@ -216,7 +216,7 @@ if (!user) {
 ### 2. Silent Failures
 
 ```typescript
-// ❌ WRONG - Swallowing errors
+//  WRONG - Swallowing errors
 async findById(id: string) {
   try {
     return await this.prisma.user.findUnique({ where: { id } });
@@ -225,7 +225,7 @@ async findById(id: string) {
   }
 }
 
-// ✅ CORRECT - Proper error handling
+//  CORRECT - Proper error handling
 async findById(id: string): Promise<UserResponse> {
   try {
     const user = await this.prisma.user.findUnique({ where: { id } });
@@ -250,13 +250,13 @@ async findById(id: string): Promise<UserResponse> {
 ### 3. Generic Error Messages
 
 ```typescript
-// ❌ WRONG - Vague messages
+//  WRONG - Vague messages
 throw new RpcException({
   statusCode: 400,
   message: 'Error',
 });
 
-// ✅ CORRECT - Specific messages
+//  CORRECT - Specific messages
 throw new RpcException({
   statusCode: 400,
   message: 'Email already exists',
@@ -266,13 +266,13 @@ throw new RpcException({
 ### 4. Missing Context in Logs
 
 ```typescript
-// ❌ WRONG - No context
+//  WRONG - No context
 catch (error) {
   console.error(error);
   throw new RpcException({ statusCode: 400, message: 'Failed' });
 }
 
-// ✅ CORRECT - With context
+//  CORRECT - With context
 catch (error) {
   console.error('[UsersService] create error:', error);
   throw new RpcException({
@@ -285,7 +285,7 @@ catch (error) {
 ### 5. Not Re-throwing Known Exceptions
 
 ```typescript
-// ❌ WRONG - Overwrites specific errors
+//  WRONG - Overwrites specific errors
 catch (error) {
   throw new RpcException({
     statusCode: 400,
@@ -293,7 +293,7 @@ catch (error) {
   });
 }
 
-// ✅ CORRECT - Preserve specific errors
+//  CORRECT - Preserve specific errors
 catch (error) {
   if (error instanceof RpcException) throw error;
 
@@ -345,7 +345,7 @@ try {
 
 ---
 
-## 📦 GLOBAL ERROR FILTER
+## GLOBAL ERROR FILTER
 
 ### RPC Exception Filter (Already Implemented)
 
@@ -381,7 +381,7 @@ create(@Payload() dto: CreateUserDto) {
 }
 
 // If DTO validation fails, ValidationPipe throws RpcException
-// ✅ RECOMMENDED: Use @IsNotEmpty(), @IsEmail(), etc in DTO
+//  RECOMMENDED: Use @IsNotEmpty(), @IsEmail(), etc in DTO
 ```
 
 ### Manual Validation in Service
@@ -424,10 +424,10 @@ async create(dto: CreateUserDto): Promise<UserResponse> {
 🚨 MICROSERVICE EXCEPTION VIOLATION
 
 Using HttpException in microservice:
-  ❌ throw new NotFoundException(`User ${id} not found`);
+   throw new NotFoundException(`User ${id} not found`);
 
 💡 Use RpcException instead:
-  ✅ throw new RpcException({
+   throw new RpcException({
        statusCode: 404,
        message: `User ${id} not found`,
      });

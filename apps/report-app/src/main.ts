@@ -41,6 +41,6 @@ async function bootstrap(): Promise<void> {
   app.useGlobalFilters(new AllRpcExceptionsFilter());
 
   await app.listen();
-  console.log('✅ [Report Service] is listening on NATS');
+  console.log(' [Report Service] is listening on NATS');
 }
 void bootstrap();

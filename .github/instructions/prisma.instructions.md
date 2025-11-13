@@ -10,7 +10,7 @@ applyTo: 'apps/*/prisma/schema.prisma,apps/*/prisma/migrations/**/*.sql'
 
 ---
 
-## 📋 SCHEMA STRUCTURE
+## SCHEMA STRUCTURE
 
 ### Schema File Template
 
@@ -42,21 +42,21 @@ model Entity {
 
 ```prisma
 model Product {
-  id          String   @id @default(cuid())        // ✅ Always CUID
-  name        String                                // ✅ Required string
-  description String?                               // ✅ Optional (nullable)
-  priceInt    Int                                   // ✅ Money in cents
-  stock       Int      @default(0)                  // ✅ Default value
-  isActive    Boolean  @default(true)               // ✅ Boolean with default
-  createdAt   DateTime @default(now())              // ✅ Timestamp
-  updatedAt   DateTime @updatedAt                   // ✅ Auto-update
+  id          String   @id @default(cuid())        //  Always CUID
+  name        String                                //  Required string
+  description String?                               //  Optional (nullable)
+  priceInt    Int                                   //  Money in cents
+  stock       Int      @default(0)                  //  Default value
+  isActive    Boolean  @default(true)               //  Boolean with default
+  createdAt   DateTime @default(now())              //  Timestamp
+  updatedAt   DateTime @updatedAt                   //  Auto-update
 }
 ```
 
 ### Money Fields - ALWAYS Integers
 
 ```prisma
-// ✅ CORRECT - Store in cents
+//  CORRECT - Store in cents
 model Product {
   priceInt    Int  // 1999 = $19.99
 }
@@ -65,7 +65,7 @@ model Order {
   totalInt    Int @default(0)  // Total in cents
 }
 
-// ❌ WRONG - Never use Decimal for money
+//  WRONG - Never use Decimal for money
 model Product {
   price Decimal  // Floating point issues!
 }
@@ -102,7 +102,7 @@ model Payment {
 model User {
   id        String    @id @default(cuid())
   email     String    @unique
-  addresses Address[]  // ✅ User has many addresses
+  addresses Address[]  //  User has many addresses
 }
 
 model Address {
@@ -129,7 +129,7 @@ model Category {
 ```prisma
 model Product {
   id         String    @id @default(cuid())
-  categoryId String?   // ✅ Optional foreign key
+  categoryId String?   //  Optional foreign key
   category   Category? @relation(fields: [categoryId], references: [id])
 }
 ```
@@ -143,13 +143,13 @@ model Product {
 ```prisma
 model User {
   id    String @id @default(cuid())
-  email String @unique  // ✅ Unique email
+  email String @unique  //  Unique email
 }
 
 model Product {
   id   String @id @default(cuid())
-  sku  String @unique  // ✅ Unique SKU
-  slug String @unique  // ✅ Unique slug for URLs
+  sku  String @unique  //  Unique SKU
+  slug String @unique  //  Unique slug for URLs
 }
 ```
 
@@ -172,13 +172,13 @@ model CartItem {
 ### 1. Missing Timestamps
 
 ```prisma
-// ❌ WRONG - No tracking
+//  WRONG - No tracking
 model Product {
   id   String @id @default(cuid())
   name String
 }
 
-// ✅ CORRECT - Always include timestamps
+//  CORRECT - Always include timestamps
 model Product {
   id        String   @id @default(cuid())
   name      String
@@ -190,12 +190,12 @@ model Product {
 ### 2. Using Decimal for Money
 
 ```prisma
-// ❌ WRONG
+//  WRONG
 model Product {
   price Decimal @db.Decimal(10, 2)  // Floating point issues!
 }
 
-// ✅ CORRECT
+//  CORRECT
 model Product {
   priceInt Int  // Store cents: 1999 = $19.99
 }
@@ -204,13 +204,13 @@ model Product {
 ### 3. Missing Defaults
 
 ```prisma
-// ❌ WRONG - No default
+//  WRONG - No default
 model User {
   isActive Boolean  // What if not set?
   role     String   // Default role?
 }
 
-// ✅ CORRECT - Explicit defaults
+//  CORRECT - Explicit defaults
 model User {
   isActive Boolean @default(true)
   role     String  @default("CUSTOMER")
@@ -219,17 +219,17 @@ model User {
 
 ---
 
-## 📦 MIGRATION BEST PRACTICES
+## MIGRATION BEST PRACTICES
 
 ### Naming Migrations
 
 ```bash
-# ✅ CORRECT - Descriptive names
+#  CORRECT - Descriptive names
 pnpm prisma migrate dev --name add_product_model3d_url
 pnpm prisma migrate dev --name create_cart_tables
 pnpm prisma migrate dev --name add_user_phone_field
 
-# ❌ WRONG - Generic names
+#  WRONG - Generic names
 pnpm prisma migrate dev --name update
 pnpm prisma migrate dev --name fix
 ```
@@ -286,7 +286,7 @@ export class UsersService {
         id: true,
         email: true,
         fullName: true,
-        // ✅ Never select passwordHash in responses!
+        //  Never select passwordHash in responses!
       },
     });
   }
@@ -300,7 +300,7 @@ export class UsersService {
 ### Always Use Select
 
 ```typescript
-// ✅ CORRECT - Explicit fields
+//  CORRECT - Explicit fields
 const user = await prisma.user.findUnique({
   where: { id },
   select: {
@@ -310,7 +310,7 @@ const user = await prisma.user.findUnique({
   },
 });
 
-// ❌ WRONG - Exposes all fields (including passwordHash!)
+//  WRONG - Exposes all fields (including passwordHash!)
 const user = await prisma.user.findUnique({
   where: { id },
 });
@@ -319,8 +319,8 @@ const user = await prisma.user.findUnique({
 ### Transactions
 
 ```typescript
-// ✅ CORRECT - Multiple operations in transaction
-await prisma.$transaction(async (tx) => {
+//  CORRECT - Multiple operations in transaction
+await prisma.$transaction(async tx => {
   const order = await tx.order.create({ data: orderData });
   await tx.orderItem.createMany({ data: items });
   await tx.payment.create({ data: paymentData });
@@ -330,7 +330,7 @@ await prisma.$transaction(async (tx) => {
 ### Pagination
 
 ```typescript
-// ✅ CORRECT - Proper pagination
+//  CORRECT - Proper pagination
 const users = await prisma.user.findMany({
   skip: (page - 1) * pageSize,
   take: pageSize,

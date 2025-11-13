@@ -1,0 +1,84 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+npm-debug.log
+pnpm-debug.log
+yarn-error.log
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+
+# Test files
+test/
+*.spec.ts
+*.spec.js
+*.e2e-spec.ts
+*.e2e-spec.js
+coverage/
+.nyc_output/
+
+# Environment
+.env
+.env.local
+.env.test
+.env.production.local
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.sublime-workspace
+*.sublime-project
+.eslintcache
+
+# Prisma
+apps/*/prisma/generated/
+apps/*/prisma/dev.db
+apps/*/prisma/migrations/
+prisma/generated/
+
+# Keys
+keys/
+*.pem
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Documentation
+docs/
+README.md
+CHANGELOG.md
+LICENSE
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+

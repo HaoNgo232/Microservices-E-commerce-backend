@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  product-app:
+    image: ${DOCKER_USERNAME}/lv-product-app:${VERSION:-latest}
+    container_name: product-app
+    
+    environment:
+      - DATABASE_URL_PRODUCT=${DATABASE_URL_PRODUCT}
+      - NODE_ENV=production
+      - NATS_URL=${NATS_URL:-nats://localhost:4222}
+      - LOG_LEVEL=debug
+      - APP_NAME=product-app
+    
+    restart: unless-stopped
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

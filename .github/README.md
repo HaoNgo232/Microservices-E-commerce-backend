@@ -56,7 +56,7 @@ Thư mục này chứa custom instructions cho GitHub Copilot để giúp AI hi�
 - **Áp dụng cho**: `**/*.spec.ts`, `**/*.e2e-spec.ts`
 - **Nội dung**: Testing patterns, mocking, assertions
 
-## 🚀 Cách SửỤng
+## Cách SửỤng
 
 ### Kích Hoạt Custom Instructions
 
@@ -88,11 +88,11 @@ Khi bạn đang code trong `apps/gateway/src/`:
 @Controller('products')
 export class ProductsController {
   @Get()
-  @UseGuards(AuthGuard) // ✅ Copilot biết phải thêm guard
+  @UseGuards(AuthGuard) //  Copilot biết phải thêm guard
   async getProducts() {
     return firstValueFrom(
       this.productClient.send(EVENTS.PRODUCT.FIND_ALL, {}).pipe(
-        timeout(5000), // ✅ Copilot biết phải có timeout
+        timeout(5000), //  Copilot biết phải có timeout
         retry({ count: 1, delay: 1000 }),
       ),
     );
@@ -108,9 +108,9 @@ Khi bạn đang code trong `apps/user-app/src/`:
 // Copilot sẽ suggest MessagePattern và NO guards
 @Controller()
 export class UsersController {
-  @MessagePattern(EVENTS.USER.FIND_ONE) // ✅ MessagePattern
+  @MessagePattern(EVENTS.USER.FIND_ONE) //  MessagePattern
   async findOne(@Payload() payload: { userId: string }) {
-    // ✅ No AuthGuard - Copilot biết microservices trust Gateway
+    //  No AuthGuard - Copilot biết microservices trust Gateway
     return this.usersService.findOne(payload.userId);
   }
 }
@@ -123,7 +123,7 @@ Khi bạn đang code trong `libs/shared/dto/`:
 ```typescript
 // Copilot sẽ suggest với validation decorators
 export class CreateProductDto {
-  @IsString() // ✅ Copilot tự động thêm validation
+  @IsString() //  Copilot tự động thêm validation
   @IsNotEmpty()
   name: string;
 
@@ -148,7 +148,7 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         {
-          provide: PrismaService, // ✅ Copilot biết phải mock Prisma
+          provide: PrismaService, //  Copilot biết phải mock Prisma
           useValue: {
             user: { findUnique: jest.fn() },
           },
@@ -166,11 +166,11 @@ describe('UsersService', () => {
 
 Update instructions khi:
 
-- ✅ Thêm conventions mới
-- ✅ Thay đổi architecture patterns
-- ✅ Update tech stack (libraries, versions)
-- ✅ Thêm best practices mới
-- ✅ Phát hiện Copilot đang suggest sai patterns
+- Thêm conventions mới
+- Thay đổi architecture patterns
+- Update tech stack (libraries, versions)
+- Thêm best practices mới
+- Phát hiện Copilot đang suggest sai patterns
 
 ### Best Practices
 
@@ -183,9 +183,9 @@ Update instructions khi:
 
 Sau khi update instructions:
 
-1. ✅ Test bằng cách code một feature mới
-2. ✅ Verify Copilot suggestions follow conventions
-3. ✅ Adjust instructions nếu cần
+1.  Test bằng cách code một feature mới
+2.  Verify Copilot suggestions follow conventions
+3.  Adjust instructions nếu cần
 
 ## 📚 Resources
 
@@ -216,23 +216,23 @@ Xem thêm chi tiết trong:
 Good prompts cho Copilot Chat:
 
 ```
-✅ "Create a new microservice controller for products with NATS MessagePattern"
+ "Create a new microservice controller for products with NATS MessagePattern"
 
-✅ "Write a unit test for UsersService.findOne with Prisma mocking"
+ "Write a unit test for UsersService.findOne with Prisma mocking"
 
-✅ "Generate a CreateProductDto with validation decorators"
+ "Generate a CreateProductDto with validation decorators"
 
-✅ "Implement Gateway endpoint with AuthGuard and NATS communication"
+ "Implement Gateway endpoint with AuthGuard and NATS communication"
 ```
 
 Bad prompts:
 
 ```
-❌ "Create a controller"  (too vague)
+ "Create a controller"  (too vague)
 
-❌ "Write tests"  (không specific)
+ "Write tests"  (không specific)
 
-❌ "Add validation"  (thiếu context)
+ "Add validation"  (thiếu context)
 ```
 
 ## 🤝 Contributing

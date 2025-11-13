@@ -10,7 +10,7 @@ applyTo: 'apps/*/src/**/*.controller.ts'
 
 ---
 
-## 📋 CONTROLLER STRUCTURE
+## CONTROLLER STRUCTURE
 
 ### Microservice Controller Template
 
@@ -35,15 +35,7 @@ export class ServiceNameController {
 ### Gateway HTTP Controller Template
 
 ```typescript
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ServiceName } from './service-name.service';
 import { AuthGuard } from './auth.guard';
 import { CreateDto, QueryDto } from '@shared/dto/entity.dto';
@@ -73,12 +65,12 @@ export class EntityController {
 
 ---
 
-## ✅ CONTROLLER BEST PRACTICES
+## CONTROLLER BEST PRACTICES
 
 ### 1. NO Business Logic
 
 ```typescript
-// ❌ WRONG - Business logic in controller
+//  WRONG - Business logic in controller
 @MessagePattern(EVENTS.USER.CREATE)
 async create(@Payload() dto: CreateUserDto) {
   const existingUser = await this.prisma.user.findUnique({
@@ -91,7 +83,7 @@ async create(@Payload() dto: CreateUserDto) {
   return this.prisma.user.create({ data: { ...dto, passwordHash: hash } });
 }
 
-// ✅ CORRECT - Delegate to service
+//  CORRECT - Delegate to service
 @MessagePattern(EVENTS.USER.CREATE)
 create(@Payload() dto: CreateUserDto) {
   return this.service.create(dto);
@@ -101,7 +93,7 @@ create(@Payload() dto: CreateUserDto) {
 ### 2. NO Return Type on Controllers
 
 ```typescript
-// ✅ CORRECT - Controllers don't need return types
+//  CORRECT - Controllers don't need return types
 @MessagePattern(EVENTS.USER.FIND_BY_ID)
 findById(@Payload() id: string) {
   return this.service.findById(id);
@@ -115,17 +107,17 @@ async findById(id: string): Promise<UserResponse> { ... }
 
 ```typescript
 // Microservices
-@MessagePattern(EVENTS.USER.CREATE)  // ✅ NATS message pattern
+@MessagePattern(EVENTS.USER.CREATE)  //  NATS message pattern
 create(@Payload() dto: CreateUserDto) { ... }
 
 // HTTP Gateway
-@Post('users')                       // ✅ HTTP POST
+@Post('users')                       //  HTTP POST
 create(@Body() dto: CreateUserDto) { ... }
 
-@Get('users/:id')                    // ✅ Route params
+@Get('users/:id')                    //  Route params
 findOne(@Param('id') id: string) { ... }
 
-@Get('users')                        // ✅ Query params
+@Get('users')                        //  Query params
 list(@Query() query: ListUsersDto) { ... }
 ```
 
@@ -136,12 +128,12 @@ list(@Query() query: ListUsersDto) { ... }
 ### Event Naming
 
 ```typescript
-// ✅ CORRECT - Descriptive event names
+//  CORRECT - Descriptive event names
 @MessagePattern(EVENTS.USER.FIND_BY_ID)
 @MessagePattern(EVENTS.PRODUCT.GET_BY_SLUG)
 @MessagePattern(EVENTS.ORDER.UPDATE_STATUS)
 
-// ❌ WRONG - Generic names
+//  WRONG - Generic names
 @MessagePattern('find')
 @MessagePattern('get')
 ```
@@ -149,13 +141,13 @@ list(@Query() query: ListUsersDto) { ... }
 ### Payload Patterns
 
 ```typescript
-// ✅ CORRECT - Single DTO parameter
+//  CORRECT - Single DTO parameter
 @MessagePattern(EVENTS.USER.UPDATE)
 update(@Payload() payload: { id: string; dto: UpdateUserDto }) {
   return this.service.update(payload.id, payload.dto);
 }
 
-// ✅ CORRECT - Simple payload
+//  CORRECT - Simple payload
 @MessagePattern(EVENTS.USER.FIND_BY_ID)
 findById(@Payload() id: string) {
   return this.service.findById(id);
@@ -171,14 +163,14 @@ findById(@Payload() id: string) {
 ```typescript
 @Controller('users')
 export class UsersController {
-  // ✅ CORRECT - Auth guard on protected routes
+  //  CORRECT - Auth guard on protected routes
   @Get('me')
   @UseGuards(AuthGuard)
   getCurrentUser(@Request() req) {
     return this.service.findById(req.user.userId);
   }
 
-  // ✅ CORRECT - Public route (no guard)
+  //  CORRECT - Public route (no guard)
   @Post('register')
   register(@Body() dto: CreateUserDto) {
     return this.service.create(dto);
@@ -211,7 +203,7 @@ export class UsersController {
 ### 1. Fat Controllers
 
 ```typescript
-// ❌ WRONG - Too much logic
+//  WRONG - Too much logic
 @MessagePattern(EVENTS.ORDER.CREATE)
 async create(@Payload() dto: OrderCreateDto) {
   // Validation
@@ -235,7 +227,7 @@ async create(@Payload() dto: OrderCreateDto) {
   return order;
 }
 
-// ✅ CORRECT - Thin controller
+//  CORRECT - Thin controller
 @MessagePattern(EVENTS.ORDER.CREATE)
 create(@Payload() dto: OrderCreateDto) {
   return this.service.create(dto);
@@ -245,13 +237,13 @@ create(@Payload() dto: OrderCreateDto) {
 ### 2. Direct Database Access
 
 ```typescript
-// ❌ WRONG - Prisma in controller
+//  WRONG - Prisma in controller
 @MessagePattern(EVENTS.USER.FIND_BY_ID)
 async findById(@Payload() id: string) {
   return this.prisma.user.findUnique({ where: { id } });
 }
 
-// ✅ CORRECT - Through service
+//  CORRECT - Through service
 @MessagePattern(EVENTS.USER.FIND_BY_ID)
 findById(@Payload() id: string) {
   return this.service.findById(id);
@@ -261,7 +253,7 @@ findById(@Payload() id: string) {
 ### 3. Multiple Services in One Handler
 
 ```typescript
-// ❌ WRONG - Orchestration in controller
+//  WRONG - Orchestration in controller
 @MessagePattern(EVENTS.ORDER.CREATE)
 async create(@Payload() dto: OrderCreateDto) {
   const user = await this.userService.findById(dto.userId);
@@ -270,7 +262,7 @@ async create(@Payload() dto: OrderCreateDto) {
   return this.orderService.createWithDetails(user, address, products, dto);
 }
 
-// ✅ CORRECT - Service handles orchestration
+//  CORRECT - Service handles orchestration
 @MessagePattern(EVENTS.ORDER.CREATE)
 create(@Payload() dto: OrderCreateDto) {
   return this.service.create(dto);  // Service does orchestration
@@ -279,12 +271,12 @@ create(@Payload() dto: OrderCreateDto) {
 
 ---
 
-## 📦 DEPENDENCY INJECTION
+## DEPENDENCY INJECTION
 
 ### Constructor Injection
 
 ```typescript
-// ✅ CORRECT - Inject services via constructor
+//  CORRECT - Inject services via constructor
 @Controller()
 export class UsersController {
   constructor(
@@ -293,7 +285,7 @@ export class UsersController {
   ) {}
 }
 
-// ❌ WRONG - Direct instantiation
+//  WRONG - Direct instantiation
 @Controller()
 export class UsersController {
   private service = new UsersService(); // NO!
@@ -307,13 +299,13 @@ export class UsersController {
 ### Let Services Handle Errors
 
 ```typescript
-// ✅ CORRECT - Service throws, controller propagates
+//  CORRECT - Service throws, controller propagates
 @MessagePattern(EVENTS.USER.FIND_BY_ID)
 findById(@Payload() id: string) {
   return this.service.findById(id);  // Service throws NotFoundException
 }
 
-// ❌ WRONG - Catch in controller
+//  WRONG - Catch in controller
 @MessagePattern(EVENTS.USER.FIND_BY_ID)
 async findById(@Payload() id: string) {
   try {

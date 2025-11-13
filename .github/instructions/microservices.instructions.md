@@ -17,11 +17,11 @@ Microservices xử lý business logic:
 
 Microservice controllers PHẢI:
 
-✅ Sử dụng `@MessagePattern(EVENTS.*)` (NATS patterns)
-✅ KHÔNG có guards - tin tưởng Gateway
-✅ Nhận data qua `@Payload()` decorator
-✅ Throw RPC exceptions (không phải HTTP exceptions)
-✅ Validate payload structure
+Sử dụng `@MessagePattern(EVENTS.*)` (NATS patterns)
+KHÔNG có guards - tin tưởng Gateway
+Nhận data qua `@Payload()` decorator
+Throw RPC exceptions (không phải HTTP exceptions)
+Validate payload structure
 
 ```typescript
 @Controller()
@@ -59,7 +59,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         role: true,
-        // ❌ NEVER select passwordHash
+        //  NEVER select passwordHash
       },
     });
 
@@ -76,15 +76,15 @@ export class UsersService {
 
 **CRITICAL**: Mỗi microservice chỉ truy cập database của chính nó.
 
-✅ CORRECT: user-app → user_db
-❌ WRONG: user-app → product_db
+CORRECT: user-app → user_db
+WRONG: user-app → product_db
 
 ### Prisma Best Practices
 
 1. **Luôn dùng explicit select**:
 
 ```typescript
-// ✅ CORRECT
+//  CORRECT
 const user = await prisma.user.findUnique({
   where: { id },
   select: {
@@ -94,7 +94,7 @@ const user = await prisma.user.findUnique({
   },
 });
 
-// ❌ WRONG - exposes all fields
+//  WRONG - exposes all fields
 const user = await prisma.user.findUnique({ where: { id } });
 ```
 
@@ -126,11 +126,7 @@ try {
 Sử dụng RPC exceptions (KHÔNG phải HTTP exceptions):
 
 ```typescript
-import {
-  EntityNotFoundRpcException,
-  ValidationRpcException,
-  ConflictRpcException,
-} from '@shared/exceptions';
+import { EntityNotFoundRpcException, ValidationRpcException, ConflictRpcException } from '@shared/exceptions';
 
 // 404
 if (!user) {
@@ -169,7 +165,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   await app.listen();
-  console.log('🚀 User microservice is listening on NATS');
+  console.log(' User microservice is listening on NATS');
 }
 bootstrap();
 ```

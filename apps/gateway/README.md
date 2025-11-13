@@ -1,4 +1,4 @@
-# 🚀 API Gateway - E-commerce Microservices
+# API Gateway - E-commerce Microservices
 
 API Gateway sử dụng **REST API** để giao tiếp với client và **NATS** để giao tiếp với các microservices.
 
@@ -44,7 +44,7 @@ gateway/src/
 - `DELETE /addresses/:id` - Xóa địa chỉ
 - `PUT /addresses/:id/set-default` - Đặt địa chỉ mặc định
 
-### 📦 Products (`/products`)
+### Products (`/products`)
 
 - `GET /products` - Danh sách sản phẩm (có phân trang, filter)
 - `GET /products/:id` - Chi tiết sản phẩm
@@ -71,7 +71,7 @@ gateway/src/
 
 Lưu ý: Hiện không có endpoint `DELETE /cart` (xóa toàn bộ) hay `POST /cart/transfer`.
 
-### 📋 Orders (`/orders`)
+### Orders (`/orders`)
 
 - `GET /orders` - Danh sách đơn hàng của user
 - `GET /orders/:id` - Chi tiết đơn hàng

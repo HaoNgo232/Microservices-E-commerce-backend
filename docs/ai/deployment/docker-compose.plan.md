@@ -167,20 +167,20 @@ set -e
 REGISTRY_USER=${DOCKER_USERNAME:-"yourusername"}
 VERSION=${VERSION:-"latest"}
 
-echo "🔨 Building all Docker images..."
+echo " Building all Docker images..."
 echo "Registry: $REGISTRY_USER"
 echo "Version: $VERSION"
 echo ""
 
 # Build gateway (no APP_NAME needed)
-echo "📦 Building gateway..."
+echo " Building gateway..."
 docker build -t $REGISTRY_USER/lv-gateway:$VERSION -f Dockerfile.gateway .
 
 # Build microservices
 apps=("user-app" "product-app" "order-app" "cart-app" "payment-app" "report-app" "ar-app")
 
 for app in "${apps[@]}"; do
-  echo "📦 Building $app..."
+  echo " Building $app..."
   docker build \
     -t $REGISTRY_USER/lv-$app:$VERSION \
     -f Dockerfile.$app \
@@ -189,7 +189,7 @@ for app in "${apps[@]}"; do
 done
 
 echo ""
-echo "✅ All images built successfully!"
+echo " All images built successfully!"
 docker images | grep lv-
 ```
 
@@ -202,7 +202,7 @@ set -e
 REGISTRY_USER=${DOCKER_USERNAME:-"yourusername"}
 VERSION=${VERSION:-"latest"}
 
-echo "🚀 Pushing all images to Docker Hub..."
+echo " Pushing all images to Docker Hub..."
 echo "Registry: $REGISTRY_USER"
 echo "Version: $VERSION"
 echo ""
@@ -215,7 +215,7 @@ for app in "${all_apps[@]}"; do
 done
 
 echo ""
-echo "✅ All images pushed successfully!"
+echo " All images pushed successfully!"
 echo "Images available at: docker pull $REGISTRY_USER/lv-{app}:$VERSION"
 ```
 
@@ -343,7 +343,7 @@ for app in "${apps[@]}"; do
   npx prisma migrate deploy --schema=apps/${app}/prisma/schema.prisma
 done
 
-echo "✅ All migrations completed!"
+echo " All migrations completed!"
 ```
 
 ### 8. Tạo .dockerignore
@@ -405,12 +405,12 @@ if [ ! -f "${APP_NAME}.yml" ]; then
   exit 1
 fi
 
-echo "🚀 Deploying $APP_NAME..."
+echo " Deploying $APP_NAME..."
 docker compose -f ${APP_NAME}.yml pull
 docker compose -f ${APP_NAME}.yml up -d
-echo "✅ $APP_NAME deployed!"
+echo " $APP_NAME deployed!"
 echo ""
-echo "📋 Logs:"
+echo " Logs:"
 docker compose -f ${APP_NAME}.yml logs -f
 ```
 
@@ -499,41 +499,41 @@ nano .env  # Update DATABASE_URL, NATS_URL, etc.
 
 ### Startup Order (Important!)
 
-1. ✅ Database Server
-2. ✅ NATS Server
-3. ✅ User-app (publishes public key)
-4. ✅ Gateway (receives public key)
-5. ✅ Other microservices (bất kỳ thứ tự)
+1.  Database Server
+2.  NATS Server
+3.  User-app (publishes public key)
+4.  Gateway (receives public key)
+5.  Other microservices (bất kỳ thứ tự)
 
 ## Benefits Summary
 
 ### Simplicity
 
-- ✅ Docker compose files CỰC KỲ đơn giản (4-5 dòng)
-- ✅ No database containers to manage
-- ✅ No volumes, healthchecks, depends_on
-- ✅ Faster startup and restart
+- Docker compose files CỰC KỲ đơn giản (4-5 dòng)
+- No database containers to manage
+- No volumes, healthchecks, depends_on
+- Faster startup and restart
 
 ### Flexibility
 
-- ✅ Dễ dàng switch database configurations
-- ✅ Có thể dùng 1 DB server hoặc nhiều DB servers
-- ✅ Có thể dùng managed databases (AWS RDS, etc.)
-- ✅ Database schemas có thể shared hoặc separated
+- Dễ dàng switch database configurations
+- Có thể dùng 1 DB server hoặc nhiều DB servers
+- Có thể dùng managed databases (AWS RDS, etc.)
+- Database schemas có thể shared hoặc separated
 
 ### Production-Ready
 
-- ✅ Separate database tier (real-world architecture)
-- ✅ Independent scaling (scale apps không ảnh hưởng DB)
-- ✅ Centralized backup/restore
-- ✅ Professional approach cho luận văn
+- Separate database tier (real-world architecture)
+- Independent scaling (scale apps không ảnh hưởng DB)
+- Centralized backup/restore
+- Professional approach cho luận văn
 
 ### Deployment
 
-- ✅ Build once, deploy nhiều lần
-- ✅ Image-based deployment (consistency)
-- ✅ Version control qua tags
-- ✅ Easy rollback
+- Build once, deploy nhiều lần
+- Image-based deployment (consistency)
+- Version control qua tags
+- Easy rollback
 
 ## Presentation Points for Luận Văn
 

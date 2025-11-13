@@ -27,7 +27,7 @@ async function main(): Promise<void> {
       extractable: true,
     });
 
-    console.log('✅ Key pair generated successfully!\n');
+    console.log(' Key pair generated successfully!\n');
 
     // Export keys to PEM format
     console.log('📝 Exporting keys to PEM format...\n');
@@ -48,10 +48,10 @@ async function main(): Promise<void> {
 
     console.log('💾 Keys saved successfully!\n');
     console.log('='.repeat(80));
-    console.log('📋 KEY FILES GENERATED:');
+    console.log(' KEY FILES GENERATED:');
     console.log('='.repeat(80));
     console.log('');
-    console.log(`✅ Public Key:  ${publicKeyPath}`);
+    console.log(` Public Key:  ${publicKeyPath}`);
     console.log(`🔒 Private Key: ${privateKeyPath}`);
     console.log('');
     console.log('='.repeat(80));
@@ -68,9 +68,9 @@ async function main(): Promise<void> {
     console.log('  2. Services will auto-load keys from keys/ directory');
     console.log('  3. For Docker: mount keys/ as read-only volume');
     console.log('');
-    console.log('✅ Key generation complete!');
+    console.log(' Key generation complete!');
   } catch (error) {
-    console.error('❌ Error generating keys:', error);
+    console.error(' Error generating keys:', error);
     process.exit(1);
   }
 }

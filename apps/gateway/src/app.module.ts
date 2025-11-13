@@ -1,5 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { HealthController } from '@gateway/health.controller';
 import { GatewayClientsModule } from '@gateway/gateway-clients.module';
 import { AuthModule } from '@gateway/auth/auth.module';
@@ -13,11 +14,13 @@ import { ArModule } from '@gateway/ar/ar.module';
 import { JwtModule } from '@shared/main';
 import { RateLimitMiddleware } from '@gateway/middleware/rate-limit.middleware';
 import { AuditLogMiddleware } from '@gateway/middleware/audit-log.middleware';
+import { KeyReceiverService } from '@gateway/key-receiver.service';
 
 /**
  * App Module
  * Main module cho API Gateway
  * Implement Perimeter Security pattern với middleware stack
+ * Receive public key từ user-app qua NATS
  */
 @Module({
   imports: [
@@ -32,9 +35,19 @@ import { AuditLogMiddleware } from '@gateway/middleware/audit-log.middleware';
     OrdersModule,
     PaymentsModule,
     ArModule,
+    // Register NATS client cho key receiver
+    ClientsModule.register([
+      {
+        name: 'NATS_CLIENT',
+        transport: Transport.NATS,
+        options: {
+          servers: [process.env.NATS_URL ?? 'nats://localhost:4222'],
+        },
+      },
+    ]),
   ],
   controllers: [HealthController],
-  providers: [],
+  providers: [KeyReceiverService],
 })
 export class AppModule implements NestModule {
   /**

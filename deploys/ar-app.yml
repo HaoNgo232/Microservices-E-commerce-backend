@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  ar-app:
+    image: ${DOCKER_USERNAME}/lv-ar-app:${VERSION:-latest}
+    container_name: ar-app
+    
+    environment:
+      - DATABASE_URL_AR=${DATABASE_URL_AR}
+      - NODE_ENV=production
+      - NATS_URL=${NATS_URL:-nats://localhost:4222}
+      - LOG_LEVEL=debug
+      - APP_NAME=ar-app
+    
+    restart: unless-stopped
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

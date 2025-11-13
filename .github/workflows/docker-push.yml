@@ -1,0 +1,97 @@
+name: Docker Build & Push to Hub
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0 or latest)'
+        required: true
+        default: 'latest'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_PREFIX: lv
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [gateway, user-app, product-app, order-app, cart-app, payment-app, report-app, ar-app]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION=${{ github.event.inputs.version || 'latest' }}
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "FULL_IMAGE=${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build and push - ${{ matrix.app }}
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.${{ matrix.app }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:${{ steps.version.outputs.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_PREFIX }}-${{ matrix.app }}:buildcache,mode=max
+          build-args: |
+            APP_NAME=${{ matrix.app }}
+
+      - name: Image pushed
+        run: |
+          echo " Pushed: ${{ steps.version.outputs.FULL_IMAGE }}"
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ## 🐳 Docker Images Released
+
+            All services are now available on Docker Hub:
+
+            - `${{ secrets.DOCKER_USERNAME }}/lv-gateway:${{ github.ref_name }}`
+            - `${{ secrets.DOCKER_USERNAME }}/lv-user-app:${{ github.ref_name }}`
+            - `${{ secrets.DOCKER_USERNAME }}/lv-product-app:${{ github.ref_name }}`
+            - `${{ secrets.DOCKER_USERNAME }}/lv-order-app:${{ github.ref_name }}`
+            - `${{ secrets.DOCKER_USERNAME }}/lv-cart-app:${{ github.ref_name }}`
+            - `${{ secrets.DOCKER_USERNAME }}/lv-payment-app:${{ github.ref_name }}`
+            - `${{ secrets.DOCKER_USERNAME }}/lv-report-app:${{ github.ref_name }}`
+            - `${{ secrets.DOCKER_USERNAME }}/lv-ar-app:${{ github.ref_name }}`
+
+            ### Deployment
+            ```bash
+            export DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+            export VERSION=${{ github.ref_name }}
+            cd deploys
+            ./deploy.sh gateway
+            ./deploy.sh user-app
+            # ... etc
+            ```

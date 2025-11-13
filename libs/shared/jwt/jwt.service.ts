@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, OnModuleInit } from '@nestjs/common';
+import { Injectable, UnauthorizedException, OnModuleInit, Optional, Inject } from '@nestjs/common';
 import * as jose from 'jose';
 import * as path from 'node:path';
 import { FileReaderService } from '../utils/file-reader.service';
@@ -10,7 +10,9 @@ import { FileReaderService } from '../utils/file-reader.service';
  * - user-app: có private key để ký token
  * - các service khác: có public key để verify token
  *
- * Key được nạp từ thư mục keys/ dưới dạng PEM.
+ * Key được nạp từ:
+ * 1. File: keys/ directory (nếu có)
+ * 2. Dynamic: KeyReceiverService (gateway nhận từ user-app qua NATS)
  *
  * Ví dụ ký (ở user-app):
  * const token = await jwtService.signToken({ sub, email, role }, 900);
@@ -26,7 +28,10 @@ export class JwtService implements OnModuleInit {
   private readonly algorithm = 'RS256';
   private readonly issuer = 'luan-van-ecommerce';
 
-  constructor(private readonly fileReader: FileReaderService) {}
+  constructor(
+    private readonly fileReader: FileReaderService,
+    @Optional() @Inject('KEY_RECEIVER_SERVICE') private readonly keyReceiverService?: any,
+  ) {}
 
   /**
    * Lifecycle hook: Tự động nạp key khi module khởi tạo
@@ -36,16 +41,33 @@ export class JwtService implements OnModuleInit {
   }
 
   /**
-   * Nạp RSA keys từ thư mục keys/ (định dạng PEM)
+   * Nạp RSA keys từ thư mục keys/ hoặc từ KeyReceiverService (gateway)
+   *
+   * Priority:
+   * 1. Try KeyReceiverService (gateway gets key từ user-app qua NATS)
+   * 2. Fall back to file-based keys (user-app load từ keys/ directory)
    *
    * Yêu cầu:
-   * - keys/public-key.pem: bắt buộc (mọi service đều cần để verify)
+   * - keys/public-key.pem: bắt buộc nếu KeyReceiverService không có
    * - keys/private-key.pem: tuỳ chọn (chỉ cần ở service ký token)
    *
-   * @throws Error nếu thiếu public key hoặc không thể import key
+   * @throws Error nếu thiếu public key từ cả hai nguồn
    */
   private async loadKeys(): Promise<void> {
     try {
+      // Try dynamic key from KeyReceiverService (gateway)
+      if (this.keyReceiverService && typeof this.keyReceiverService.getPublicKey === 'function') {
+        try {
+          const publicKeyPEM = await this.keyReceiverService.getPublicKey();
+          this.publicKey = await jose.importSPKI(publicKeyPEM, this.algorithm);
+          console.log('[JwtService]  Public key loaded successfully from KeyReceiverService (NATS)');
+          return; // Successfully loaded from dynamic source
+        } catch (error) {
+          console.warn('[JwtService] ⚠️  Failed to load key from KeyReceiverService, trying file-based keys...', error);
+        }
+      }
+
+      // Fall back to file-based keys
       const keysDir = path.join(process.cwd(), 'keys');
 
       // Public key: bắt buộc
@@ -53,7 +75,7 @@ export class JwtService implements OnModuleInit {
       const publicKeyPEM = await this.fileReader.readFile(publicKeyPath);
       this.publicKey = await jose.importSPKI(publicKeyPEM, this.algorithm);
 
-      console.log('[JwtService] ✅ Public key loaded successfully from file');
+      console.log('[JwtService]  Public key loaded successfully from file');
 
       // Private key: tuỳ chọn (ở user-app)
       const privateKeyPath = path.join(keysDir, 'private-key.pem');
@@ -62,12 +84,12 @@ export class JwtService implements OnModuleInit {
       if (privateKeyExists) {
         const privateKeyPEM = await this.fileReader.readFile(privateKeyPath);
         this.privateKey = await jose.importPKCS8(privateKeyPEM, this.algorithm);
-        console.log('[JwtService] ✅ Private key loaded successfully (signing enabled)');
+        console.log('[JwtService]  Private key loaded successfully (signing enabled)');
       } else {
         console.log('[JwtService] ℹ️  Private key not found (verification-only mode)');
       }
     } catch (error) {
-      console.error('[JwtService] ❌ Failed to load RSA keys:', error);
+      console.error('[JwtService]  Failed to load RSA keys:', error);
       throw new Error(`JWT key initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

@@ -63,16 +63,7 @@ RegisterDto;
 Tất cả DTOs PHẢI có validation decorators:
 
 ```typescript
-import {
-  IsEmail,
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  MinLength,
-  MaxLength,
-  IsNumber,
-  Min,
-} from 'class-validator';
+import { IsEmail, IsString, IsNotEmpty, IsOptional, MinLength, MaxLength, IsNumber, Min } from 'class-validator';
 
 export class CreateUserDto {
   @IsEmail()
@@ -271,13 +262,13 @@ await expectRpcErrorWithStatus(promise, 404, 'User không tồn tại');
 Code ngoài `libs/shared` import với `@shared/`:
 
 ```typescript
-// ✅ CORRECT
+//  CORRECT
 import { CreateUserDto, UpdateUserDto } from '@shared/dto';
 import { EVENTS } from '@shared/events';
 import { EntityNotFoundRpcException } from '@shared/exceptions';
 import { UserRole } from '@shared/types';
 
-// ❌ WRONG
+//  WRONG
 import { CreateUserDto } from '../../../libs/shared/dto/user/create-user.dto';
 ```
 

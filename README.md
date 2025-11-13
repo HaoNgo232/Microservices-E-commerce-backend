@@ -48,7 +48,7 @@ Hệ thống áp dụng **Perimeter Security** model:
 - [Setup Guide](./SETUP.md)
 - Tài liệu luận văn: `docs/thesis/*` (API Gateway, User, Order, v.v.)
 
-#### 🚀 Getting Started
+#### Getting Started
 
 - [Setup Guide](./SETUP.md) - Hướng dẫn setup project từ đầu
 

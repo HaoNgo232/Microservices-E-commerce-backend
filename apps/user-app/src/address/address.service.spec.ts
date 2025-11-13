@@ -18,7 +18,7 @@ describe('AddressService', () => {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       findFirst: jest.fn(),
-      count: jest.fn(), // ✅ Add count method
+      count: jest.fn(), //  Add count method
       create: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
@@ -133,7 +133,7 @@ describe('AddressService', () => {
       };
 
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      mockPrismaService.address.count.mockResolvedValue(2); // ✅ User already has 2 addresses
+      mockPrismaService.address.count.mockResolvedValue(2); //  User already has 2 addresses
       mockPrismaService.address.create.mockResolvedValue(mockCreatedAddress);
 
       const result = await service.create({ userId, dto });
@@ -181,7 +181,7 @@ describe('AddressService', () => {
       };
 
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      mockPrismaService.address.count.mockResolvedValue(2); // ✅ User has addresses
+      mockPrismaService.address.count.mockResolvedValue(2); //  User has addresses
       mockPrismaService.address.updateMany.mockResolvedValue({ count: 2 });
       mockPrismaService.address.create.mockResolvedValue(mockCreatedAddress);
 
@@ -224,7 +224,7 @@ describe('AddressService', () => {
       };
 
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      mockPrismaService.address.count.mockResolvedValue(0); // ✅ First address (count = 0)
+      mockPrismaService.address.count.mockResolvedValue(0); //  First address (count = 0)
       mockPrismaService.address.updateMany.mockResolvedValue({ count: 0 });
       mockPrismaService.address.create.mockResolvedValue(mockCreatedAddress);
 
@@ -248,7 +248,7 @@ describe('AddressService', () => {
           ward: dto.ward,
           district: dto.district,
           city: dto.city,
-          isDefault: true, // ✅ Auto-set to true for first address
+          isDefault: true, //  Auto-set to true for first address
         },
       });
     });

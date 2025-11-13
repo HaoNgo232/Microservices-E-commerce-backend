@@ -97,8 +97,8 @@ ACCOUNT_NAME="TEN_CHINH_XAC_DA_DANG_KY"
 
 | Loại              | Số tài khoản | Dùng cho QR? | Webhook? |
 | ----------------- | ------------ | ------------ | -------- |
-| Tài khoản chính   | 8890116911   | ❌ KHÔNG     | ❌ KHÔNG |
-| Tài khoản ảo (VA) | 96247HAOVA   | ✅ CÓ        | ✅ CÓ    |
+| Tài khoản chính   | 8890116911   | KHÔNG        | KHÔNG    |
+| Tài khoản ảo (VA) | 96247HAOVA   | CÓ           | CÓ       |
 
 ## Lưu Ý Bảo Mật
 

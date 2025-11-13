@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  report-app:
+    image: ${DOCKER_USERNAME}/lv-report-app:${VERSION:-latest}
+    container_name: report-app
+    
+    environment:
+      - DATABASE_URL_REPORT=${DATABASE_URL_REPORT}
+      - NODE_ENV=production
+      - NATS_URL=${NATS_URL:-nats://localhost:4222}
+      - LOG_LEVEL=debug
+      - APP_NAME=report-app
+    
+    restart: unless-stopped
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

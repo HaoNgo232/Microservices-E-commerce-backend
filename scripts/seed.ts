@@ -315,7 +315,7 @@ async function main() {
     console.log('  Order DB:   npx prisma studio --schema=apps/order-app/prisma/schema.prisma');
     console.log('  Payment DB: npx prisma studio --schema=apps/payment-app/prisma/schema.prisma');
   } catch (err) {
-    console.error('\n❌ Seed failed:', err);
+    console.error('\n Seed failed:', err);
     process.exitCode = 1;
   } finally {
     await Promise.allSettled([

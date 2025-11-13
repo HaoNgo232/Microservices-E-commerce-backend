@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  payment-app:
+    image: ${DOCKER_USERNAME}/lv-payment-app:${VERSION:-latest}
+    container_name: payment-app
+    
+    environment:
+      - DATABASE_URL_PAYMENT=${DATABASE_URL_PAYMENT}
+      - NODE_ENV=production
+      - NATS_URL=${NATS_URL:-nats://localhost:4222}
+      - LOG_LEVEL=debug
+      - APP_NAME=payment-app
+    
+    restart: unless-stopped
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

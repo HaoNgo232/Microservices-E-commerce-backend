@@ -111,7 +111,7 @@ Format: `<Action><Entity>Dto`
 **LUÔN LUÔN** dùng explicit select để tránh leak sensitive data:
 
 ```typescript
-// ✅ CORRECT
+//  CORRECT
 const user = await prisma.user.findUnique({
   where: { id },
   select: {
@@ -122,7 +122,7 @@ const user = await prisma.user.findUnique({
   },
 });
 
-// ❌ WRONG - exposes all fields including passwordHash
+//  WRONG - exposes all fields including passwordHash
 const user = await prisma.user.findUnique({ where: { id } });
 ```
 
@@ -131,12 +131,12 @@ const user = await prisma.user.findUnique({ where: { id } });
 Gateway gọi microservices PHẢI có timeout và retry:
 
 ```typescript
-// ✅ CORRECT
+//  CORRECT
 return firstValueFrom(
   this.userClient.send(EVENTS.USER.FIND_ONE, { userId }).pipe(timeout(5000), retry({ count: 1, delay: 1000 })),
 );
 
-// ❌ WRONG - no error handling
+//  WRONG - no error handling
 return firstValueFrom(this.userClient.send(EVENTS.USER.FIND_ONE, { userId }));
 ```
 
@@ -171,7 +171,7 @@ if (existingEmail) {
 Tất cả DTOs PHẢI có validation decorators:
 
 ```typescript
-// ✅ CORRECT
+//  CORRECT
 export class CreateUserDto {
   @IsEmail()
   @IsNotEmpty()
@@ -183,7 +183,7 @@ export class CreateUserDto {
   password: string;
 }
 
-// ❌ WRONG - no validation
+//  WRONG - no validation
 export class CreateUserDto {
   email: string;
   password: string;
@@ -198,7 +198,7 @@ export class CreateUserDto {
 - Microservice controllers: KHÔNG có guards (trust Gateway)
 
 ```typescript
-// ✅ CORRECT - Gateway controller
+//  CORRECT - Gateway controller
 @Controller('users')
 export class UsersController {
   @Get('me')
@@ -210,7 +210,7 @@ export class UsersController {
   }
 }
 
-// ✅ CORRECT - Microservice controller
+//  CORRECT - Microservice controller
 @Controller()
 export class UsersController {
   @MessagePattern(EVENTS.USER.FIND_ONE)
@@ -360,15 +360,15 @@ npx prisma migrate dev --name add_user_avatar_field
 
 ## Things to AVOID
 
-❌ KHÔNG share database giữa các services
-❌ KHÔNG dùng guards trong microservice controllers
-❌ KHÔNG dùng Prisma queries mà không có explicit select
-❌ KHÔNG gửi NATS messages mà không có timeout/retry
-❌ KHÔNG expose sensitive data như passwordHash trong responses
-❌ KHÔNG dùng generic error messages (dùng specific RPC exceptions)
-❌ KHÔNG skip DTO validation
-❌ KHÔNG commit code mà không có tests
-❌ KHÔNG dùng `npm` hay `yarn` - chỉ dùng `pnpm`
+KHÔNG share database giữa các services
+KHÔNG dùng guards trong microservice controllers
+KHÔNG dùng Prisma queries mà không có explicit select
+KHÔNG gửi NATS messages mà không có timeout/retry
+KHÔNG expose sensitive data như passwordHash trong responses
+KHÔNG dùng generic error messages (dùng specific RPC exceptions)
+KHÔNG skip DTO validation
+KHÔNG commit code mà không có tests
+KHÔNG dùng `npm` hay `yarn` - chỉ dùng `pnpm`
 
 ## Security Checklist
 
