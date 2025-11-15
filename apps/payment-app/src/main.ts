@@ -5,18 +5,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { AllRpcExceptionsFilter } from '@shared/filters/rpc-exception.filter';
 
 /**
- * Bootstrap Payment Microservice
+ * Khởi động Payment Microservice
  *
- * Khởi tạo và cấu hình Payment microservice với:
- * - NATS transport để giao tiếp với các service khác
- * - Global validation pipe để validate DTO
- * - Global exception filter để xử lý lỗi RPC
- * - Queue-based message handling
+ * Thiết lập và cấu hình microservice xử lý thanh toán bao gồm:
+ * - Kết nối NATS để trao đổi dữ liệu với các service khác
+ * - Validation tự động cho tất cả dữ liệu đầu vào
+ * - Xử lý lỗi tập trung cho RPC calls
+ * - Hàng đợi tin nhắn để xử lý song song
  *
- * **Business Domain:**
- * - Payment processing (COD, SePay)
- * - Payment verification
- * - Transaction tracking từ SePay webhook
+ * **Chức năng chính:**
+ * - Xử lý thanh toán (COD, SePay)
+ * - Xác minh thanh toán
+ * - Theo dõi giao dịch từ webhook SePay
  */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(PaymentAppModule, {

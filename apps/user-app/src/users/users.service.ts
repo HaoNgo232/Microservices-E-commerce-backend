@@ -7,7 +7,7 @@ import * as bcrypt from 'bcryptjs';
 
 /**
  * Interface cho User Service
- * Định nghĩa các phương thức quản lý users
+ * Liệt kê các chức năng xử lý user
  */
 export interface IUserService {
   /**
@@ -42,19 +42,19 @@ export interface IUserService {
 }
 
 /**
- * UsersService - Service quản lý users
+ * UsersService - Xử lý logic nghiệp vụ cho user
  *
- * Xử lý business logic liên quan đến:
- * - Tạo user mới (admin only, hash password)
- * - Tìm kiếm user (by ID, by email)
- * - Cập nhật user info (fullName, phone, role, isActive)
- * - Vô hiệu hóa user account (soft delete)
- * - Liệt kê users với pagination và search
+ * Chịu trách nhiệm các công việc:
+ * - Tạo user mới (chỉ admin, mã hóa mật khẩu)
+ * - Tìm user (theo ID hoặc email)
+ * - Cập nhật thông tin user (tên, số điện thoại, vai trò, trạng thái)
+ * - Khóa tài khoản user (không xóa hẳn)
+ * - Lấy danh sách user có phân trang và tìm kiếm
  *
- * **Bảo mật:**
- * - Password luôn được hash bằng bcrypt trước khi lưu
- * - Response KHÔNG bao gồm passwordHash
- * - Chỉ admin có thể tạo user và set role
+ * **Về bảo mật:**
+ * - Mật khẩu luôn được mã hóa bằng bcrypt trước khi lưu
+ * - Không bao giờ trả mật khẩu trong response
+ * - Chỉ admin mới được tạo user và phân vai trò
  */
 @Injectable()
 export class UsersService implements IUserService {
@@ -63,16 +63,16 @@ export class UsersService implements IUserService {
   /**
    * Tạo user mới
    *
-   * Luồng xử lý:
-   * 1. Validate email chưa tồn tại
-   * 2. Hash password bằng bcrypt (salt rounds = 10)
-   * 3. Tạo user với role (mặc định CUSTOMER nếu không truyền)
+   * Các bước thực hiện:
+   * 1. Kiểm tra email chưa được sử dụng
+   * 2. Mã hóa mật khẩu bằng bcrypt (salt rounds = 10)
+   * 3. Tạo user với vai trò (mặc định CUSTOMER nếu không chỉ định)
    *
-   * **Quan trọng:** Không lưu mật khẩu ở dạng plain text
+   * **Lưu ý quan trọng:** Không bao giờ lưu mật khẩu dạng text thuần
    *
-   * @param dto - { email, password, fullName, phone?, role? }
-   * @returns User đã tạo (không bao gồm passwordHash)
-   * @throws RpcException nếu email đã tồn tại hoặc có lỗi database
+   * @param dto - Thông tin user { email, password, fullName, phone?, role? }
+   * @returns Thông tin user vừa tạo (không có mật khẩu)
+   * @throws RpcException nếu email đã tồn tại hoặc lỗi database
    */
   async create(dto: CreateUserDto): Promise<UserResponse> {
     try {
@@ -218,18 +218,18 @@ export class UsersService implements IUserService {
   }
 
   /**
-   * Cập nhật user info
+   * Cập nhật thông tin user
    *
-   * Cho phép cập nhật:
-   * - fullName: Họ tên
+   * Có thể cập nhật:
+   * - fullName: Họ và tên
    * - phone: Số điện thoại
    * - role: Vai trò (ADMIN/CUSTOMER)
-   * - isActive: Trạng thái active
+   * - isActive: Trạng thái hoạt động
    *
-   * @param id - User ID
-   * @param dto - Dữ liệu cập nhật (partial)
-   * @returns User đã cập nhật
-   * @throws RpcException nếu user không tồn tại hoặc có lỗi database
+   * @param id - ID của user cần cập nhật
+   * @param dto - Thông tin cần thay đổi (có thể chỉ cập nhật một phần)
+   * @returns Thông tin user sau khi cập nhật
+   * @throws RpcException nếu user không tồn tại hoặc lỗi database
    */
   async update(id: string, dto: UpdateUserDto): Promise<UserResponse> {
     try {

@@ -5,12 +5,12 @@ import { ValidationPipe } from '@nestjs/common';
 import { AllRpcExceptionsFilter } from '@shared/filters/rpc-exception.filter';
 
 /**
- * Bootstrap Cart Microservice
+ * Khởi động Cart Microservice
  *
- * Khởi tạo và cấu hình Cart microservice với:
- * - NATS transport để giao tiếp với các service khác
- * - Global validation pipe để validate DTO
- * - Global exception filter để xử lý lỗi RPC
+ * Thiết lập và cấu hình microservice quản lý giỏ hàng bao gồm:
+ * - Kết nối NATS để trao đổi dữ liệu với các service khác
+ * - Validation tự động cho tất cả dữ liệu đầu vào
+ * - Xử lý lỗi tập trung cho RPC calls
  */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(CartAppModule, {

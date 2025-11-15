@@ -5,18 +5,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { AllRpcExceptionsFilter } from '@shared/filters/rpc-exception.filter';
 
 /**
- * Bootstrap User Microservice
+ * Khởi động User Microservice
  *
- * Khởi tạo và cấu hình User microservice với:
- * - NATS transport để giao tiếp với các service khác
- * - Global validation pipe để validate DTO
- * - Global exception filter để xử lý lỗi RPC
- * - Queue-based message handling
+ * Thiết lập và cấu hình microservice quản lý user bao gồm:
+ * - Kết nối NATS để trao đổi dữ liệu với các service khác
+ * - Validation tự động cho tất cả dữ liệu đầu vào
+ * - Xử lý lỗi tập trung cho RPC calls
+ * - Hàng đợi tin nhắn để xử lý song song
  *
- * **Business Domain:**
- * - User management (CRUD)
- * - Authentication (login, register, JWT)
- * - Address management (shipping addresses)
+ * **Chức năng chính:**
+ * - Quản lý thông tin user (tạo, sửa, xóa, tìm kiếm)
+ * - Xác thực người dùng (đăng nhập, đăng ký, JWT)
+ * - Quản lý địa chỉ giao hàng
  */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(UserAppModule, {
@@ -27,7 +27,7 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  // Global validation for all incoming DTOs
+  // Validation tự động cho tất cả dữ liệu đầu vào
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -39,7 +39,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Global RPC exception handling
+  // Xử lý lỗi tập trung cho RPC
   app.useGlobalFilters(new AllRpcExceptionsFilter());
 
   await app.listen();

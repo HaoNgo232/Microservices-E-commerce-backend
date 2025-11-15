@@ -9,7 +9,7 @@ import * as jose from 'jose';
 
 /**
  * Interface cho Auth Service
- * Định nghĩa các phương thức authentication
+ * Liệt kê các chức năng xác thực người dùng
  */
 export interface IAuthService {
   /**
@@ -34,26 +34,26 @@ export interface IAuthService {
 }
 
 /**
- * AuthService - Service xử lý authentication
+ * AuthService - Xử lý xác thực người dùng
  *
- * Xử lý business logic liên quan đến:
- * - Đăng nhập: Validate credentials, generate JWT tokens
- * - Đăng ký: Hash password, tạo user mới, auto-login
- * - Verify token: Validate JWT signature và expiry
- * - Refresh token: Generate new tokens từ refresh token
+ * Chịu trách nhiệm các công việc:
+ * - Đăng nhập: Kiểm tra thông tin, tạo JWT tokens
+ * - Đăng ký: Mã hóa mật khẩu, tạo user mới, tự động đăng nhập
+ * - Xác thực token: Kiểm tra chữ ký JWT và thời hạn
+ * - Làm mới token: Tạo tokens mới từ refresh token
  *
- * **Security Implementation:**
- * - Password hashing: bcrypt với salt rounds = 10
- * - JWT signing: RSA private key (asymmetric)
- * - JWT verification: RSA public key
- * - Token expiry: accessToken (15m), refreshToken (7d)
+ * **Về bảo mật:**
+ * - Mã hóa mật khẩu: bcrypt với salt rounds = 10
+ * - Ký JWT: Khóa riêng RSA (asymmetric)
+ * - Xác thực JWT: Khóa công khai RSA
+ * - Thời hạn token: accessToken (15 phút), refreshToken (7 ngày)
  *
- * **JWT Payload Structure:**
- * - sub: userId (JOSE standard claim)
- * - email: user email
- * - role: user role (ADMIN/CUSTOMER)
- * - iat: issued at timestamp
- * - exp: expiration timestamp
+ * **Cấu trúc JWT payload:**
+ * - sub: ID user (theo chuẩn JOSE)
+ * - email: Email của user
+ * - role: Vai trò (ADMIN/CUSTOMER)
+ * - iat: Thời gian tạo
+ * - exp: Thời gian hết hạn
  */
 @Injectable()
 export class AuthService implements IAuthService {
