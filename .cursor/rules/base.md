@@ -27,7 +27,7 @@ libs/shared/          # Shared library
 └── events.ts        # NATS event patterns
 ```
 
-## 🔑 Key Conventions
+## Key Conventions
 
 ### 1. Communication Pattern
 
@@ -187,7 +187,7 @@ import { expectRpcError, expectRpcErrorWithStatus } from '@shared/testing/rpc-te
 await expectRpcErrorWithStatus(firstValueFrom(client.send(EVENTS.USER.FIND_ONE, 'invalid-id')), 404, 'không tồn tại');
 ```
 
-## 📝 Common Tasks
+## Common Tasks
 
 ### Add New Feature
 

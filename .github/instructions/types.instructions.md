@@ -103,7 +103,7 @@ export type ProductResponse = {
 
 ---
 
-## 🔒 NULL SAFETY PATTERNS
+## NULL SAFETY PATTERNS
 
 ### Handle Prisma Nullable Fields
 

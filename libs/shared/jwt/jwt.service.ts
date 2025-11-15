@@ -63,7 +63,7 @@ export class JwtService implements OnModuleInit {
           console.log('[JwtService]  Public key loaded successfully from KeyReceiverService (NATS)');
           return; // Successfully loaded from dynamic source
         } catch (error) {
-          console.warn('[JwtService] ⚠️  Failed to load key from KeyReceiverService, trying file-based keys...', error);
+          console.warn('[JwtService]   Failed to load key from KeyReceiverService, trying file-based keys...', error);
         }
       }
 

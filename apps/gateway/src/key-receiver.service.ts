@@ -46,7 +46,7 @@ export class KeyReceiverService implements OnModuleInit {
    */
   async onModuleInit(): Promise<void> {
     try {
-      this.logger.log('🔑 KeyReceiverService initializing...');
+      this.logger.log(' KeyReceiverService initializing...');
       await this.subscribeAndWaitForKey();
       this.logger.log(' Public key received and cached');
     } catch (error) {

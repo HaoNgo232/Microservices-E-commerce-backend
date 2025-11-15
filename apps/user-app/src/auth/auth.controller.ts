@@ -1,6 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthService } from '@user-app/auth/auth.service';
+import { KeyDistributorService } from '@user-app/key-distributor.service';
 import { EVENTS } from '@shared/events';
 import { LoginDto, VerifyDto, RefreshDto, RegisterDto } from '@shared/dto/auth.dto';
 import { JWTPayload } from 'jose';
@@ -50,7 +51,10 @@ export interface IAuthController {
  */
 @Controller()
 export class AuthController implements IAuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly keyDistributor: KeyDistributorService,
+  ) {}
 
   /**
    * NATS Handler: Đăng nhập
@@ -98,5 +102,17 @@ export class AuthController implements IAuthController {
   @MessagePattern(EVENTS.AUTH.REFRESH)
   refresh(@Payload() dto: RefreshDto): Promise<AuthResponse> {
     return this.authService.refresh(dto);
+  }
+
+  /**
+   * NATS Handler: Respond to Gateway public key request
+   *
+   * Pattern: auth.public-key
+   * Gateway send() request để lấy public key, user-app reply với key
+   * @returns { publicKey, algorithm, issuedAt }
+   */
+  @MessagePattern('auth.public-key')
+  getPublicKey() {
+    return this.keyDistributor.handlePublicKeyRequest();
   }
 }

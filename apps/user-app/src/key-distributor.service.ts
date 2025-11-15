@@ -10,14 +10,14 @@ import * as jose from 'jose';
  *
  * Chức năng:
  * - Generate/load RSA key pair khi module khởi tạo
- * - Publish public key qua NATS để gateway lấy
- * - Subject: auth.public-key
+ * - Serve public key qua NATS request-reply pattern
+ * - Subject: auth.public-key (respond to Gateway send())
  *
  * Flow:
  * 1. OnModuleInit hook chạy
  * 2. Load/generate keys từ thư mục keys/
- * 3. Publish public key qua NATS
- * 4. Gateway subscribe và cache public key
+ * 3. Listen for requests từ Gateway trên auth.public-key subject
+ * 4. Gateway send() request, user-app reply với public key
  */
 @Injectable()
 export class KeyDistributorService implements OnModuleInit {
@@ -127,17 +127,16 @@ export class KeyDistributorService implements OnModuleInit {
   }
 
   /**
-   * Khởi tạo keys và publish public key qua NATS
+   * Khởi tạo keys và setup listener
+   * Không cần publish, chỉ cần load keys cho controller
    */
   private async initializeAndPublishKeys(): Promise<void> {
     try {
       const { publicKeyPEM } = await this.loadOrGenerateKeys();
       this.publicKey = publicKeyPEM;
-
-      // Publish public key qua NATS
-      this.publishPublicKey(publicKeyPEM);
+      this.logger.log(' RSA keys initialized, waiting for Gateway requests on auth.public-key');
     } catch (error) {
-      this.logger.error('Failed to initialize and publish keys:', error);
+      this.logger.error('Failed to initialize keys:', error);
       throw error;
     }
   }
@@ -145,25 +144,15 @@ export class KeyDistributorService implements OnModuleInit {
   /**
    * Publish public key qua NATS subject: auth.public-key
    * Payload: { publicKey, algorithm, issuedAt }
+   *
+   * Phương thức này được gọi bởi controller khi nhận request từ Gateway
    */
-  private publishPublicKey(publicKeyPEM: string): void {
-    try {
-      const payload = {
-        publicKey: publicKeyPEM,
-        algorithm: 'RS256',
-        issuedAt: new Date().toISOString(),
-      };
-
-      this.logger.log('Publishing public key to NATS...');
-
-      // Publish pattern
-      this.client.emit('auth.public-key', payload);
-
-      this.logger.log(' Public key published to NATS (subject: auth.public-key)');
-    } catch (error) {
-      this.logger.error('Failed to publish public key:', error);
-      throw error;
-    }
+  public handlePublicKeyRequest(): { publicKey: string; algorithm: string; issuedAt: string } {
+    return {
+      publicKey: this.publicKey,
+      algorithm: 'RS256',
+      issuedAt: new Date().toISOString(),
+    };
   }
 
   /**

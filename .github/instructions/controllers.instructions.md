@@ -99,7 +99,7 @@ findById(@Payload() id: string) {
   return this.service.findById(id);
 }
 
-// ⚠️ OPTIONAL - But service MUST have return type
+//  OPTIONAL - But service MUST have return type
 async findById(id: string): Promise<UserResponse> { ... }
 ```
 
@@ -156,7 +156,7 @@ findById(@Payload() id: string) {
 
 ---
 
-## 🔒 AUTHENTICATION PATTERNS
+## AUTHENTICATION PATTERNS
 
 ### Protected Routes (Gateway)
 
@@ -181,7 +181,7 @@ export class UsersController {
 ### Auth in Microservices
 
 ```typescript
-// ⚠️ NOTE: Microservices use AuthGuard in service layer
+//  NOTE: Microservices use AuthGuard in service layer
 // Controllers just route, guards check in service handlers
 
 @Controller()

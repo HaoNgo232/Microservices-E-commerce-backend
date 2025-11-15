@@ -1,8 +1,8 @@
-# ��� Docker Hub Setup & Push Images - Hướng Dẫn 2024
+# ��� Docker Hub Setup & Push Images - Hướng Dẫn 2024
 
 Hướng dẫn chi tiết để setup Docker Hub và đẩy images lên.
 
-## ��� Mục Lục
+## ��� Mục Lục
 
 1. [Tạo Docker Hub Account](#tạo-docker-hub-account)
 2. [Tạo Access Token](#tạo-access-token)
@@ -13,7 +13,7 @@ Hướng dẫn chi tiết để setup Docker Hub và đẩy images lên.
 
 ---
 
-## ��� Tạo Docker Hub Account
+## ��� Tạo Docker Hub Account
 
 ### Step 1: Truy cập Docker Hub
 
@@ -38,9 +38,9 @@ Hướng dẫn chi tiết để setup Docker Hub và đẩy images lên.
 
 ---
 
-## ��� Tạo Access Token (NOT Password)
+## ��� Tạo Access Token (NOT Password)
 
-⚠️ **QUAN TRỌNG:** Dùng Access Token, KHÔNG dùng password của account!
+**QUAN TRỌNG:** Dùng Access Token, KHÔNG dùng password của account!
 
 ### Step 1: Truy cập Security Settings
 
@@ -55,16 +55,17 @@ Hướng dẫn chi tiết để setup Docker Hub và đẩy images lên.
 2. Click "Generate new token"
 3. Token name: `deployment` (hoặc tên tuỳ ý)
 4. Access permissions: Select "Read & Write"
-   - ✅ Read & Write (để push images)
+   - Read & Write (để push images)
 5. Click "Generate"
 
 ### Step 3: Copy Token
 
 ```
-⚠️ COPY TOKEN NGAY - Chỉ hiện 1 lần!
+ COPY TOKEN NGAY - Chỉ hiện 1 lần!
 ```
 
 Token sẽ trông như:
+
 ```
 dckr_pat_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
@@ -73,16 +74,18 @@ dckr_pat_xxxxxxxxxxxxxxxxxxxxxxxx
 
 ---
 
-## ��� Login Docker Locally
+## ��� Login Docker Locally
 
 ### Step 1: Open Terminal/PowerShell
 
 **Windows PowerShell:**
+
 ```powershell
 docker login
 ```
 
 **Or Bash:**
+
 ```bash
 docker login
 ```
@@ -95,11 +98,12 @@ Password: dckr_pat_xxxxxxxxxxxxxxxxxxxxxxxx  (paste token, không show)
 ```
 
 **Expected Output:**
+
 ```
 Login Succeeded
 ```
 
-✅ **SUCCESS!** Bây giờ máy local được phép push lên Docker Hub.
+**SUCCESS!** Bây giờ máy local được phép push lên Docker Hub.
 
 ### Step 3: Verify Login
 
@@ -110,7 +114,7 @@ docker info | grep Username
 
 ---
 
-## ��� Push Images Lên Hub
+## ��� Push Images Lên Hub
 
 ### Method 1: Push Manually (Nếu chưa có Images)
 
@@ -128,8 +132,9 @@ chmod +x scripts/build-all-images.sh
 ```
 
 **Output:**
+
 ```
-✅ All images built successfully!
+ All images built successfully!
 lv-gateway:v1.0.0
 lv-user-app:v1.0.0
 ... etc
@@ -143,10 +148,11 @@ chmod +x scripts/push-all-images.sh
 ```
 
 **Output:**
-```
-✅ All images pushed successfully!
 
-��� Images available at Docker Hub:
+```
+ All images pushed successfully!
+
+��� Images available at Docker Hub:
 docker pull haongo123/lv-gateway:v1.0.0
 docker pull haongo123/lv-user-app:v1.0.0
 ... etc
@@ -173,7 +179,7 @@ done
 
 ---
 
-## ✅ Verify Images Trên Docker Hub
+## Verify Images Trên Docker Hub
 
 ### Step 1: Truy cập Docker Hub
 
@@ -182,6 +188,7 @@ URL: https://hub.docker.com/r/haongo123
 ### Step 2: Check Images
 
 **Nên thấy:**
+
 ```
 lv-gateway
 lv-user-app
@@ -194,9 +201,10 @@ lv-ar-app
 ```
 
 Mỗi image có:
-- ���️ Tags: v1.0.0, latest
-- ��� Pushed date: vừa push
-- ��� Size: ~100-150MB mỗi cái
+
+- ���️ Tags: v1.0.0, latest
+- ��� Pushed date: vừa push
+- ��� Size: ~100-150MB mỗi cái
 
 ### Step 3: Pull & Test
 
@@ -210,7 +218,7 @@ docker image inspect haongo123/lv-gateway:v1.0.0
 
 ---
 
-## ��� Cleanup Local
+## ��� Cleanup Local
 
 ### Xóa Local Images (Optional)
 
@@ -227,7 +235,7 @@ docker rmi haongo123/lv-gateway:v1.0.0
 
 ---
 
-## ��� Full Workflow Example
+## ��� Full Workflow Example
 
 **Scenario: Deploy v1.0.0 mới**
 
@@ -254,17 +262,18 @@ export VERSION=v1.0.0
 
 ---
 
-## ��� Docker Hub Dashboard
+## ��� Docker Hub Dashboard
 
 ### Access
 
 URL: https://hub.docker.com/dashboard
 
 **Shows:**
-- ��� Repositories (8 repositories: lv-gateway, lv-user-app, etc.)
-- ��� Pull counts (bao nhiêu lần mọi người pull)
-- ���️ Tags (v1.0.0, latest, etc.)
-- ��� Description
+
+- ��� Repositories (8 repositories: lv-gateway, lv-user-app, etc.)
+- ��� Pull counts (bao nhiêu lần mọi người pull)
+- ���️ Tags (v1.0.0, latest, etc.)
+- ��� Description
 - ⭐ Stars
 
 ### Image Details
@@ -272,28 +281,31 @@ URL: https://hub.docker.com/dashboard
 Click vào 1 image (e.g., lv-gateway):
 
 **Shows:**
-- ��� Size: ~120MB
-- ��� Last pushed: 2024-11-13
-- ���️ Tags: v1.0.0, latest
-- ��� Dockerfile content (nếu public)
-- ��� Pull command:
+
+- ��� Size: ~120MB
+- ��� Last pushed: 2024-11-13
+- ���️ Tags: v1.0.0, latest
+- ��� Dockerfile content (nếu public)
+- ��� Pull command:
   ```bash
   docker pull haongo123/lv-gateway:v1.0.0
   ```
 
 ---
 
-## ��� Security Best Practices
+## ��� Security Best Practices
 
 ### 1. Token Management
 
-✅ **DO:**
+**DO:**
+
 - Dùng Access Token (NOT password)
 - Rotate token hàng 3-6 tháng
 - Tạo token cho từng CI/CD pipeline
 - Revoke old tokens
 
 ❌ **DON'T:**
+
 - Push password lên Git
 - Share token công khai
 - Dùng token cá nhân cho công việc
@@ -301,11 +313,13 @@ Click vào 1 image (e.g., lv-gateway):
 ### 2. Image Visibility
 
 **Public (mặc định):**
+
 ```
 Ai cũng có thể: docker pull haongo123/lv-gateway
 ```
 
 **Private (nếu cần):**
+
 1. Docker Hub → Repositories → Settings
 2. Repository visibility → Private
 3. Invite members để access
@@ -320,7 +334,7 @@ Docker Hub → Account Settings → Security
 
 ---
 
-## ��� Troubleshooting
+## ��� Troubleshooting
 
 ### Error: "permission denied"
 
@@ -329,6 +343,7 @@ Error response from daemon: push access denied for haongo123/lv-gateway
 ```
 
 **Fix:**
+
 1. Check login: `docker logout && docker login`
 2. Nhập đúng username: **haongo123**
 3. Nhập đúng token (không phải password account)
@@ -341,6 +356,7 @@ Error: 401 Unauthorized
 ```
 
 **Fix:**
+
 1. Check token còn hiệu lực
 2. Generate token mới nếu cần
 3. Login lại: `docker login`
@@ -352,6 +368,7 @@ Error: manifest for haongo123/lv-gateway:latest not found
 ```
 
 **Fix:**
+
 1. Build image trước: `./scripts/build-all-images.sh`
 2. Push image: `./scripts/push-all-images.sh`
 3. Check tag đúng: `docker images | grep lv-`
@@ -363,6 +380,7 @@ Pushing takes forever...
 ```
 
 **Fix:**
+
 - Check internet: `speedtest-cli` hoặc speedtest.net
 - Try từng image: `docker push haongo123/lv-gateway:v1.0.0`
 - Compress image (nếu cần): Trong Dockerfile
@@ -375,6 +393,7 @@ Error: credential not found
 ```
 
 **Fix:**
+
 ```bash
 # Clear credentials
 docker logout
@@ -387,9 +406,10 @@ docker login
 
 ---
 
-## ��� Checklist
+## ��� Checklist
 
 **Before Push:**
+
 - [ ] Account Docker Hub created (haongo123)
 - [ ] Access Token generated
 - [ ] Token saved safely
@@ -398,11 +418,13 @@ docker login
 - [ ] Images tagged correctly
 
 **During Push:**
+
 - [ ] Running: `./scripts/push-all-images.sh`
 - [ ] Monitoring upload progress
 - [ ] No errors in logs
 
 **After Push:**
+
 - [ ] Check Docker Hub dashboard
 - [ ] Verify 8 images pushed
 - [ ] Check tags: v1.0.0, latest
@@ -411,7 +433,7 @@ docker login
 
 ---
 
-## ��� Tips & Tricks
+## ��� Tips & Tricks
 
 ### Faster Builds with Cache
 
@@ -442,6 +464,7 @@ docker buildx build \
 Already configured! File: `.github/workflows/docker-push.yml`
 
 Just push to main:
+
 ```bash
 git push origin main
 # → Auto builds & pushes
@@ -449,7 +472,7 @@ git push origin main
 
 ---
 
-## ��� References
+## ��� References
 
 - **Docker Hub:** https://hub.docker.com
 - **Docker Docs:** https://docs.docker.com/docker-hub/

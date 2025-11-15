@@ -54,7 +54,7 @@ if [ ${#failed_apps[@]} -gt 0 ]; then
     echo "   - $app"
   done
   echo ""
-  echo "⚠️  Some migrations failed. Check logs above."
+  echo "  Some migrations failed. Check logs above."
   exit 1
 else
   echo ""

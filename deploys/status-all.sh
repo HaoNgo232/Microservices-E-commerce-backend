@@ -37,7 +37,7 @@ for app in "${apps[@]}"; do
       echo ""
     fi
   else
-    echo "$app:              ⚠️  compose file not found"
+    echo "$app:                compose file not found"
   fi
 done
 
@@ -53,10 +53,10 @@ if [ $running_count -eq $total_count ]; then
   # Try to get basic info
   echo ""
   echo "Gateway health check:"
-  curl -s http://localhost:3000/health || echo "⚠️  Gateway not responding on localhost:3000"
+  curl -s http://localhost:3000/health || echo "  Gateway not responding on localhost:3000"
   
   exit 0
 else
-  echo "⚠️  Some services are not running"
+  echo "  Some services are not running"
   exit 1
 fi

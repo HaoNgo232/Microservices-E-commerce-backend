@@ -91,7 +91,7 @@ Lưu ý: Hiện không có endpoint `DELETE /cart` (xóa toàn bộ) hay `POST /
 - `POST /ar/snapshots` - Tạo AR snapshot
 - `GET /ar/snapshots` - Danh sách AR snapshots
 
-## 🔒 Authentication Guard
+## Authentication Guard
 
 Gateway verify JWT token **TRỰC TIẾP** bằng RSA Public Key (không qua NATS) để tối ưu performance!
 
@@ -123,7 +123,7 @@ async getCurrentUser(@Req() req) {
 **Lợi ích:**
 
 - ⚡ **Nhanh**: Không cần gọi microservice qua NATS
-- 🔒 **An toàn**: RSA signature verification
+- **An toàn**: RSA signature verification
 - 📈 **Scalable**: Giảm load cho user-app
 
 ## 🌐 NATS Communication
@@ -190,7 +190,7 @@ pnpm run build gateway
 pnpm run start:prod gateway
 ```
 
-## 📝 Best Practices
+## Best Practices
 
 1. **Module per Feature**: Mỗi domain có module riêng (auth, users, products, etc.)
 2. **Service Layer**: Controllers chỉ forward requests, không chứa business logic

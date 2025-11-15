@@ -5,7 +5,7 @@
 
 // Verify we're in test environment
 if (process.env.NODE_ENV !== 'test') {
-  console.warn('⚠️  Warning: NODE_ENV is not set to "test"');
+  console.warn('  Warning: NODE_ENV is not set to "test"');
 }
 
 // Verify test database URLs are loaded

@@ -93,7 +93,7 @@ async update(id: string, dto: UpdateDto): Promise<Response> {
 
 ---
 
-## 🔒 SECURITY RULES
+## SECURITY RULES
 
 ### Never Expose Sensitive Fields
 

@@ -96,7 +96,7 @@ if [ "$STATUS" = "running" ]; then
   echo " $APP_NAME deployed successfully!"
   echo "Status: $STATUS"
 else
-  echo "⚠️  $APP_NAME status: $STATUS"
+  echo "  $APP_NAME status: $STATUS"
 fi
 echo "=========================================="
 echo ""

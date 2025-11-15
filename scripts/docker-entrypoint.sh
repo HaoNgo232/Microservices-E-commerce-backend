@@ -13,7 +13,7 @@ if [ "$APP_NAME" != "unknown" ]; then
   echo "Database: $DATABASE_URL_USER$DATABASE_URL_PRODUCT$DATABASE_URL_ORDER$DATABASE_URL_CART$DATABASE_URL_PAYMENT$DATABASE_URL_REPORT$DATABASE_URL_AR"
   
   npx prisma migrate deploy --schema=apps/${APP_NAME}/prisma/schema.prisma 2>&1 || {
-    echo "⚠️  Warning: Migration may have failed or already applied"
+    echo "  Warning: Migration may have failed or already applied"
   }
   
   echo " Migrations completed"
@@ -30,7 +30,7 @@ if [ "$APP_NAME" != "unknown" ]; then
     else
       # Generate keys using the generate-keys script
       node dist/scripts/generate-keys.js 2>&1 || {
-        echo "⚠️  Warning: Failed to generate keys"
+        echo "  Warning: Failed to generate keys"
       }
       echo " Keys generated"
     fi

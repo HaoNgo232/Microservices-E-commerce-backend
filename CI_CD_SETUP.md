@@ -198,8 +198,8 @@ GitHub → Security → Code scanning
 
 **Shows:**
 
-- 🔒 Vulnerability severity
-- 📝 Details & fixes
+- Vulnerability severity
+- Details & fixes
 - 📂 Affected files
 
 ### Docker Hub
@@ -359,7 +359,7 @@ GitHub Actions → Workflow run → Failed job → Logs
 
 ---
 
-## 📝 Example Workflows
+## Example Workflows
 
 ### Release New Version
 

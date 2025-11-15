@@ -35,10 +35,12 @@ docker/
 ```
 
 Environment variables (optional):
+
 - `DOCKER_USERNAME`: Docker registry username (default: `haongo123`)
 - `VERSION`: Image version tag (default: `latest`)
 
 Example:
+
 ```bash
 DOCKER_USERNAME=yourusername VERSION=1.0.0 ./scripts/build-all-images.sh
 ```
@@ -60,6 +62,7 @@ docker build -t your-registry/lv-user-app:latest -f docker/microservices/user-ap
 ```
 
 Prerequisites:
+
 - `docker login` must be executed first
 
 ## Image Optimization
@@ -79,11 +82,11 @@ All Dockerfiles use **4-stage multi-stage builds** for optimal image size:
 
 ### Key Optimization Techniques
 
-✅ Multi-stage builds (separate build and runtime)
-✅ `pnpm prune --prod` (remove dev dependencies)
-✅ Alpine Linux base image (150MB)
-✅ Copy only production artifacts
-✅ Health checks using Node.js (no external tools)
+Multi-stage builds (separate build and runtime)
+`pnpm prune --prod` (remove dev dependencies)
+Alpine Linux base image (150MB)
+Copy only production artifacts
+Health checks using Node.js (no external tools)
 
 For detailed optimization information, see [DOCKER_OPTIMIZATION.md](../DOCKER_OPTIMIZATION.md)
 
@@ -112,6 +115,7 @@ For detailed optimization information, see [DOCKER_OPTIMIZATION.md](../DOCKER_OP
 ## CI/CD Integration
 
 The build and push scripts are automatically triggered by:
+
 - `./.github/workflows/docker-build.yml` (GitHub Actions)
 - Or manual execution: `pnpm run ci`
 
@@ -124,6 +128,7 @@ The build and push scripts are automatically triggered by:
 5. **Test locally before pushing** to registry
 
 Example workflow:
+
 ```bash
 # 1. Build all images locally
 ./scripts/build-all-images.sh
@@ -147,6 +152,7 @@ docker run your-registry/lv-gateway:latest
 ### Build fails with "Module not found: './generated/client'"
 
 **Solution:** Ensure Prisma client is generated before build. Already handled in optimized Dockerfiles:
+
 ```dockerfile
 RUN pnpm exec prisma generate --schema=apps/app-name/prisma/schema.prisma
 RUN pnpm build app-name
@@ -155,6 +161,7 @@ RUN pnpm build app-name
 ### Image size is still large
 
 **Possible causes:**
+
 1. Unoptimized node_modules (contains dev dependencies)
 2. Old base image version
 3. Unnecessary files copied to final stage
@@ -179,4 +186,3 @@ cmd> .\scripts\build-all-images.sh
 - [Node.js Docker Best Practices](https://nodejs.org/en/docs/guides/nodejs-docker-webapp/)
 - [pnpm CLI Reference](https://pnpm.io/cli/prune)
 - [Alpine Linux](https://alpinelinux.org/)
-

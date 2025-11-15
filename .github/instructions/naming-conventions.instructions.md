@@ -10,7 +10,7 @@ applyTo: '**/*.ts,**/*.prisma'
 
 ---
 
-## 📁 FILE NAMING
+## FILE NAMING
 
 ### TypeScript Files
 
@@ -66,7 +66,7 @@ export class Users_Service {}
 export interface PaymentGateway {}
 export interface OrderRepository {}
 
-// ⚠️ OPTIONAL - I prefix (old convention)
+//  OPTIONAL - I prefix (old convention)
 export interface IPaymentGateway {}
 
 //  WRONG

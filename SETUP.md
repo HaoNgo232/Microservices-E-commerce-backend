@@ -21,7 +21,7 @@ pnpm install
 cp .env.example .env
 ```
 
-**⚠️ IMPORTANT: Update these values in `.env`:**
+** IMPORTANT: Update these values in `.env`:**
 
 ```env
 # Generate strong JWT secret (minimum 32 characters)

@@ -426,7 +426,7 @@ postgresql://admin:p@ss123@db.example.com:5432/order_db?schema=public
 
 ---
 
-## ⚠️ Troubleshooting
+## Troubleshooting
 
 ### Gateway không start
 

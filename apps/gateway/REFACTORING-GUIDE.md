@@ -22,7 +22,7 @@ Client → API Gateway (Perimeter Security) → NATS → Microservices
          - Error Handling
 ```
 
-## 📁 Cấu Trúc Files
+## Cấu Trúc Files
 
 ### Gateway Controllers
 
@@ -290,7 +290,7 @@ async findById(@Param('id') id: string): Promise<UserResponse> {
 - **Compile-time Safety**: Catch errors trước khi runtime
 - **Self-documenting Code**: Types serve as documentation
 
-## 📝 Migration Guide
+## Migration Guide
 
 Để migrate controllers khác theo pattern này:
 

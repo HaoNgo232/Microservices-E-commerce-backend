@@ -31,7 +31,7 @@ export function validateEnvironment(): void {
   // Khuyến nghị độ dài tối thiểu cho secret khi dùng HMAC
   const jwtSecret = process.env.JWT_SECRET_KEY || '';
   if (jwtSecret.length < 32) {
-    console.warn('⚠️  WARNING: JWT_SECRET_KEY should be at least 32 characters for security');
+    console.warn('  WARNING: JWT_SECRET_KEY should be at least 32 characters for security');
   }
 
   console.log(' Environment variables validated successfully');
