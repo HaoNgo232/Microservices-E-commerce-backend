@@ -1,3 +1,8 @@
+/**
+ * DTO cho giỏ hàng.
+ *
+ * Mô tả các trường cần thiết để tạo, cập nhật và truy vấn giỏ hàng.
+ */
 import { IsNotEmpty, IsString, IsNumber, IsPositive, Min, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 

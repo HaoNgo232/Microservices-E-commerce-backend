@@ -6,15 +6,15 @@ import { ErrorParser } from './error-parser';
 import { ErrorResponseBuilder } from './error-response-builder';
 
 /**
- * Bộ lọc ngoại lệ RPC toàn cục
- * Xử lý các ngoại lệ từ microservices NATS và chuyển đổi chúng thành phản hồi HTTP
+ * Bộ lọc xử lý lỗi RPC toàn hệ thống
+ * Chuyển đổi các lỗi từ microservices NATS thành phản hồi HTTP chuẩn
  *
- * Các trường hợp lỗi được hỗ trợ:
- * - RpcException với statusCode tùy chỉnh
+ * Hỗ trợ các loại lỗi:
+ * - RpcException với mã trạng thái tùy chỉnh
  * - HttpException (NotFoundException, BadRequestException, v.v.)
- * - Dịch vụ không khả dụng (phản hồi trống)
- * - Lỗi timeout
- * - Lỗi chung
+ * - Dịch vụ không phản hồi
+ * - Lỗi timeout kết nối
+ * - Các lỗi chung khác
  */
 @Catch()
 export class AllRpcExceptionsFilter implements RpcExceptionFilter<RpcException> {
@@ -36,8 +36,8 @@ export class AllRpcExceptionsFilter implements RpcExceptionFilter<RpcException> 
   }
 
   /**
-   * Xử lý ngoại lệ trong context HTTP (Gateway)
-   * Độ phức tạp được giảm bớt bằng cách ủy quyền cho các tiện ích helper
+   * Xử lý lỗi trong context HTTP (Gateway)
+   * Giao việc cho các helper để xử lý chi tiết
    */
   private handleHttpException(exception: RpcException | Error, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
@@ -56,7 +56,7 @@ export class AllRpcExceptionsFilter implements RpcExceptionFilter<RpcException> 
   }
 
   /**
-   * Xử lý ngoại lệ trong context RPC (Microservices)
+   * Xử lý lỗi trong context RPC (Microservices)
    */
   private handleRpcException(exception: RpcException | Error): Observable<never> {
     // Chuyển đổi các ngoại lệ NestJS tiêu chuẩn sang định dạng RPC
@@ -74,8 +74,8 @@ export class AllRpcExceptionsFilter implements RpcExceptionFilter<RpcException> 
   }
 
   /**
-   * Chuẩn hóa ngoại lệ sang định dạng RPC
-   * Chuyển đổi HttpException (NotFoundException, BadRequestException) sang định dạng tương thích RPC
+   * Chuẩn hóa lỗi về định dạng RPC
+   * Biến đổi HttpException sang định dạng RPC để xử lý thống nhất
    */
   private normalizeException(exception: RpcException | Error): string | object {
     // Nếu đã là RpcException, trả về nguyên trạng

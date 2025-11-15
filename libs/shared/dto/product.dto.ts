@@ -1,3 +1,8 @@
+/**
+ * DTO cho sản phẩm.
+ *
+ * Mô tả các trường cần thiết để tạo, cập nhật và truy vấn sản phẩm.
+ */
 import { type ProductAttributes } from '@shared/types';
 import { Type } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, IsNumber, IsPositive, IsArray, IsUrl, Min, IsObject } from 'class-validator';

@@ -1,3 +1,8 @@
+/**
+ * DTO cho xác thực người dùng.
+ *
+ * Mô tả các trường cần thiết để đăng nhập, đăng ký, xác minh và làm mới token.
+ */
 import { IsNotEmpty, IsString, IsEmail, MinLength } from 'class-validator';
 
 export class LoginDto {

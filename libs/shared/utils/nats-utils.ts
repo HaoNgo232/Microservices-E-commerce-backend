@@ -4,14 +4,19 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Error } from '@shared/types';
 
 /**
- * Gửi tin nhắn đến microservice với cơ chế retry tự động.
+ * Gửi tin nhắn đến microservice với retry tự động
  *
- * @template T - Kiểu dữ liệu của response
- * @param client - NestJS ClientProxy để gửi tin nhắn
- * @param pattern - Tên pattern của microservice
- * @param data - Dữ liệu gửi đi
- * @returns Promise chứa response từ microservice
- * @throws HttpException nếu lỗi sau khi retry
+ * Hàm tiện ích giúp gửi request đến các microservice với cơ chế:
+ * - Timeout: 5s
+ * - Retry: 1 lần sau 1s
+ * - Chuyển lỗi RPC thành HttpException
+ *
+ * @template T - Kiểu dữ liệu phản hồi
+ * @param client - ClientProxy của NestJS
+ * @param pattern - Pattern tên service
+ * @param data - Dữ liệu gửi kèm
+ * @returns Phản hồi từ microservice
+ * @throws HttpException khi lỗi sau các lần retry
  *
  * @example
  * const result = await sendWithRetry<User>(client, 'user.get', { id: 1 });

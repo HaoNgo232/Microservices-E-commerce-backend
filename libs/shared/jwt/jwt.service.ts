@@ -4,20 +4,20 @@ import * as path from 'node:path';
 import { FileReaderService } from '../utils/file-reader.service';
 
 /**
- * JwtService - Ký và xác thực JWT dựa trên RSA (bất đối xứng)
+ * JwtService - Quản lý ký và xác thực JWT bằng RSA (bất đối xứng)
  *
  * Chức năng:
- * - user-app: có private key để ký token
- * - các service khác: có public key để verify token
+ * - user-app: giữ private key để ký token
+ * - các service khác: dùng public key để xác thực token
  *
- * Key được nạp từ:
- * 1. File: keys/ directory (nếu có)
- * 2. Dynamic: KeyReceiverService (gateway nhận từ user-app qua NATS)
+ * Nguồn key:
+ * 1. Thư mục \`keys/\` (nếu có)
+ * 2. KeyReceiverService (gateway nhận key từ user-app qua NATS)
  *
- * Ví dụ ký (ở user-app):
+ * Ví dụ ký (trong user-app):
  * const token = await jwtService.signToken({ sub, email, role }, 900);
  *
- * Ví dụ verify (ở các service khác):
+ * Ví dụ xác thực (trong các service khác):
  * const payload = await jwtService.verifyToken(token);
  */
 @Injectable()

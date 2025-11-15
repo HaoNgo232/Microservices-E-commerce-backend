@@ -1,3 +1,8 @@
+/**
+ * DTO cho người dùng.
+ *
+ * Mô tả các trường cần thiết để tạo, cập nhật và truy vấn người dùng.
+ */
 import { Type } from 'class-transformer';
 import {
   IsOptional,

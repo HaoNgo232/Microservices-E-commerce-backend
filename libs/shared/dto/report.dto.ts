@@ -1,3 +1,8 @@
+/**
+ * DTO cho báo cáo.
+ *
+ * Mô tả các trường cần thiết để tạo và truy vấn báo cáo.
+ */
 import { IsNotEmpty, IsString, IsDateString } from 'class-validator';
 
 export class DateRangeDto {

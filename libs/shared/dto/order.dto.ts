@@ -1,3 +1,8 @@
+/**
+ * DTO cho đơn hàng.
+ *
+ * Mô tả các trường cần thiết để tạo, cập nhật và truy vấn đơn hàng.
+ */
 import {
   IsNotEmpty,
   IsOptional,

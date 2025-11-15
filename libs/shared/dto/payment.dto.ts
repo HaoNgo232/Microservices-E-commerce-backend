@@ -1,3 +1,8 @@
+/**
+ * DTO cho thanh toán.
+ *
+ * Mô tả các trường cần thiết để tạo, cập nhật và truy vấn thanh toán.
+ */
 import { PaymentMethod } from '@shared/types';
 import { Type } from 'class-transformer';
 import { IsNotEmpty, IsString, IsEnum, IsNumber, IsPositive, IsObject, IsOptional, IsIn } from 'class-validator';

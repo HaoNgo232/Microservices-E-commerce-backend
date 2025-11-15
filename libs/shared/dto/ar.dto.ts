@@ -1,3 +1,8 @@
+/**
+ * DTO cho thực tế tăng cường (AR).
+ *
+ * Mô tả các trường cần thiết để tạo và truy vấn ảnh chụp AR.
+ */
 import { Type } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, IsNumber, IsUrl, IsPositive, Min, IsObject } from 'class-validator';
 

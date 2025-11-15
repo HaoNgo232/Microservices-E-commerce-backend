@@ -1,3 +1,8 @@
+/**
+ * DTO cho địa chỉ người dùng.
+ *
+ * Mô tả các trường cần thiết để tạo, cập nhật và truy vấn địa chỉ.
+ */
 import { Type } from 'class-transformer';
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 

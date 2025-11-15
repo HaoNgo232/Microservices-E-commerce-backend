@@ -1,3 +1,8 @@
+/**
+ * DTO cho danh mục sản phẩm.
+ *
+ * Mô tả các trường cần thiết để tạo, cập nhật và truy vấn danh mục.
+ */
 import { IsNotEmpty, IsOptional, IsString, IsNumber, IsPositive, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 

@@ -1,8 +1,8 @@
 /**
- * Shared RPC Exceptions Library
+ * Thư viện Exception RPC dùng chung
  *
- * Standardize error handling across all microservices
- * Use these instead of generic RpcException for better type safety
+ * Chuẩn hoá việc xử lý lỗi giữa các microservice.
+ * Thay thế RpcException chung bằng các exception có kiểu dữ liệu rõ ràng.
  */
 
 import { RpcException } from '@nestjs/microservices';
