@@ -160,12 +160,12 @@ export class AddressService implements IAddressService {
         where: { userId },
       });
 
-      // LOGIC QUAN TRỌNG: Địa chỉ đầu tiên tự động là default
+      // Lưu ý: Địa chỉ đầu tiên sẽ tự động được đặt làm default
       // Dù client set isDefault: false, địa chỉ đầu tiên LUÔN là default
       const isFirstAddress = existingAddressCount === 0;
       const shouldBeDefault = isFirstAddress || dto.isDefault;
 
-      // QUAN TRỌNG: Chỉ được có 1 địa chỉ mặc định cho mỗi user
+      // Lưu ý: Mỗi user chỉ được có một địa chỉ mặc định
       // Nếu đánh dấu địa chỉ mới là mặc định → bỏ mặc định tất cả địa chỉ cũ
       if (shouldBeDefault) {
         await this.prisma.address.updateMany({
@@ -295,7 +295,7 @@ export class AddressService implements IAddressService {
         where: { id },
       });
 
-      // LOGIC QUAN TRỌNG: Auto-assign địa chỉ mặc định mới
+      // Lưu ý: Gán tự động địa chỉ mặc định khi cần
       // Nếu xóa địa chỉ mặc định → tự động chọn địa chỉ cũ nhất còn lại làm mặc định
       // Tránh trường hợp user không có địa chỉ mặc định
       if (existingAddress.isDefault) {

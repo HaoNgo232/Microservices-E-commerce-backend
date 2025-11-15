@@ -37,7 +37,7 @@ export interface IReportService {
  * - Order Service: Lấy dữ liệu đơn hàng để phân tích
  * - User Service: Lấy dữ liệu người dùng để phân tích
  *
- * **Note:** Implementation hiện tại sử dụng mock data
+ * **Lưu ý:** Implementation hiện tại sử dụng mock data
  * Production cần query thực tế từ Order và User services
  */
 @Injectable()
@@ -77,8 +77,8 @@ export class ReportService implements IReportService {
         throw new ValidationRpcException('fromAt must be before toAt');
       }
 
-      // In production, this would query actual order data
-      // For now, return mock aggregated data
+      // Trong môi trường production, sẽ query dữ liệu order thực tế
+      // Hiện tại trả dữ liệu giả lập (mock)
       const mockData = {
         fromAt,
         toAt,
@@ -135,7 +135,7 @@ export class ReportService implements IReportService {
         throw new ValidationRpcException('fromAt must be before toAt');
       }
 
-      // Mock product performance data
+      // Dữ liệu báo cáo hiệu suất sản phẩm giả lập
       const mockData = {
         fromAt,
         toAt,
@@ -202,7 +202,7 @@ export class ReportService implements IReportService {
         throw new ValidationRpcException('fromAt must be before toAt');
       }
 
-      // Mock user cohort data
+      // Dữ liệu cohort người dùng giả lập
       const mockData = {
         fromAt,
         toAt,

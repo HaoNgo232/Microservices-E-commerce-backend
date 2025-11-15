@@ -14,8 +14,8 @@
  */
 
 import * as jose from 'jose';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 
 async function main(): Promise<void> {
   console.log(' Generating RSA key pair for JWT...\n');

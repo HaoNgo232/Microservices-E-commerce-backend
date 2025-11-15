@@ -56,7 +56,7 @@ export interface IAddressController {
  * - DELETE: Xóa address (auto-assign default mới nếu xóa default)
  * - SET_DEFAULT: Đặt address làm mặc định
  *
- * **Note:** Controller chỉ route messages, business logic ở AddressService
+ * **Lưu ý:** Controller chỉ route messages; business logic nằm trong `AddressService`
  */
 @Controller()
 export class AddressController implements IAddressController {

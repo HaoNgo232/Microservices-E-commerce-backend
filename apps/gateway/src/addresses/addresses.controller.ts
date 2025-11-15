@@ -60,8 +60,8 @@ export class AddressesController extends BaseGatewayController {
    */
   @Post()
   create(@Req() req: Request & { user: { userId: string } }, @Body() dto: AddressCreateDto): Promise<AddressResponse> {
-    // IMPORTANT: Extract userId from JWT token, NOT from request body
-    // This prevents security vulnerability where users could create addresses for other users
+    // Quan trọng: Lấy userId từ JWT (không lấy từ request body)
+    // Tránh việc user có thể tạo/điền địa chỉ cho user khác
     const payload = {
       userId: req.user.userId,
       dto,

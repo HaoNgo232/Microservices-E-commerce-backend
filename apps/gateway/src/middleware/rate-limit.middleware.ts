@@ -10,7 +10,6 @@ interface RateLimitStore {
  * Part of Perimeter Security - prevent DDoS and brute force attacks
  *
  * Giới hạn số lượng requests từ mỗi IP trong 1 time window
- * Đây là implementation đơn giản cho thesis - production nên dùng Redis
  */
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {

@@ -5,7 +5,7 @@ import { JwtService } from '@shared/main';
 import { LoginDto } from '@shared/dto/auth.dto';
 import { PrismaService } from '@user-app/prisma/prisma.service';
 
-// Mock bcrypt module
+// Giả lập module bcrypt
 jest.mock('bcryptjs');
 import * as bcrypt from 'bcryptjs';
 
@@ -20,7 +20,7 @@ const mockPrismaService = {
   },
 };
 
-// Mock JwtService
+// Giả lập JwtService
 const mockJwtService = {
   signToken: jest.fn(),
   verifyToken: jest.fn(),

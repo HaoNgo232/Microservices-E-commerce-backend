@@ -17,7 +17,7 @@ describe('PaymentsController (e2e)', () => {
   // Test data
   const testOrderId = 'order-123';
 
-  // Mock Order Service client
+  // Giả lập client Order Service
   const mockOrderClient = {
     send: jest.fn(),
     emit: jest.fn(),

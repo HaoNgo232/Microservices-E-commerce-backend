@@ -3,7 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthService } from '@user-app/auth/auth.service';
 import { AuthController } from '@user-app/auth/auth.controller';
 import { PrismaService } from '@user-app/prisma/prisma.service';
-import { KeyDistributorService } from '@user-app/key-distributor.service';
+import { KeyDistributorService } from '@user-app/auth/key-distributor.service';
 
 @Module({
   imports: [

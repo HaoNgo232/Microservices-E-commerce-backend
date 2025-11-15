@@ -31,7 +31,7 @@ export class CategoriesController extends BaseGatewayController {
   /**
    * GET /categories/slug/:slug
    * Lấy chi tiết category theo slug
-   * Note: Phải đặt route này TRƯỚC :id route để tránh conflict
+   * Lưu ý: Phải đặt route này TRƯỚC :id route để tránh conflict
    */
   @Get('slug/:slug')
   findBySlug(@Param('slug') slug: string): Promise<CategoryResponse> {

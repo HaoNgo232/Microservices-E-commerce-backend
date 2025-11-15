@@ -1,6 +1,5 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { Inject } from '@nestjs/common';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import * as jose from 'jose';
@@ -8,26 +7,18 @@ import * as jose from 'jose';
 /**
  * KeyDistributorService - User-app
  *
- * Chức năng:
- * - Generate/load RSA key pair khi module khởi tạo
- * - Serve public key qua NATS request-reply pattern
- * - Subject: auth.public-key (respond to Gateway send())
- *
- * Flow:
- * 1. OnModuleInit hook chạy
- * 2. Load/generate keys từ thư mục keys/
- * 3. Listen for requests từ Gateway trên auth.public-key subject
- * 4. Gateway send() request, user-app reply với public key
+ * Load hoặc tạo cặp RSA và trả public key khi `gateway` hỏi.
+ * Public key được cung cấp qua pattern request-reply trên `auth.public-key`.
  */
 @Injectable()
 export class KeyDistributorService implements OnModuleInit {
   private readonly logger = new Logger(KeyDistributorService.name);
   private publicKey: string = '';
 
-  constructor(@Inject('NATS_CLIENT') private client: ClientProxy) {}
+  constructor(@Inject('NATS_CLIENT') private readonly client: ClientProxy) {}
 
   /**
-   * Lifecycle hook: Khởi tạo và publish public key
+   * Lifecycle hook: khởi tạo key và sẵn sàng phục vụ public key
    */
   async onModuleInit(): Promise<void> {
     try {
@@ -39,7 +30,7 @@ export class KeyDistributorService implements OnModuleInit {
   }
 
   /**
-   * Tạo thư mục keys nếu chưa tồn tại
+   * Tạo thư mục `keys/` nếu chưa có
    */
   private async ensureKeysDirectory(): Promise<string> {
     const keysDir = path.join(process.cwd(), 'keys');
@@ -53,7 +44,7 @@ export class KeyDistributorService implements OnModuleInit {
   }
 
   /**
-   * Generate RSA key pair (RS256)
+   * Tạo cặp RSA mới (RS256)
    */
   private async generateKeyPair(): Promise<{ publicKeyPEM: string; privateKeyPEM: string }> {
     try {
@@ -77,9 +68,7 @@ export class KeyDistributorService implements OnModuleInit {
   }
 
   /**
-   * Load hoặc generate keys
-   * Nếu keys/private-key.pem tồn tại → load
-   * Nếu không → generate mới
+   * Tải keys từ disk nếu có, còn không thì tạo mới và lưu.
    */
   private async loadOrGenerateKeys(): Promise<{ publicKeyPEM: string; privateKeyPEM: string }> {
     const keysDir = await this.ensureKeysDirectory();
@@ -87,7 +76,7 @@ export class KeyDistributorService implements OnModuleInit {
     const publicKeyPath = path.join(keysDir, 'public-key.pem');
 
     try {
-      // Kiểm tra xem keys đã tồn tại
+      // Kiểm tra keys đã tồn tại
       const privateKeyExists = await this.fileExists(privateKeyPath);
       const publicKeyExists = await this.fileExists(publicKeyPath);
 
@@ -99,10 +88,10 @@ export class KeyDistributorService implements OnModuleInit {
         return { publicKeyPEM, privateKeyPEM };
       }
 
-      // Generate keys mới nếu chưa có
+      // Tạo keys mới nếu không có
       const { publicKeyPEM, privateKeyPEM } = await this.generateKeyPair();
 
-      // Lưu keys vào disk
+      // Lưu keys lên disk
       await fs.writeFile(privateKeyPath, privateKeyPEM, 'utf-8');
       await fs.writeFile(publicKeyPath, publicKeyPEM, 'utf-8');
       this.logger.log(` Keys saved to ${keysDir}`);
@@ -115,7 +104,7 @@ export class KeyDistributorService implements OnModuleInit {
   }
 
   /**
-   * Kiểm tra file tồn tại
+   * Kiểm tra file có tồn tại hay không
    */
   private async fileExists(filePath: string): Promise<boolean> {
     try {
@@ -127,8 +116,7 @@ export class KeyDistributorService implements OnModuleInit {
   }
 
   /**
-   * Khởi tạo keys và setup listener
-   * Không cần publish, chỉ cần load keys cho controller
+   * Khởi tạo keys và sẵn sàng trả public key cho controller
    */
   private async initializeAndPublishKeys(): Promise<void> {
     try {
@@ -142,10 +130,8 @@ export class KeyDistributorService implements OnModuleInit {
   }
 
   /**
-   * Publish public key qua NATS subject: auth.public-key
-   * Payload: { publicKey, algorithm, issuedAt }
-   *
-   * Phương thức này được gọi bởi controller khi nhận request từ Gateway
+   * Trả public key khi controller nhận request từ Gateway.
+   * Trả về object gồm publicKey, algorithm và issuedAt.
    */
   public handlePublicKeyRequest(): { publicKey: string; algorithm: string; issuedAt: string } {
     return {
@@ -156,7 +142,7 @@ export class KeyDistributorService implements OnModuleInit {
   }
 
   /**
-   * Getter: Lấy public key (nếu cần)
+   * Trả public key hiện có
    */
   getPublicKey(): string {
     return this.publicKey;

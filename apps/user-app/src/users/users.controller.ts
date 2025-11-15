@@ -52,7 +52,7 @@ export interface IUsersController {
  * - DEACTIVATE: Vô hiệu hóa user account
  * - LIST: Lấy danh sách users với pagination và search
  *
- * **Note:** Controller chỉ route messages, business logic ở UsersService
+ * **Lưu ý:** Controller chỉ route messages; business logic nằm trong `UsersService`
  */
 @Controller()
 export class UsersController implements IUsersController {

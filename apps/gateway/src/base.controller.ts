@@ -23,7 +23,7 @@ export interface SendOptions {
  *
  * **Chức năng chính:**
  * - Gửi request-response messages với timeout và retry
- * - Gửi fire-and-forget events
+ * - Gửi event không chờ phản hồi
  * - Xử lý lỗi tập trung và convert sang HTTP exceptions
  *
  * @example
@@ -74,8 +74,8 @@ export abstract class BaseGatewayController {
   }
 
   /**
-   * Gửi event (fire-and-forget) đến microservice qua NATS
-   * Không chờ response, phù hợp cho logging, notifications
+   * Gửi event không chờ phản hồi đến microservice qua NATS
+   * Không chờ phản hồi, phù hợp cho logging hoặc notifications
    *
    * @param pattern - NATS event pattern
    * @param data - Event payload

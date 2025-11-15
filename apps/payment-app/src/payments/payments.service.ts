@@ -102,8 +102,8 @@ export class PaymentsService implements IPaymentService {
   /**
    * Xử lý thanh toán cho order
    *
-   * Flow:
-   * 1. Validate order tồn tại và ở trạng thái PENDING
+   * Luồng xử lý:
+   * 1. Kiểm tra order tồn tại và ở trạng thái PENDING
    * 2. Tạo payment record ở trạng thái UNPAID
    * 3. COD: Hoàn thành thanh toán ngay, cập nhật order sang PAID
    * 4. SePay: Tạo payment URL, trả về cho client để redirect
@@ -114,7 +114,7 @@ export class PaymentsService implements IPaymentService {
    */
   async process(dto: PaymentProcessDto): Promise<PaymentProcessResponse> {
     try {
-      // Validate order exists and is in PENDING status
+      // Kiểm tra order tồn tại và đang ở trạng thái PENDING
       await this.validateOrderForPayment(dto.orderId);
 
       // Tạo hồ sơ thanh toán
@@ -139,7 +139,7 @@ export class PaymentsService implements IPaymentService {
         };
       }
 
-      // SePay: Validate env variables trước khi generate QR
+      // SePay: Kiểm tra biến môi trường trước khi tạo QR
       if (!process.env.SEPAY_ACCOUNT_NUMBER) {
         throw new ValidationRpcException(
           'SePay configuration missing: SEPAY_ACCOUNT_NUMBER không được cấu hình. ' +
@@ -190,7 +190,7 @@ export class PaymentsService implements IPaymentService {
   /**
    * Xác thực thanh toán từ gateway callback
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Tìm payment theo orderId
    * 2. Verify payload từ gateway (mock verification)
    * 3. Nếu hợp lệ: Cập nhật payment và order sang PAID
@@ -213,7 +213,7 @@ export class PaymentsService implements IPaymentService {
         throw new EntityNotFoundRpcException('Payment', dto.orderId);
       }
 
-      // Mock verification logic (in production, verify with actual gateway)
+      // Đoạn xác thực giả lập (ở production cần xác thực với gateway thực tế)
       const isValid = this.mockVerifyPaymentGateway(dto.payload);
 
       if (!isValid) {
@@ -299,11 +299,11 @@ export class PaymentsService implements IPaymentService {
    * Dùng khi admin/shipper đã giao hàng và thu tiền từ khách hàng.
    * Chỉ áp dụng cho COD payments.
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Tìm payment theo ID hoặc orderId
-   * 2. Validate payment method = COD và status = UNPAID
+   * 2. Kiểm tra phương thức thanh toán = COD và trạng thái = UNPAID
    * 3. Update payment status → PAID
-   * 4. Update order status → PAID (fire-and-forget)
+   * 4. Cập nhật trạng thái order → PAID (không chờ phản hồi)
    *
    * @param dto - { id } hoặc { orderId }
    * @returns Payment đã được confirm
@@ -331,12 +331,12 @@ export class PaymentsService implements IPaymentService {
         throw new EntityNotFoundRpcException('Payment', identifier);
       }
 
-      // Validate payment is COD
+      // Kiểm tra payment là COD
       if (payment.method !== PaymentMethod.COD) {
         throw new ValidationRpcException(`Cannot confirm non-COD payment. Payment method: ${payment.method}`);
       }
 
-      // Validate payment is not already PAID
+      // Kiểm tra payment chưa ở trạng thái PAID
       if (payment.status === PaymentStatus.PAID) {
         throw new ValidationRpcException('Payment already confirmed');
       }
@@ -353,7 +353,7 @@ export class PaymentsService implements IPaymentService {
         },
       });
 
-      // Update order.paymentStatus to PAID (fire-and-forget)
+      // Cập nhật order.paymentStatus → PAID (không chờ phản hồi)
       firstValueFrom(
         this.orderClient
           .send(EVENTS.ORDER.UPDATE_PAYMENT_STATUS, {
@@ -368,7 +368,7 @@ export class PaymentsService implements IPaymentService {
             }),
           ),
       ).catch(() => {
-        // Ignore errors (fire-and-forget)
+        // Bỏ qua lỗi (không chờ phản hồi)
       });
 
       console.log(`[PaymentsService] COD payment confirmed: orderId=${payment.orderId}, paymentId=${payment.id}`);
@@ -395,7 +395,7 @@ export class PaymentsService implements IPaymentService {
    * 4. Extract order ID từ transaction content (pattern: DH123, DH-123)
    * 5. Tìm payment matching (orderId + amount + status UNPAID)
    * 6. Cập nhật payment status sang PAID
-   * 7. Cập nhật order status sang PAID (fire-and-forget)
+   * 7. Cập nhật trạng thái order sang PAID (không chờ phản hồi)
    *
    * **Idempotency:** Webhook có thể được gọi nhiều lần, service phải handle duplicate
    *
@@ -449,8 +449,8 @@ export class PaymentsService implements IPaymentService {
 
       // 4. Extract order ID from transaction content using regex
       // Pattern: DH{orderId} - orderId có thể là CUID (cmhild03q0004uxjsg6940pjb) hoặc số
-      // Match: DH + bất kỳ ký tự nào sau đó (alphanumeric)
-      const orderIdMatch = /DH([a-zA-Z0-9_-]+)/i.exec(dto.content);
+      // Match: DH + order ID (CUID or numeric or alphanumeric-like). Use \w (letters, digits, underscore) and hyphen
+      const orderIdMatch = /DH([\w-]+)/i.exec(dto.content);
 
       if (!orderIdMatch) {
         console.log('[PaymentsService] No order ID found in transaction content:', dto.content);
@@ -495,7 +495,7 @@ export class PaymentsService implements IPaymentService {
         },
       });
 
-      // 7. Update order.paymentStatus to PAID (fire-and-forget)
+      // 7. Cập nhật order.paymentStatus → PAID (không chờ phản hồi)
       firstValueFrom(
         this.orderClient
           .send(EVENTS.ORDER.UPDATE_PAYMENT_STATUS, {
@@ -510,7 +510,7 @@ export class PaymentsService implements IPaymentService {
             }),
           ),
       ).catch(() => {
-        // Ignore errors (fire-and-forget)
+        // Bỏ qua lỗi (không chờ phản hồi)
       });
 
       console.log(`[PaymentsService] Payment completed: orderId=${orderId}, paymentId=${payment.id}`);
@@ -574,9 +574,9 @@ export class PaymentsService implements IPaymentService {
   /**
    * Hoàn thành thanh toán và cập nhật trạng thái order
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Cập nhật payment status sang PAID
-   * 2. Cập nhật order status sang PAID (fire-and-forget)
+   * 2. Cập nhật trạng thái order sang PAID (không chờ phản hồi)
    *
    * @param paymentId - ID của payment cần cập nhật
    * @param orderId - ID của order cần cập nhật
@@ -589,7 +589,7 @@ export class PaymentsService implements IPaymentService {
       data: { status: 'PAID' },
     });
 
-    // Update order.paymentStatus to PAID (fire-and-forget)
+    // Cập nhật order.paymentStatus → PAID (không chờ phản hồi)
     firstValueFrom(
       this.orderClient
         .send(EVENTS.ORDER.UPDATE_PAYMENT_STATUS, {
@@ -621,7 +621,7 @@ export class PaymentsService implements IPaymentService {
         }),
       ),
     ).catch(() => {
-      // fire-and-forget
+      // không chờ phản hồi
     });
   }
 
@@ -636,8 +636,8 @@ export class PaymentsService implements IPaymentService {
    * @private
    */
   private mockVerifyPaymentGateway(payload: Record<string, unknown>): boolean {
-    // Mock verification logic
-    // In production: verify signature, check transaction status, etc.
+    // Kiểm tra giả lập (chỉ dùng trong môi trường dev); ở production cần verify thực tế với cổng thanh toán
+    // Trong môi trường production: kiểm tra chữ ký, trạng thái giao dịch, v.v.
     return payload.status === 'success' || payload.verified === true;
   }
 
@@ -647,14 +647,14 @@ export class PaymentsService implements IPaymentService {
    *
    * URL format: https://qr.sepay.vn/img?acc=SO_TAI_KHOAN&bank=NGAN_HANG&amount=SO_TIEN&des=NOI_DUNG&accountName=TEN_TAI_KHOAN&template=compact
    *
-   * LƯU Ý QUAN TRỌNG CHO BIDV:
-   * - BIDV API KHÔNG thể đồng bộ giao dịch qua tài khoản chính
-   * - PHẢI dùng số tài khoản ảo (VA - Virtual Account)
-   * - Format VA: {SốChính}{Mã} - VD: "96247HAOVA"
-   * - accountName là tên hiển thị trên QR (tên người nhận)
-   * - Tài khoản ảo PHẢI được đăng ký tại https://my.sepay.vn trước
-   * - SePay nhận diện giao dịch qua: số VA + pattern trong nội dung (DH123)
-   * - Webhook sẽ KHÔNG hoạt động nếu thiếu accountName hoặc chưa đăng ký VA
+   * Lưu ý quan trọng cho BIDV:
+   * - BIDV API không đồng bộ giao dịch qua tài khoản chính
+   * - Cần dùng số tài khoản ảo (VA - Virtual Account)
+   * - Format VA: {SốChính}{Mã} — ví dụ: "96247HAOVA"
+   * - `accountName` là tên hiển thị trên QR (tên người nhận)
+   * - Tài khoản ảo phải được đăng ký tại https://my.sepay.vn trước
+   * - SePay nhận diện giao dịch qua số VA và pattern trong nội dung (ví dụ: DH123)
+   * - Webhook sẽ không hoạt động nếu thiếu `accountName` hoặc chưa đăng ký VA
    *
    * @param accountNo - Số tài khoản ảo (VA) - VD: "96247HAOVA" (KHÔNG dùng số tài khoản chính)
    * @param bankName - Tên ngân hàng (VD: "BIDV", "MBBank", "Vietcombank")

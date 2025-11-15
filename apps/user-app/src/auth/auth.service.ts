@@ -77,7 +77,7 @@ export class AuthService implements IAuthService {
   /**
    * Đăng nhập với email và password
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Validate user credentials (email, password, isActive)
    * 2. Generate JWT tokens (access + refresh)
    * 3. Trả về tokens (user info có trong JWT payload)
@@ -115,13 +115,13 @@ export class AuthService implements IAuthService {
   /**
    * Đăng ký tài khoản mới
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Validate email chưa tồn tại
    * 2. Hash password bằng bcrypt
    * 3. Tạo user mới với role CUSTOMER (hardcoded)
    * 4. Auto-login: Generate JWT tokens
    *
-   * **Security Note:**
+   * **Lưu ý bảo mật:**
    * - Register chỉ tạo CUSTOMER, không cho phép tự đăng ký ADMIN
    * - ADMIN phải được tạo từ admin panel hoặc script
    *
@@ -146,7 +146,7 @@ export class AuthService implements IAuthService {
       const passwordHash = await bcrypt.hash(dto.password, 10);
 
       // Tạo user mới
-      // LƯU Ý: Register luôn tạo CUSTOMER, không cho phép tự đăng ký ADMIN
+      // Lưu ý: Register chỉ tạo CUSTOMER; không cho phép tự đăng ký ADMIN
       const newUser = await this.prisma.user.create({
         data: {
           email: dto.email,
@@ -179,7 +179,7 @@ export class AuthService implements IAuthService {
   /**
    * Xác thực JWT token
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Verify token signature và expiry bằng RSA public key
    * 2. Validate payload chứa sub claim (userId)
    * 3. Kiểm tra user vẫn tồn tại và active
@@ -232,7 +232,7 @@ export class AuthService implements IAuthService {
   /**
    * Làm mới access token bằng refresh token
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Verify refresh token (signature + expiry)
    * 2. Extract userId từ sub claim
    * 3. Validate user vẫn tồn tại và active
@@ -302,7 +302,7 @@ export class AuthService implements IAuthService {
    * - accessToken: thời gian sống ngắn (15m) - dùng cho API calls
    * - refreshToken: thời gian sống dài (7d) - dùng để lấy accessToken mới
    *
-   * **QUAN TRỌNG:** Cả 2 đều dùng RSA private key để sign
+   * **Quan trọng:** Cả hai token đều được ký bằng RSA private key
    *
    * @param payload - JWT payload (sub, email, role)
    * @returns { accessToken, refreshToken }
@@ -315,7 +315,7 @@ export class AuthService implements IAuthService {
     // Tạo 2 loại token song song để tối ưu performance:
     // - accessToken: thời gian sống ngắn (15m) - dùng cho API calls
     // - refreshToken: thời gian sống dài (7d) - dùng để lấy accessToken mới
-    // QUAN TRỌNG: Cả 2 đều dùng RSA private key để sign
+    // Quan trọng: Cả hai token đều ký bằng RSA private key
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signToken(payload, expiresIn),
       this.jwtService.signToken(payload, refreshExpiresIn),

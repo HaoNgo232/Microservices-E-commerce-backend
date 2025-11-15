@@ -8,7 +8,7 @@ set -e
 #   DOCKER_USERNAME: Docker registry username (default: yourusername)
 #   VERSION: Image version tag (default: latest)
 
-REGISTRY_USER=${DOCKER_USERNAME:-"yourusername"}
+REGISTRY_USER=${DOCKER_USERNAME:-"haongo123"}
 VERSION=${VERSION:-"latest"}
 
 echo "=================================="

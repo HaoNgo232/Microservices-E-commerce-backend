@@ -2,10 +2,10 @@ import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from
 import { JwtService } from '@shared/main';
 import { Request } from 'express';
 /**
- * Authentication Guard for Gateway
- * Validates JWT token locally using RSA public key (no microservice call needed!)
+ * Guard xác thực cho Gateway
+ * Xác thực token JWT cục bộ bằng RSA public key (không cần gọi microservice)
  *
- * Giống các microservices khác, Gateway verify token trực tiếp để tối ưu performance
+ * Tương tự các microservice khác, Gateway xác thực token cục bộ để tối ưu hiệu năng
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -26,7 +26,7 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      // Verify token locally with RSA public key (FAST!)
+      // Xác thực token cục bộ bằng RSA public key (nhanh)
       const payload = await this.jwtService.verifyToken(token);
 
       // Validate required fields

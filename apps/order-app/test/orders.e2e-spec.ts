@@ -18,7 +18,7 @@ describe('OrdersController (e2e)', () => {
   const testUserId = 'user-123';
   const testProductId = 'product-123';
 
-  // Mock clients
+  // Giả lập các client
   const mockProductClient = {
     send: jest.fn(),
     emit: jest.fn(),
@@ -88,14 +88,14 @@ describe('OrdersController (e2e)', () => {
         }
         return of([]);
       }
-      // Mock DEC_STOCK for fire-and-forget
+      // Giả lập DEC_STOCK cho hoạt động không chờ phản hồi
       if (pattern === EVENTS.PRODUCT.DEC_STOCK) {
         return of({ success: true });
       }
       return of([]);
     });
 
-    // Mock Cart Service (clearUserCart is fire-and-forget)
+    // Giả lập Cart Service (clearUserCart là hoạt động không chờ phản hồi)
     mockCartClient.send.mockImplementation(() => of({ success: true }));
   });
 

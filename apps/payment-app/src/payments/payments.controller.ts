@@ -23,7 +23,7 @@ import { SePayWebhookResponse } from '@shared/types/payment.webhook.types';
  * - GET_BY_ID: Lấy thông tin payment theo ID
  * - GET_BY_ORDER: Lấy thông tin payment theo order ID
  *
- * **Note:** Controller chỉ route messages, business logic ở PaymentsService
+ * **Lưu ý:** Controller chỉ route messages; business logic nằm trong `PaymentsService`
  */
 @Controller()
 export class PaymentsController {

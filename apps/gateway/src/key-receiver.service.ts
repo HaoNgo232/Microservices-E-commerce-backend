@@ -1,6 +1,5 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { Inject } from '@nestjs/common';
 import { firstValueFrom, timeout } from 'rxjs';
 
 interface PublicKeyMessage {
@@ -12,29 +11,20 @@ interface PublicKeyMessage {
 /**
  * KeyReceiverService - Gateway
  *
- * Chức năng:
- * - Subscribe qua NATS subject: auth.public-key
- * - Wait nhận public key message từ user-app
- * - Cache public key trong memory
- * - Expose method để lấy public key
- *
- * Flow:
- * 1. OnModuleInit chạy
- * 2. Subscribe auth.public-key
- * 3. Wait message (timeout 30s, retry 5 lần)
- * 4. Cache public key
- * 5. JwtModule registerAsync sử dụng public key này
+ * Nhận public key từ `user-app` qua NATS bằng request-reply (send/sendReply).
+ * Lưu key vào bộ nhớ và cung cấp các phương thức để lấy key.
+ * Khi khởi động, service sẽ cố lấy key (timeout + retry).
  */
 @Injectable()
 export class KeyReceiverService implements OnModuleInit {
   private readonly logger = new Logger(KeyReceiverService.name);
   private publicKey: string | null = null;
-  private keyReceived: Promise<string>;
+  private readonly keyReceived: Promise<string>;
   private resolveKeyReceived!: (value: string) => void;
   private rejectKeyReceived!: (reason?: Error | string) => void;
 
-  constructor(@Inject('NATS_CLIENT') private client: ClientProxy) {
-    // Tạo promise để wait public key
+  constructor(@Inject('NATS_CLIENT') private readonly client: ClientProxy) {
+    // Tạo Promise để chờ public key
     this.keyReceived = new Promise((resolve, reject) => {
       this.resolveKeyReceived = resolve;
       this.rejectKeyReceived = reject;
@@ -42,7 +32,7 @@ export class KeyReceiverService implements OnModuleInit {
   }
 
   /**
-   * Lifecycle hook: Khởi tạo subscription và wait key
+   * Lifecycle hook: khởi tạo và chờ public key
    */
   async onModuleInit(): Promise<void> {
     try {
@@ -56,8 +46,8 @@ export class KeyReceiverService implements OnModuleInit {
   }
 
   /**
-   * Subscribe auth.public-key subject
-   * Wait message với timeout và retry logic
+   * Gửi request đến `auth.public-key` và chờ reply.
+   * Có timeout và retry để đảm bảo khởi động ổn định.
    */
   private async subscribeAndWaitForKey(): Promise<void> {
     const maxRetries = 5;
@@ -67,10 +57,10 @@ export class KeyReceiverService implements OnModuleInit {
       try {
         this.logger.log(`Waiting for public key (attempt ${attempt}/${maxRetries})...`);
 
-        // Subscribe and wait for message
+        // Gửi request và chờ reply
         const message$ = this.client.send<PublicKeyMessage>('auth.public-key', {});
 
-        // Apply timeout
+        // Áp timeout
         const publicKey = await firstValueFrom(message$.pipe(timeout(timeoutMs)), {
           defaultValue: null as PublicKeyMessage | null,
         });
@@ -81,16 +71,16 @@ export class KeyReceiverService implements OnModuleInit {
           return;
         }
 
-        this.logger.warn(`No valid public key received on attempt ${attempt}/${maxRetries}`);
+        this.logger.warn(`Không nhận được public key hợp lệ (lần ${attempt}/${maxRetries})`);
 
         if (attempt < maxRetries) {
-          await this.sleep(2000); // Wait 2s before retry
+          await this.sleep(2000); // Chờ 2s trước khi thử lại
         }
       } catch (error) {
-        this.logger.warn(`Attempt ${attempt}/${maxRetries} failed:`, error instanceof Error ? error.message : error);
+        this.logger.warn(`Lần thử ${attempt}/${maxRetries} thất bại:`, error instanceof Error ? error.message : error);
 
         if (attempt === maxRetries) {
-          throw new Error(`Failed to receive public key after ${maxRetries} attempts: ${error}`);
+          throw new Error(`Không nhận được public key sau ${maxRetries} lần thử: ${error}`);
         }
 
         await this.sleep(2000); // Wait 2s before retry
@@ -99,20 +89,19 @@ export class KeyReceiverService implements OnModuleInit {
   }
 
   /**
-   * Note: Key rotation support can be added later if needed
-   * Currently we receive key once on startup and cache it
+   * Lưu ý: Có thể thêm hỗ trợ luân chuyển key (key rotation) sau này.
+   * Hiện tại service chỉ lấy key 1 lần khi khởi động và cache lại.
    */
 
   /**
-   * Sleep utility
+   * Sleep utility (dùng để delay giữa các retry)
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
-   * Get cached public key
-   * Throws error nếu chưa nhận được key
+   * Trả về public key đã cache. Nếu chưa có, chờ Promise `keyReceived`.
    */
   async getPublicKey(): Promise<string> {
     if (this.publicKey) {
@@ -124,14 +113,14 @@ export class KeyReceiverService implements OnModuleInit {
   }
 
   /**
-   * Check if public key is available
+   * Kiểm tra xem public key đã được load chưa
    */
   isKeyAvailable(): boolean {
     return this.publicKey !== null;
   }
 
   /**
-   * Get cached public key synchronously (unsafe, use with caution)
+   * Trả public key đồng bộ (unsafe) — chỉ dùng khi chắc chắn key đã sẵn sàng
    */
   getPublicKeySync(): string {
     if (!this.publicKey) {

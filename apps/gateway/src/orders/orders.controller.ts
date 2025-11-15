@@ -69,7 +69,7 @@ export class OrdersController extends BaseGatewayController {
    * PATCH /orders/:id/status
    * Cập nhật trạng thái order (admin only)
    *
-   * Note: ValidationPipe với transform: true đảm bảo dto đã được validate và transform
+   * Lưu ý: ValidationPipe (transform: true) đảm bảo DTO được validate và chuyển kiểu
    * TypeScript không thể infer type từ decorator tại compile time, nhưng runtime đã được đảm bảo
    */
   @Patch(':id/status')

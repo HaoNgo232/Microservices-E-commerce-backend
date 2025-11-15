@@ -77,7 +77,7 @@ describe('ReportController (e2e)', () => {
     // Clean database trước mỗi test
     await prisma.reportEntry.deleteMany({});
 
-    // Mock Order and User services (not used in current implementation but good to have)
+    // Giả lập Order và User services (không dùng trong implementation hiện tại nhưng tiện cho test)
     jest.spyOn(orderClient, 'send').mockImplementation(() => of([]));
     jest.spyOn(userClient, 'send').mockImplementation(() => of([]));
   });

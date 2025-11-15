@@ -214,7 +214,7 @@ describe('Gateway (e2e)', () => {
 
   describe('Error Handling', () => {
     it('should handle microservice timeout errors', async () => {
-      // Mock Observable that times out
+      // Giả lập Observable timeout
       userService.send.mockReturnValue(throwError(() => ({ name: 'TimeoutError', message: 'Timeout' })));
 
       await request(app.getHttpServer())
@@ -265,7 +265,7 @@ describe('Gateway (e2e)', () => {
     });
 
     it('should allow ADMIN to access /users endpoint', async () => {
-      // Mock ADMIN token
+      // Giả lập token ADMIN
       const adminPayload = { sub: 'admin-1', email: 'admin@example.com', role: 'ADMIN' };
       jwtService.verifyToken.mockResolvedValueOnce(adminPayload);
 
@@ -275,7 +275,7 @@ describe('Gateway (e2e)', () => {
     });
 
     it('should deny CUSTOMER access to /users endpoint (admin-only)', async () => {
-      // Mock CUSTOMER token
+      // Giả lập token CUSTOMER
       const customerPayload = { sub: 'user-123', email: 'user@example.com', role: 'CUSTOMER' };
       jwtService.verifyToken.mockResolvedValueOnce(customerPayload);
 

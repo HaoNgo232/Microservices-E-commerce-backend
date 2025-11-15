@@ -51,7 +51,7 @@ export interface IUserService {
  * - Vô hiệu hóa user account (soft delete)
  * - Liệt kê users với pagination và search
  *
- * **Security:**
+ * **Bảo mật:**
  * - Password luôn được hash bằng bcrypt trước khi lưu
  * - Response KHÔNG bao gồm passwordHash
  * - Chỉ admin có thể tạo user và set role
@@ -63,12 +63,12 @@ export class UsersService implements IUserService {
   /**
    * Tạo user mới
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Validate email chưa tồn tại
    * 2. Hash password bằng bcrypt (salt rounds = 10)
    * 3. Tạo user với role (mặc định CUSTOMER nếu không truyền)
    *
-   * **QUAN TRỌNG:** Password KHÔNG BAO GIỜ lưu plain text
+   * **Quan trọng:** Không lưu mật khẩu ở dạng plain text
    *
    * @param dto - { email, password, fullName, phone?, role? }
    * @returns User đã tạo (không bao gồm passwordHash)
@@ -89,7 +89,7 @@ export class UsersService implements IUserService {
       }
 
       // Hash password với bcrypt (salt rounds = 10)
-      // QUAN TRỌNG: Không bao giờ lưu plain password vào DB
+      // Quan trọng: Không bao giờ lưu mật khẩu ở dạng plain text vào DB
       const passwordHash = await bcrypt.hash(dto.password, 10);
 
       // Create user
@@ -121,7 +121,7 @@ export class UsersService implements IUserService {
       }
 
       // Type assertion: Prisma enum → Shared enum
-      // LƯU Ý: Response KHÔNG bao gồm passwordHash (vì không select nó)
+      // Lưu ý: Response không bao gồm `passwordHash` (đã loại trừ trong select)
       return user as UserResponse;
     } catch (error) {
       if (error instanceof RpcException) throw error;

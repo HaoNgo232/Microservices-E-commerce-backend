@@ -85,7 +85,7 @@ describe('AuthGuard + RolesGuard Integration', () => {
 
   describe('Authorization Tests (RolesGuard)', () => {
     beforeEach(() => {
-      // Mock successful JWT verification for all tests
+      // Giả lập việc xác thực JWT thành công cho tất cả tests
       jwtService.verifyToken.mockResolvedValue({
         sub: 'user-123',
         email: 'admin@test.com',

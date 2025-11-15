@@ -25,7 +25,7 @@ export class ArService {
   /**
    * Tạo AR snapshot mới
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Validate input từ DTO
    * 2. Lưu snapshot vào database (userId, productId, imageUrl, metadata)
    * 3. Trả về response với id, imageUrl, createdAt
@@ -72,7 +72,7 @@ export class ArService {
   /**
    * Lấy danh sách AR snapshots với filter và pagination
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Validate pagination parameters (page, pageSize)
    * 2. Build where clause từ filters (userId, productId)
    * 3. Query snapshots + count total (parallel)

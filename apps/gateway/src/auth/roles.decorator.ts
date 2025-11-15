@@ -13,7 +13,7 @@ export const ROLES_KEY = 'roles';
  *
  * @param roles - Danh sách roles được phép (OR logic - chỉ cần 1 role match)
  *
- * @example Admin-only endpoint
+ * @example Ví dụ: Endpoint chỉ dành cho Admin
  * ```typescript
  * @Get('users')
  * @UseGuards(AuthGuard, RolesGuard)
@@ -21,7 +21,7 @@ export const ROLES_KEY = 'roles';
  * async listAllUsers() { ... }
  * ```
  *
- * @example Multiple roles allowed
+ * @example Ví dụ: Cho phép nhiều vai trò
  * ```typescript
  * @Get('products')
  * @UseGuards(AuthGuard, RolesGuard)
@@ -29,7 +29,7 @@ export const ROLES_KEY = 'roles';
  * async listProducts() { ... }
  * ```
  *
- * @example No @Roles() decorator (authentication-only)
+ * @example Ví dụ: Không có @Roles() (chỉ cần xác thực)
  * ```typescript
  * @Get('me')
  * @UseGuards(AuthGuard, RolesGuard)

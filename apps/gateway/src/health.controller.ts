@@ -151,7 +151,7 @@ export class HealthController {
    * @param client - NATS ClientProxy (user-service, product-service, ...)
    * @returns { status: 'up'|'down', latency?: number }
    *
-   * Flow:
+   * Luồng xử lý:
    * 1. Ghi lại thời gian bắt đầu
    * 2. Gửi health_check message qua NATS (timeout 2000ms)
    * 3. Nếu thành công: trả về status='up' + latency

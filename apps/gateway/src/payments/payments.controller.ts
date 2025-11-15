@@ -61,7 +61,7 @@ export class PaymentsController extends BaseGatewayController {
   /**
    * GET /payments/order/:orderId
    * Lấy payment theo order ID
-   * Note: Phải đặt route này TRƯỚC :id route để tránh conflict
+   * Lưu ý: Phải đặt route này TRƯỚC :id route để tránh conflict
    */
   @Get('order/:orderId')
   findByOrder(@Param('orderId') orderId: string): Promise<PaymentResponse> {

@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthService } from '@user-app/auth/auth.service';
-import { KeyDistributorService } from '@user-app/key-distributor.service';
+import { KeyDistributorService } from '@user-app/auth/key-distributor.service';
 import { EVENTS } from '@shared/events';
 import { LoginDto, VerifyDto, RefreshDto, RegisterDto } from '@shared/dto/auth.dto';
 import { JWTPayload } from 'jose';
@@ -42,12 +42,12 @@ export interface IAuthController {
  * - VERIFY: Xác thực JWT token (check signature và expiry)
  * - REFRESH: Làm mới access token bằng refresh token
  *
- * **Security:**
+ * **Bảo mật:**
  * - JWT tokens được sign bằng RSA private key
  * - Password được hash bằng bcrypt (salt rounds = 10)
  * - Token payload chứa: sub (userId), email, role
  *
- * **Note:** Controller chỉ route messages, business logic ở AuthService
+ * **Lưu ý:** Controller chỉ route messages; business logic nằm trong `AuthService`
  */
 @Controller()
 export class AuthController implements IAuthController {
@@ -112,7 +112,7 @@ export class AuthController implements IAuthController {
    * @returns { publicKey, algorithm, issuedAt }
    */
   @MessagePattern('auth.public-key')
-  getPublicKey() {
+  getPublicKey(): { publicKey: string; algorithm: string; issuedAt: string } {
     return this.keyDistributor.handlePublicKeyRequest();
   }
 }

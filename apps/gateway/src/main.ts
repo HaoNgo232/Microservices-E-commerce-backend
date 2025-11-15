@@ -37,8 +37,10 @@ async function bootstrap(): Promise<void> {
 
   // Enable CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || '*',
+    origin: ['http://localhost:3000', 'https://v0-eyewear-store-website-kohl.vercel.app', 'https://*.vercel.app'],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
   });
 
   // Disable caching để tránh race conditions và stale data

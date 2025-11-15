@@ -51,7 +51,7 @@ export class AuthController extends BaseGatewayController {
   /**
    * GET /auth/me
    * Lấy thông tin user hiện tại (protected route)
-   * AuthGuard verify token locally - không cần gọi qua NATS
+   * AuthGuard xác thực token cục bộ - không cần gọi qua NATS
    */
   @Get('me')
   @UseGuards(AuthGuard)

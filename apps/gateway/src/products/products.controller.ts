@@ -13,7 +13,6 @@ import {
   UseInterceptors,
   Patch,
 } from '@nestjs/common';
-// Note: Put is still used for adminUpdate endpoint (line 164)
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -55,7 +54,7 @@ export class ProductsController extends BaseGatewayController {
   /**
    * GET /products/slug/:slug
    * Lấy chi tiết product theo slug
-   * Note: Phải đặt route này TRƯỚC :id route để tránh conflict
+   * Lưu ý: Đặt route này trước `/products/:id` để tránh xung đột
    */
   @Get('slug/:slug')
   findBySlug(@Param('slug') slug: string): Promise<ProductResponse> {

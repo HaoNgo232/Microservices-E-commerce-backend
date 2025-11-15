@@ -113,8 +113,8 @@ export class OrdersService implements IOrdersService {
    * 2. Kiểm tra sản phẩm tồn tại và đủ tồn kho
    * 3. Tính tổng tiền từ items
    * 4. Tạo order và items trong transaction
-   * 5. Giảm tồn kho sản phẩm (fire-and-forget)
-   * 6. Xóa giỏ hàng của user (fire-and-forget)
+   * 5. Giảm tồn kho sản phẩm (không chờ phản hồi)
+   * 6. Xóa giỏ hàng của user (không chờ phản hồi)
    *
    * @param dto - DTO chứa userId, addressId, items
    * @returns Order đã tạo với đầy đủ items
@@ -158,10 +158,10 @@ export class OrdersService implements IOrdersService {
       },
     });
 
-    // Step 5: Decrement product stock (fire-and-forget)
+    // Step 5: Giảm tồn kho sản phẩm (không chờ phản hồi)
     this.decrementProductStock(dto.items);
 
-    // Step 6: Clear user's cart after successful order (fire-and-forget)
+    // Step 6: Xóa giỏ hàng của user sau khi tạo đơn (không chờ phản hồi)
     this.clearUserCart(dto.userId);
 
     console.log(`[OrdersService] Created order: ${order.id} with ${order.items.length} items`);
@@ -295,7 +295,7 @@ export class OrdersService implements IOrdersService {
    * 1. Kiểm tra order tồn tại
    * 2. Validate chuyển trạng thái hợp lệ (PENDING → PAID/CANCELLED, PAID → SHIPPED/CANCELLED)
    * 3. Cập nhật status trong database
-   * 4. Nếu chuyển sang CANCELLED: hoàn trả tồn kho (fire-and-forget)
+   * 4. Nếu chuyển sang CANCELLED: hoàn trả tồn kho (không chờ phản hồi)
    *
    * @param dto - DTO chứa orderId và status mới
    * @returns Order đã cập nhật
@@ -348,14 +348,20 @@ export class OrdersService implements IOrdersService {
       },
     });
 
-    // If cancelled, restore stock (fire-and-forget)
+    // Nếu hủy: hoàn trả tồn kho (không chờ phản hồi)
     if (statusChanged && dto.status === OrderStatus.CANCELLED) {
       this.restoreProductStock(existingOrder.items);
     }
 
-    console.log(
-      `[OrdersService] Updated order ${dto.id}${statusChanged ? ` status to ${dto.status}` : ''}${dto.paymentStatus !== undefined ? ` paymentStatus to ${dto.paymentStatus}` : ''}`,
-    );
+    // Avoid nested template literals for better readability and to satisfy linters
+    let updateLog = `[OrdersService] Updated order ${dto.id}`;
+    if (statusChanged) {
+      updateLog += ` status to ${dto.status}`;
+    }
+    if (dto.paymentStatus !== undefined) {
+      updateLog += ` paymentStatus to ${dto.paymentStatus}`;
+    }
+    console.log(updateLog);
     return updatedOrder as OrderResponse;
   }
 
@@ -392,7 +398,7 @@ export class OrdersService implements IOrdersService {
    * Quy tắc hủy:
    * - Chỉ cho phép hủy order PENDING hoặc PAID
    * - Không cho phép hủy order SHIPPED hoặc đã CANCELLED
-   * - Tự động hoàn trả tồn kho khi hủy (fire-and-forget)
+   * - Tự động hoàn trả tồn kho khi hủy (không chờ phản hồi)
    *
    * @param dto - DTO chứa orderId và lý do hủy (optional)
    * @returns Order đã hủy
@@ -432,7 +438,7 @@ export class OrdersService implements IOrdersService {
       },
     });
 
-    // Restore product stock (fire-and-forget)
+    // Hoàn trả tồn kho sản phẩm (không chờ phản hồi)
     this.restoreProductStock(existingOrder.items);
 
     console.log(`[OrdersService] Cancelled order: ${dto.id}`);
@@ -513,7 +519,7 @@ export class OrdersService implements IOrdersService {
   /**
    * Giảm tồn kho sản phẩm sau khi tạo order
    *
-   * Fire-and-forget operation: Gửi message qua NATS không chờ response
+   * Hoạt động không chờ phản hồi: Gửi message qua NATS không chờ phản hồi
    * Timeout: 5s, bỏ qua lỗi nếu có
    *
    * @param items - Danh sách items cần giảm tồn kho
@@ -535,7 +541,7 @@ export class OrdersService implements IOrdersService {
             }),
           ),
       ).catch(() => {
-        // Ignore errors for fire-and-forget
+        // Bỏ qua lỗi cho hoạt động không chờ phản hồi
       });
     }
   }
@@ -543,7 +549,7 @@ export class OrdersService implements IOrdersService {
   /**
    * Hoàn trả tồn kho sản phẩm sau khi hủy order
    *
-   * Fire-and-forget operation: Gửi message qua NATS không chờ response
+   * Hoạt động không chờ phản hồi: Gửi message qua NATS không chờ phản hồi
    * Timeout: 5s, bỏ qua lỗi nếu có
    *
    * @param items - Danh sách items cần hoàn trả tồn kho
@@ -565,7 +571,7 @@ export class OrdersService implements IOrdersService {
             }),
           ),
       ).catch(() => {
-        // Ignore errors for fire-and-forget
+        // Bỏ qua lỗi cho hoạt động không chờ phản hồi
       });
     }
   }
@@ -573,7 +579,7 @@ export class OrdersService implements IOrdersService {
   /**
    * Xóa giỏ hàng của user sau khi tạo order thành công
    *
-   * Fire-and-forget operation: Gửi message qua NATS không chờ response
+   * Hoạt động không chờ phản hồi: Gửi message qua NATS không chờ phản hồi
    * Timeout: 5s, bỏ qua lỗi nếu có
    *
    * @param userId - ID của user cần xóa giỏ hàng
@@ -589,7 +595,7 @@ export class OrdersService implements IOrdersService {
         }),
       ),
     ).catch(() => {
-      // Ignore errors for fire-and-forget
+      // Bỏ qua lỗi cho hoạt động không chờ phản hồi
     });
   }
 

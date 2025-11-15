@@ -71,7 +71,7 @@ describe('CartController (e2e)', () => {
     await prisma.cartItem.deleteMany({});
     await prisma.cart.deleteMany({});
 
-    // Mock Product Service responses
+    // Giả lập các response từ Product Service
     jest.spyOn(productClient, 'send').mockImplementation((pattern: string, payload: unknown) => {
       if (pattern === EVENTS.PRODUCT.GET_BY_IDS) {
         // Check if the requested product IDs match our test product

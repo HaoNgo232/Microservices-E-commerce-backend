@@ -3,13 +3,13 @@ import { RpcException } from '@nestjs/microservices';
 import { UsersService } from './users.service';
 import { UpdateUserDto, UserRole } from '@shared/dto/user.dto';
 import * as bcrypt from 'bcryptjs';
-import { UserResponse } from '@shared/main';
+import { UserResponse } from '@shared/types';
 import { PrismaService } from '@user-app/prisma/prisma.service';
 
-// Mock bcrypt
+// Giả lập bcrypt
 jest.mock('bcryptjs');
 
-// Mock PrismaService
+// Giả lập PrismaService
 const mockPrismaService = {
   user: {
     findUnique: jest.fn(),

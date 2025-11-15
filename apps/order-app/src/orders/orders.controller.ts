@@ -23,7 +23,7 @@ import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.type
  * - UPDATE_STATUS: Cập nhật trạng thái order
  * - CANCEL: Hủy order
  *
- * **Note:** Controller chỉ route messages, business logic ở OrdersService
+ * **Lưu ý:** Controller chỉ route messages; business logic nằm trong `OrdersService`
  */
 @Controller()
 export class OrdersController {

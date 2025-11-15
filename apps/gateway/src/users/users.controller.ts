@@ -33,7 +33,7 @@ export class UsersController extends BaseGatewayController {
   /**
    * GET /users/email/:email
    * Lấy user theo email (admin only)
-   * Note: Phải đặt route này TRƯỚC :id route để tránh conflict
+   * Lưu ý: Phải đặt route này TRƯỚC :id route để tránh conflict
    */
   @Get('email/:email')
   @UseGuards(AuthGuard, RolesGuard)

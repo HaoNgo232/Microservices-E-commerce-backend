@@ -6,7 +6,7 @@ import { Request, Response, NextFunction } from 'express';
  * Part of Perimeter Security - log all API access for security monitoring
  *
  * Log mọi requests đến API Gateway để tracking và phát hiện suspicious activity
- * Production nên gửi logs vào centralized logging system (ELK, CloudWatch, etc.)
+ * Trong môi trường production nên gửi logs vào hệ thống logging tập trung (ELK, CloudWatch, v.v.)
  */
 @Injectable()
 export class AuditLogMiddleware implements NestMiddleware {

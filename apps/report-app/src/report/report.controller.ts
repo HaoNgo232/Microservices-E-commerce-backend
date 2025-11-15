@@ -13,7 +13,7 @@ import { ProductPerformanceResponse, SalesSummaryResponse, UserCohortResponse } 
  * - PRODUCT_PERF: Hiệu suất bán hàng của sản phẩm
  * - USER_COHORT: Phân tích người dùng (mới, active, returning)
  *
- * **Note:** Controller chỉ route messages, business logic ở ReportService
+ * **Lưu ý:** Controller chỉ route messages; business logic nằm trong `ReportService`
  */
 @Controller()
 export class ReportController {
