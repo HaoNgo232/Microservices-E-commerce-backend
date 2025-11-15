@@ -32,8 +32,8 @@ export class CategoriesService implements ICategoriesService {
   ) {}
 
   /**
-   * Get category by ID with relationships
-   * @throws RpcException if category not found
+   * Lấy category theo ID với các mối quan hệ
+   * @throws RpcException nếu không tìm thấy category
    */
   async getById(dto: CategoryIdDto): Promise<CategoryWithRelations> {
     try {
@@ -64,8 +64,8 @@ export class CategoriesService implements ICategoriesService {
   }
 
   /**
-   * Get category by slug with relationships
-   * @throws RpcException if category not found
+   * Lấy category theo slug với các mối quan hệ
+   * @throws RpcException nếu không tìm thấy category
    */
   async getBySlug(dto: CategorySlugDto): Promise<CategoryWithRelations> {
     try {
@@ -96,7 +96,7 @@ export class CategoriesService implements ICategoriesService {
   }
 
   /**
-   * List categories with pagination and filters
+   * Liệt kê categories với phân trang và bộ lọc
    */
   async list(query: CategoryListQueryDto): Promise<PaginatedCategoriesResponse> {
     try {
@@ -153,9 +153,9 @@ export class CategoriesService implements ICategoriesService {
   }
 
   /**
-   * Create a new category
-   * @throws RpcException if slug already exists
-   * @throws RpcException if parent category doesn't exist
+   * Tạo category mới
+   * @throws RpcException nếu slug đã tồn tại
+   * @throws RpcException nếu category cha không tồn tại
    */
   async create(dto: CategoryCreateDto): Promise<CategoryResponse> {
     try {
@@ -196,10 +196,10 @@ export class CategoriesService implements ICategoriesService {
   }
 
   /**
-   * Update an existing category
-   * @throws RpcException if category not found
-   * @throws RpcException if slug already exists
-   * @throws RpcException if trying to set self as parent or create circular reference
+   * Cập nhật category hiện có
+   * @throws RpcException nếu không tìm thấy category
+   * @throws RpcException nếu slug đã tồn tại
+   * @throws RpcException nếu cố gắng đặt chính mình làm cha hoặc tạo tham chiếu vòng
    */
   async update(id: string, dto: CategoryUpdateDto): Promise<CategoryResponse> {
     try {
@@ -232,9 +232,9 @@ export class CategoriesService implements ICategoriesService {
   }
 
   /**
-   * Delete a category
-   * @throws RpcException if category not found
-   * @throws RpcException if category has children or products
+   * Xóa category
+   * @throws RpcException nếu không tìm thấy category
+   * @throws RpcException nếu category có con hoặc sản phẩm
    */
   async delete(id: string): Promise<{ success: boolean; id: string }> {
     try {
@@ -259,8 +259,8 @@ export class CategoriesService implements ICategoriesService {
   }
 
   /**
-   * Get existing category by ID
-   * @throws RpcException if category not found
+   * Lấy category hiện có theo ID
+   * @throws RpcException nếu không tìm thấy category
    * @private
    */
   private async getExistingCategory(id: string): Promise<{ id: string; slug: string }> {
@@ -280,7 +280,7 @@ export class CategoriesService implements ICategoriesService {
   }
 
   /**
-   * Build update data object from DTO
+   * Tạo object dữ liệu cập nhật từ DTO
    * @private
    */
   private buildUpdateData(dto: CategoryUpdateDto): {

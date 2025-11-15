@@ -38,8 +38,8 @@ export class ProductsService implements IProductsService {
   ) {}
 
   /**
-   * Get product by ID
-   * @throws RpcException if product not found
+   * Lấy sản phẩm theo ID
+   * @throws RpcException nếu không tìm thấy sản phẩm
    */
   async getById(dto: ProductIdDto): Promise<ProductResponse> {
     try {
@@ -66,8 +66,8 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Get multiple products by IDs
-   * Returns only found products (doesn't throw if some IDs not found)
+   * Lấy nhiều sản phẩm theo danh sách ID
+   * Chỉ trả về những sản phẩm tìm thấy (không báo lỗi nếu một số ID không tồn tại)
    */
   async getByIds(dto: ProductIdsDto): Promise<ProductResponse[]> {
     try {
@@ -102,8 +102,8 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Get product by slug
-   * @throws RpcException if product not found
+   * Lấy sản phẩm theo slug
+   * @throws RpcException nếu không tìm thấy sản phẩm
    */
   async getBySlug(dto: ProductSlugDto): Promise<ProductResponse> {
     try {
@@ -138,7 +138,7 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * List products with pagination and filters
+   * Liệt kê sản phẩm với phân trang và bộ lọc
    */
   async list(query: ProductListQueryDto): Promise<PaginatedProductsResponse> {
     try {
@@ -194,9 +194,9 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Create a new product
-   * @throws RpcException if SKU or slug already exists
-   * @throws RpcException if category doesn't exist
+   * Tạo sản phẩm mới
+   * @throws RpcException nếu SKU hoặc slug đã tồn tại
+   * @throws RpcException nếu category không tồn tại
    */
   async create(dto: ProductCreateDto): Promise<ProductResponse> {
     try {
@@ -256,9 +256,9 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Update an existing product
-   * @throws RpcException if product not found
-   * @throws RpcException if slug already exists
+   * Cập nhật sản phẩm hiện có
+   * @throws RpcException nếu không tìm thấy sản phẩm
+   * @throws RpcException nếu slug đã tồn tại
    */
   async update(id: string, dto: ProductUpdateDto): Promise<ProductResponse> {
     try {
@@ -311,8 +311,8 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Delete a product
-   * @throws RpcException if product not found
+   * Xóa sản phẩm
+   * @throws RpcException nếu không tìm thấy sản phẩm
    */
   async delete(id: string): Promise<{ success: boolean; id: string }> {
     try {
@@ -344,7 +344,7 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Build update data object from DTO
+   * Tạo object dữ liệu cập nhật từ DTO
    * @private
    */
   private buildProductUpdateData(dto: ProductUpdateDto): {
@@ -384,13 +384,13 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Decrement product stock (called when order is created)
-   * Used by order-app to reduce stock after order creation
+   * Giảm số lượng tồn kho sản phẩm (được gọi khi tạo đơn hàng)
+   * Được order-app sử dụng để giảm tồn kho sau khi tạo đơn hàng
    *
-   * @param productId - Product ID
-   * @param quantity - Quantity to decrement
-   * @throws EntityNotFoundRpcException if product not found
-   * @throws RpcException if stock is insufficient
+   * @param productId - ID sản phẩm
+   * @param quantity - Số lượng cần giảm
+   * @throws EntityNotFoundRpcException nếu không tìm thấy sản phẩm
+   * @throws RpcException nếu tồn kho không đủ
    */
   async decrementStock(productId: string, quantity: number): Promise<ProductResponse> {
     try {
@@ -428,12 +428,12 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Increment product stock (called when order is cancelled)
-   * Used by order-app to restore stock after order cancellation
+   * Tăng số lượng tồn kho sản phẩm (được gọi khi hủy đơn hàng)
+   * Được order-app sử dụng để khôi phục tồn kho sau khi hủy đơn hàng
    *
-   * @param productId - Product ID
-   * @param quantity - Quantity to increment
-   * @throws EntityNotFoundRpcException if product not found
+   * @param productId - ID sản phẩm
+   * @param quantity - Số lượng cần tăng
+   * @throws EntityNotFoundRpcException nếu không tìm thấy sản phẩm
    */
   async incrementStock(productId: string, quantity: number): Promise<ProductResponse> {
     try {
@@ -464,7 +464,7 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Admin: Create product with image upload support
+   * Admin: Tạo sản phẩm với hỗ trợ upload ảnh
    */
   async adminCreate(dto: AdminCreateProductDto): Promise<ProductResponse> {
     try {
@@ -521,7 +521,7 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Admin: Update product with optional image upload
+   * Admin: Cập nhật sản phẩm với tùy chọn upload ảnh
    */
   async adminUpdate(id: string, dto: AdminUpdateProductDto): Promise<ProductResponse> {
     try {
@@ -623,7 +623,7 @@ export class ProductsService implements IProductsService {
   }
 
   /**
-   * Admin: Delete product and image
+   * Admin: Xóa sản phẩm và ảnh
    */
   async adminDelete(id: string): Promise<{ success: boolean; id: string }> {
     try {
