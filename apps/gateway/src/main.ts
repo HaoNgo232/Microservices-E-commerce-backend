@@ -37,7 +37,7 @@ async function bootstrap(): Promise<void> {
 
   // Enable CORS
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://v0-eyewear-store-website-kohl.vercel.app', 'https://*.vercel.app'],
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'https://v0-eyewear-store-website-kohl.vercel.app', 'https://*.vercel.app'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
