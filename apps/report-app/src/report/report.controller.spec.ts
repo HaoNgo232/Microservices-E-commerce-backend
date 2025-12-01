@@ -54,5 +54,6 @@ describe('ReportController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+    expect(mockReportService).toBeDefined();
   });
 });

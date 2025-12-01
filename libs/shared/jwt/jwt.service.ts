@@ -20,6 +20,10 @@ import { FileReaderService } from '../utils/file-reader.service';
  * Ví dụ xác thực (trong các service khác):
  * const payload = await jwtService.verifyToken(token);
  */
+interface KeyReceiverService {
+  getPublicKey(): Promise<string> | string;
+}
+
 @Injectable()
 export class JwtService implements OnModuleInit {
   private privateKey: jose.KeyLike | null = null;
@@ -30,7 +34,7 @@ export class JwtService implements OnModuleInit {
 
   constructor(
     private readonly fileReader: FileReaderService,
-    @Optional() @Inject('KEY_RECEIVER_SERVICE') private readonly keyReceiverService?: any,
+    @Optional() @Inject('KEY_RECEIVER_SERVICE') private readonly keyReceiverService?: KeyReceiverService,
   ) {}
 
   /**

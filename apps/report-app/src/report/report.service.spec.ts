@@ -48,5 +48,8 @@ describe('ReportService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+    expect(mockPrisma).toBeDefined();
+    expect(mockOrderClient).toBeDefined();
+    expect(mockUserClient).toBeDefined();
   });
 });

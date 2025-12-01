@@ -92,8 +92,15 @@ describe('AuthController (e2e)', () => {
         await firstValueFrom(client.send(EVENTS.AUTH.REGISTER, registerDto));
         fail('Should have thrown an error');
       } catch (error: unknown) {
-        if (typeof error === 'object' && error !== null && 'message' in error) {
-          expect((error as Record<string, unknown>).message).toContain('Email already exists');
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'message' in error &&
+          typeof (error as { message: unknown }).message === 'string'
+        ) {
+          expect((error as { message: string }).message).toContain('Email already exists');
+        } else {
+          fail('Error did not contain a readable message');
         }
       }
     });
@@ -138,8 +145,17 @@ describe('AuthController (e2e)', () => {
       try {
         await firstValueFrom(client.send(EVENTS.AUTH.LOGIN, loginDto));
         fail('Should have thrown an error');
-      } catch (error: any) {
-        expect(error.message).toContain('Invalid email or password');
+      } catch (error: unknown) {
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'message' in error &&
+          typeof (error as { message: unknown }).message === 'string'
+        ) {
+          expect((error as { message: string }).message).toContain('Invalid email or password');
+        } else {
+          fail('Error did not contain a readable message');
+        }
       }
     });
 
@@ -152,8 +168,17 @@ describe('AuthController (e2e)', () => {
       try {
         await firstValueFrom(client.send(EVENTS.AUTH.LOGIN, loginDto));
         fail('Should have thrown an error');
-      } catch (error: any) {
-        expect(error.message).toContain('Invalid email or password');
+      } catch (error: unknown) {
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'message' in error &&
+          typeof (error as { message: unknown }).message === 'string'
+        ) {
+          expect((error as { message: string }).message).toContain('Invalid email or password');
+        } else {
+          fail('Error did not contain a readable message');
+        }
       }
     });
 
