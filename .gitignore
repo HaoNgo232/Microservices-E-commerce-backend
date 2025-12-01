@@ -64,3 +64,5 @@ generated/
 /generated/prisma
 
 test-results.json
+
+overwrite-output/
