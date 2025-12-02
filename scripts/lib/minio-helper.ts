@@ -45,6 +45,13 @@ export async function initMinIOBucket(): Promise<void> {
     } else {
       console.log(`  ✓ Bucket ${BUCKET_NAME} already exists`);
     }
+
+    // Note: CORS cần được set thủ công qua MinIO Console hoặc mc CLI
+    // MinIO Console: http://localhost:9001 > Buckets > web-ban-kinh > Settings > CORS
+    // Hoặc dùng mc CLI:
+    //   mc alias set local http://127.0.0.1:9000 minio supersecret
+    //   echo '{"CORSRules":[{"AllowedOrigins":["http://localhost:3000","http://localhost:3001"],"AllowedMethods":["GET","HEAD"],"AllowedHeaders":["*"]}]}' > cors.json
+    //   mc cors set cors.json local/web-ban-kinh
   } catch (error) {
     console.error('  ✗ MinIO initialization error:', error);
     throw error;
@@ -54,14 +61,17 @@ export async function initMinIOBucket(): Promise<void> {
 /**
  * Upload ảnh lên MinIO và trả về URL
  */
-export async function uploadImageToMinIO(filePath: string, fileName: string): Promise<string> {
+export async function uploadImageToMinIO(
+  filePath: string,
+  fileName: string,
+  contentType: string = 'image/jpeg',
+): Promise<string> {
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found: ${filePath}`);
   }
 
-  const fileStream = fs.createReadStream(filePath);
+  const fileStream = fs.readFileSync(filePath);
   const stats = fs.statSync(filePath);
-  const contentType = 'image/jpeg';
 
   // Upload file
   await minioClient.putObject(BUCKET_NAME, fileName, fileStream, stats.size, {
@@ -94,4 +104,45 @@ export async function uploadAllImages(imagesDir: string): Promise<Map<string, st
 
   console.log(`  ✓ Total uploaded: ${imageUrls.size} images`);
   return imageUrls;
+}
+
+/**
+ * Upload tất cả ảnh PNG try-on từ thư mục 3dmodel
+ * Mỗi thư mục glasses-XX chứa file glasses_XX.png
+ */
+export async function uploadTryOnImages(tryOnDir: string): Promise<Map<string, string>> {
+  console.log('→ Uploading try-on images (PNG) to MinIO...');
+
+  const tryOnUrls = new Map<string, string>();
+  const dirs = fs.readdirSync(tryOnDir, { withFileTypes: true });
+
+  for (const dir of dirs) {
+    if (!dir.isDirectory() || !dir.name.startsWith('glasses-')) {
+      continue;
+    }
+
+    const dirPath = path.join(tryOnDir, dir.name);
+    const files = fs.readdirSync(dirPath);
+
+    // Tìm file PNG trong thư mục (glasses_XX.png)
+    const pngFile = files.find(f => f.endsWith('.png') && f.startsWith('glasses_'));
+    if (!pngFile) {
+      console.log(`  ⚠ Skipping ${dir.name}: no PNG file found`);
+      continue;
+    }
+
+    try {
+      const filePath = path.join(dirPath, pngFile);
+      // Tạo tên file trên MinIO: try-on/glasses_XX.png
+      const minioFileName = `try-on/${pngFile}`;
+      const url = await uploadImageToMinIO(filePath, minioFileName, 'image/png');
+      tryOnUrls.set(dir.name, url); // Key: glasses-01, Value: URL
+      console.log(`  ✓ Uploaded: ${pngFile} (from ${dir.name})`);
+    } catch (error) {
+      console.error(`  ✗ Failed to upload ${pngFile} from ${dir.name}:`, error);
+    }
+  }
+
+  console.log(`  ✓ Total try-on images uploaded: ${tryOnUrls.size}`);
+  return tryOnUrls;
 }

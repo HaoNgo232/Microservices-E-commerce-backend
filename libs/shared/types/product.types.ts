@@ -50,6 +50,7 @@ export type ProductResponse = {
   categoryId: string | null;
   attributes: ProductAttributes | null; // Json field trong Prisma
   model3dUrl: string | null;
+  tryOnImageUrl?: string; // Optional: extracted from attributes.tryOnImageUrl
   createdAt: Date;
   updatedAt: Date;
   category?: CategoryResponse | null; // Populated từ relation

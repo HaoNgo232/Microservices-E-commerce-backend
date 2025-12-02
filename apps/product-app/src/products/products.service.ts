@@ -152,7 +152,6 @@ export class ProductsService implements IProductsService {
 
       const where = this.queryBuilder.buildWhereClause(query);
 
-      // Execute queries in parallel
       const [products, total] = await Promise.all([
         this.prisma.product.findMany({
           where,
@@ -168,14 +167,22 @@ export class ProductsService implements IProductsService {
         this.prisma.product.count({ where }),
       ]);
 
-      console.log('[ProductService] results:', { total, fetched: products.length });
-
       const { totalPages } = this.queryBuilder.getPaginationMetadata(page, pageSize, total);
 
-      const formattedProducts = products.map(p => ({
-        ...p,
-        attributes: p.attributes as ProductAttributes,
-      }));
+      // Transform products: extract tryOnImageUrl from attributes and add to top level
+      const formattedProducts = products.map(p => {
+        const attrs = p.attributes as ProductAttributes | null;
+        const tryOnImageUrl =
+          attrs && typeof attrs === 'object' && 'tryOnImageUrl' in attrs
+            ? (attrs.tryOnImageUrl as string | undefined)
+            : undefined;
+
+        return {
+          ...p,
+          attributes: attrs,
+          tryOnImageUrl, // Add tryOnImageUrl to top level for frontend
+        };
+      });
 
       return {
         products: formattedProducts,

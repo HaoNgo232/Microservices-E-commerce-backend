@@ -67,12 +67,6 @@ export class ProductsController extends BaseGatewayController {
    */
   @Get()
   list(@Query() query: ProductListQueryDto): Promise<PaginatedProductsResponse> {
-    console.log('[Gateway] Raw query params:', query);
-    console.log('[Gateway] Query types:', {
-      page: typeof query.page,
-      pageSize: typeof query.pageSize,
-    });
-
     // Transform string query params to correct types
     const transformedQuery: ProductListQueryDto = {
       page: query.page ? Number(query.page) : undefined,
@@ -83,7 +77,6 @@ export class ProductsController extends BaseGatewayController {
       maxPriceInt: query.maxPriceInt ? Number(query.maxPriceInt) : undefined,
     };
 
-    console.log('[Gateway] Transformed query:', transformedQuery);
     return this.send<ProductListQueryDto, PaginatedProductsResponse>(EVENTS.PRODUCT.LIST, transformedQuery);
   }
 

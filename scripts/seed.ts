@@ -23,7 +23,7 @@ import { PrismaClient as ARDB } from '../apps/ar-app/prisma/generated/client';
 import { PrismaClient as ReportDB } from '../apps/report-app/prisma/generated/client';
 
 // Import helpers
-import { initMinIOBucket, uploadAllImages } from './lib/minio-helper';
+import { initMinIOBucket, uploadAllImages, uploadTryOnImages } from './lib/minio-helper';
 import { createProducts } from './seed-data/product-data';
 
 const userDb = new UserDB();
@@ -35,6 +35,7 @@ const arDb = new ARDB();
 const reportDb = new ReportDB();
 
 const IMAGES_DIR = path.join(__dirname, 'seed-data', 'images');
+const TRY_ON_DIR = path.join(__dirname, 'seed-data', '3dmodel');
 
 async function seedUsers() {
   console.log('→ Seeding user-app ...');
@@ -129,6 +130,9 @@ async function seedProducts() {
   // Upload images to MinIO first
   const imageUrls = await uploadAllImages(IMAGES_DIR);
 
+  // Upload try-on images (PNG) from 3dmodel directory
+  const tryOnUrls = await uploadTryOnImages(TRY_ON_DIR);
+
   // Create categories
   const catSunglasses = await productDb.category.create({
     data: { name: 'Kính mát', slug: 'kinh-mat', description: 'Kính mát thời trang, chống tia UV' },
@@ -151,10 +155,39 @@ async function seedProducts() {
     catAccessories,
   });
 
+  // Update products with tryOnImageUrl (lưu vào attributes JSON)
+  // Map try-on images to first N products (có 7 ảnh try-on)
+  const tryOnArray = Array.from(tryOnUrls.values());
+  const tryOnKeys = Array.from(tryOnUrls.keys()); // glasses-01, glasses-02, ...
+
+  for (let i = 0; i < Math.min(products.length, tryOnArray.length); i++) {
+    const product = products[i];
+    const tryOnUrl = tryOnArray[i];
+    const tryOnKey = tryOnKeys[i]; // glasses-01, etc.
+
+    // Lấy attributes hiện tại
+    const currentAttributes = (product.attributes as Record<string, unknown>) || {};
+
+    // Cập nhật với tryOnImageUrl
+    await productDb.product.update({
+      where: { id: product.id },
+      data: {
+        attributes: {
+          ...currentAttributes,
+          tryOnImageUrl: tryOnUrl,
+          tryOnKey, // Lưu key để reference (glasses-01, etc.)
+        },
+      },
+    });
+
+    console.log(`  ✓ Updated product ${i + 1} (${product.name}) with try-on image: ${tryOnKey}`);
+  }
+
   console.log('  ✓ categories:', 4);
   console.log('  ✓ products:', products.length);
+  console.log('  ✓ products with try-on:', Math.min(products.length, tryOnArray.length));
 
-  return { products, imageUrls };
+  return { products, imageUrls, tryOnUrls };
 }
 
 async function seedOrders(
@@ -272,7 +305,7 @@ async function main() {
     // 1) Users + Address
     const { customer1, addr1 } = await seedUsers();
 
-    // 2) Products + Categories (with MinIO images)
+    // 2) Products + Categories (with MinIO images and try-on images)
     const { products, imageUrls } = await seedProducts();
 
     // 3) Orders (cho customer1)
