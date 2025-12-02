@@ -217,6 +217,22 @@ export class AdminCreateProductDto {
   @IsOptional()
   @IsNumber()
   fileSize?: number;
+
+  // Optional: try-on PNG file metadata for NATS transport
+  @IsOptional()
+  tryOnFileBuffer?: string; // Base64 encoded PNG
+
+  @IsOptional()
+  @IsString()
+  tryOnFileOriginalname?: string;
+
+  @IsOptional()
+  @IsString()
+  tryOnFileMimetype?: string;
+
+  @IsOptional()
+  @IsNumber()
+  tryOnFileSize?: number;
 }
 
 export class AdminUpdateProductDto {
@@ -275,4 +291,20 @@ export class AdminUpdateProductDto {
   @IsOptional()
   @IsNumber()
   fileSize?: number;
+
+  // Optional: try-on PNG file metadata for NATS transport
+  @IsOptional()
+  tryOnFileBuffer?: string;
+
+  @IsOptional()
+  @IsString()
+  tryOnFileOriginalname?: string;
+
+  @IsOptional()
+  @IsString()
+  tryOnFileMimetype?: string;
+
+  @IsOptional()
+  @IsNumber()
+  tryOnFileSize?: number;
 }

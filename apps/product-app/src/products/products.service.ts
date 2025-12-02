@@ -173,9 +173,7 @@ export class ProductsService implements IProductsService {
       const formattedProducts = products.map(p => {
         const attrs = p.attributes as ProductAttributes | null;
         const tryOnImageUrl =
-          attrs && typeof attrs === 'object' && 'tryOnImageUrl' in attrs
-            ? (attrs.tryOnImageUrl as string | undefined)
-            : undefined;
+          attrs && typeof attrs === 'object' && 'tryOnImageUrl' in attrs ? attrs.tryOnImageUrl : undefined;
 
         return {
           ...p,
@@ -477,6 +475,8 @@ export class ProductsService implements IProductsService {
     try {
       let imageUrl: string | undefined;
       let imageFilename: string | undefined;
+      let tryOnImageUrl: string | undefined;
+      let tryOnKey: string | undefined;
 
       // Handle file upload if present
       if (dto.fileBuffer && dto.fileOriginalname && dto.fileMimetype) {
@@ -494,9 +494,39 @@ export class ProductsService implements IProductsService {
         imageFilename = uploaded.filename;
       }
 
+      // Handle try-on PNG upload if present
+      if (dto.tryOnFileBuffer && dto.tryOnFileOriginalname && dto.tryOnFileMimetype) {
+        const tryOnFile: BufferedFile = {
+          fieldname: 'tryOnImage',
+          originalname: dto.tryOnFileOriginalname,
+          encoding: '7bit',
+          mimetype: dto.tryOnFileMimetype,
+          size: dto.tryOnFileSize || 0,
+          buffer: Buffer.from(dto.tryOnFileBuffer, 'base64'),
+        };
+
+        const uploadedTryOn = await this.minioService.uploadTryOnImage(tryOnFile);
+        tryOnImageUrl = uploadedTryOn.url;
+        tryOnKey = uploadedTryOn.filename;
+      }
+
       // Auto-generate sku and slug if not provided
       const sku = dto.sku || `SKU-${Date.now()}`;
       const slug = dto.slug || dto.name.toLowerCase().replaceAll(' ', '-');
+
+      // Build attributes including optional try-on info
+      let attributes: ProductAttributes | undefined;
+      if (dto.attributes || tryOnImageUrl) {
+        attributes = {
+          ...(dto.attributes ?? ({} as ProductAttributes)),
+          ...(tryOnImageUrl && tryOnKey
+            ? {
+                tryOnImageUrl,
+                tryOnKey,
+              }
+            : {}),
+        };
+      }
 
       const product = await this.prisma.product.create({
         data: {
@@ -510,7 +540,7 @@ export class ProductsService implements IProductsService {
           imageUrl,
           imageFilename,
           imageUrls: imageUrl ? [imageUrl] : [], // Also add to imageUrls for compatibility
-          attributes: dto.attributes as Prisma.InputJsonValue | undefined,
+          attributes: attributes as Prisma.InputJsonValue | undefined,
           model3dUrl: dto.model3dUrl,
         },
         include: { category: true },
@@ -538,7 +568,18 @@ export class ProductsService implements IProductsService {
       }
 
       const imageData = await this.handleImageUploadIfNeeded(dto, (existing.imageFilename as string) ?? null);
-      const updateData = this.buildAdminUpdateData(dto, imageData);
+      const tryOnData = await this.handleTryOnUploadIfNeeded(
+        dto,
+        (existing.attributes as ProductAttributes | null)?.tryOnKey ?? null,
+      );
+
+      const mergedAttributes = this.buildMergedAttributes(
+        existing.attributes as ProductAttributes | null,
+        dto.attributes ?? null,
+        tryOnData,
+      );
+
+      const updateData = this.buildAdminUpdateData(dto, imageData, mergedAttributes);
 
       return await this.updateProductAndReturn(id, updateData);
     } catch (error) {
@@ -581,12 +622,76 @@ export class ProductsService implements IProductsService {
   }
 
   /**
+   * Handle try-on PNG upload if file is provided in DTO
+   * @private
+   */
+  private async handleTryOnUploadIfNeeded(
+    dto: AdminUpdateProductDto,
+    existingTryOnKey: string | null,
+  ): Promise<{ tryOnImageUrl: string; tryOnKey: string } | null> {
+    if (!dto.tryOnFileBuffer || !dto.tryOnFileOriginalname || !dto.tryOnFileMimetype) {
+      return null;
+    }
+
+    if (existingTryOnKey) {
+      await this.minioService.deleteImage(existingTryOnKey);
+    }
+
+    const file: BufferedFile = {
+      fieldname: 'tryOnImage',
+      originalname: dto.tryOnFileOriginalname,
+      encoding: '7bit',
+      mimetype: dto.tryOnFileMimetype,
+      size: dto.tryOnFileSize || 0,
+      buffer: Buffer.from(dto.tryOnFileBuffer, 'base64'),
+    };
+
+    const uploaded = await this.minioService.uploadTryOnImage(file);
+    return {
+      tryOnImageUrl: uploaded.url,
+      tryOnKey: uploaded.filename,
+    };
+  }
+
+  /**
+   * Merge existing attributes, DTO attributes và try-on data mới
+   * @private
+   */
+  private buildMergedAttributes(
+    existingAttributes: ProductAttributes | null,
+    dtoAttributes: Record<string, unknown> | ProductAttributes | null,
+    tryOnData: { tryOnImageUrl: string; tryOnKey: string } | null,
+  ): ProductAttributes | null {
+    const base: ProductAttributes | null = existingAttributes ?? (dtoAttributes as ProductAttributes | null) ?? null;
+
+    let merged: ProductAttributes | null;
+    if (base) {
+      merged = { ...base };
+    } else if (dtoAttributes) {
+      merged = { ...(dtoAttributes as ProductAttributes) } as ProductAttributes;
+    } else {
+      merged = null;
+    }
+
+    if (tryOnData) {
+      merged = {
+        ...(merged ?? ({} as ProductAttributes)),
+        tryOnImageUrl: tryOnData.tryOnImageUrl,
+        tryOnKey: tryOnData.tryOnKey,
+      };
+    }
+
+    return merged;
+  }
+
+  /**
    * Build update data object from DTO and optional image data
    * @private
    */
   private buildAdminUpdateData(
     dto: AdminUpdateProductDto,
     imageData: { imageUrl: string; imageFilename: string } | null,
+    mergedAttributes: ProductAttributes | null,
   ): Prisma.ProductUncheckedUpdateInput {
     const updateData: Prisma.ProductUncheckedUpdateInput = {};
 
@@ -603,7 +708,11 @@ export class ProductsService implements IProductsService {
     if (dto.categoryId !== undefined) updateData.categoryId = dto.categoryId;
     if (dto.sku) updateData.sku = dto.sku;
     if (dto.stock !== undefined) updateData.stock = dto.stock;
-    if (dto.attributes) updateData.attributes = dto.attributes as Prisma.InputJsonValue;
+    if (mergedAttributes) {
+      updateData.attributes = mergedAttributes as Prisma.InputJsonValue;
+    } else if (dto.attributes) {
+      updateData.attributes = dto.attributes as Prisma.InputJsonValue;
+    }
     if (dto.model3dUrl !== undefined) updateData.model3dUrl = dto.model3dUrl;
 
     return updateData;

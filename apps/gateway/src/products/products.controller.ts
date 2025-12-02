@@ -9,11 +9,11 @@ import {
   Query,
   UseGuards,
   Inject,
-  UploadedFile,
+  UploadedFiles,
   UseInterceptors,
   Patch,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ProductCreateDto,
@@ -126,10 +126,19 @@ export class ProductsController extends BaseGatewayController {
   @Post('admin')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'image', maxCount: 1 },
+      { name: 'tryOnImage', maxCount: 1 },
+    ]),
+  )
   async adminCreate(
     @Body() dto: AdminCreateProductDto,
-    @UploadedFile() image?: Express.Multer.File,
+    @UploadedFiles()
+    files?: {
+      image?: Express.Multer.File[];
+      tryOnImage?: Express.Multer.File[];
+    },
   ): Promise<ProductResponse> {
     const payload: AdminCreateProductDto = {
       ...dto,
@@ -138,13 +147,27 @@ export class ProductsController extends BaseGatewayController {
       stock: dto.stock ? Number(dto.stock) : undefined,
     };
 
-    // Serialize file for NATS if present
+    const image = files?.image?.[0];
+    const tryOnImage = files?.tryOnImage?.[0];
+
+    // Serialize main image file for NATS if present
     if (image && image.buffer) {
       const buffer = Buffer.isBuffer(image.buffer) ? image.buffer : Buffer.from(image.buffer as ArrayLike<number>);
       payload.fileBuffer = buffer.toString('base64');
       payload.fileOriginalname = image.originalname;
       payload.fileMimetype = image.mimetype;
       payload.fileSize = image.size;
+    }
+
+    // Serialize try-on PNG file for NATS if present
+    if (tryOnImage && tryOnImage.buffer) {
+      const buffer = Buffer.isBuffer(tryOnImage.buffer)
+        ? tryOnImage.buffer
+        : Buffer.from(tryOnImage.buffer as ArrayLike<number>);
+      payload.tryOnFileBuffer = buffer.toString('base64');
+      payload.tryOnFileOriginalname = tryOnImage.originalname;
+      payload.tryOnFileMimetype = tryOnImage.mimetype;
+      payload.tryOnFileSize = tryOnImage.size;
     }
 
     return this.send<AdminCreateProductDto, ProductResponse>(EVENTS.PRODUCT.ADMIN_CREATE, payload);
@@ -157,11 +180,20 @@ export class ProductsController extends BaseGatewayController {
   @Put('admin/:id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'image', maxCount: 1 },
+      { name: 'tryOnImage', maxCount: 1 },
+    ]),
+  )
   async adminUpdate(
     @Param('id') id: string,
     @Body() dto: AdminUpdateProductDto,
-    @UploadedFile() image?: Express.Multer.File,
+    @UploadedFiles()
+    files?: {
+      image?: Express.Multer.File[];
+      tryOnImage?: Express.Multer.File[];
+    },
   ): Promise<ProductResponse> {
     const payload: AdminUpdateProductDto = {
       ...dto,
@@ -170,13 +202,27 @@ export class ProductsController extends BaseGatewayController {
       stock: dto.stock ? Number(dto.stock) : undefined,
     };
 
-    // Serialize file for NATS if present
+    const image = files?.image?.[0];
+    const tryOnImage = files?.tryOnImage?.[0];
+
+    // Serialize main image file for NATS if present
     if (image && image.buffer) {
       const buffer = Buffer.isBuffer(image.buffer) ? image.buffer : Buffer.from(image.buffer as ArrayLike<number>);
       payload.fileBuffer = buffer.toString('base64');
       payload.fileOriginalname = image.originalname;
       payload.fileMimetype = image.mimetype;
       payload.fileSize = image.size;
+    }
+
+    // Serialize try-on PNG file for NATS if present
+    if (tryOnImage && tryOnImage.buffer) {
+      const buffer = Buffer.isBuffer(tryOnImage.buffer)
+        ? tryOnImage.buffer
+        : Buffer.from(tryOnImage.buffer as ArrayLike<number>);
+      payload.tryOnFileBuffer = buffer.toString('base64');
+      payload.tryOnFileOriginalname = tryOnImage.originalname;
+      payload.tryOnFileMimetype = tryOnImage.mimetype;
+      payload.tryOnFileSize = tryOnImage.size;
     }
 
     return this.send<{ id: string; dto: AdminUpdateProductDto }, ProductResponse>(EVENTS.PRODUCT.ADMIN_UPDATE, {

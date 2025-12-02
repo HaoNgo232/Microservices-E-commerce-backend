@@ -3,11 +3,15 @@ import { RpcException } from '@nestjs/microservices';
 import { ProductsService } from './products.service';
 import { PrismaService } from '@product-app/prisma/prisma.service';
 import { ProductQueryBuilder } from './builders/product-query.builder';
+import { MinioService } from '@product-app/minio/minio.service';
+import type { AdminCreateProductDto, AdminUpdateProductDto } from '@shared/dto/product.dto';
+import type { ProductAttributes } from '@shared/types/product.types';
 
 describe('ProductsService', () => {
   let service: ProductsService;
   let prisma: PrismaService;
   let queryBuilder: ProductQueryBuilder;
+  let minioService: MinioService;
 
   const mockPrismaService = {
     product: {
@@ -28,6 +32,12 @@ describe('ProductsService', () => {
     buildWhereClause: jest.fn(),
     getPaginationParams: jest.fn(),
     getPaginationMetadata: jest.fn(),
+  };
+
+  const mockMinioService = {
+    uploadImage: jest.fn(),
+    uploadTryOnImage: jest.fn(),
+    deleteImage: jest.fn(),
   };
 
   const mockProduct = {
@@ -67,12 +77,17 @@ describe('ProductsService', () => {
           provide: ProductQueryBuilder,
           useValue: mockProductQueryBuilder,
         },
+        {
+          provide: MinioService,
+          useValue: mockMinioService,
+        },
       ],
     }).compile();
 
     service = module.get<ProductsService>(ProductsService);
     prisma = module.get<PrismaService>(PrismaService);
     queryBuilder = module.get<ProductQueryBuilder>(ProductQueryBuilder);
+    minioService = module.get<MinioService>(MinioService);
 
     // Reset mocks
     jest.clearAllMocks();
@@ -297,6 +312,169 @@ describe('ProductsService', () => {
       mockPrismaService.product.findUnique.mockResolvedValue(null);
 
       await expect(service.delete('non-existent')).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('adminCreate with try-on PNG', () => {
+    const baseDto: AdminCreateProductDto = {
+      name: 'Admin Product',
+      priceInt: 5000,
+      description: 'Admin create',
+      categoryId: 'cat-1',
+      sku: 'SKU-ADMIN',
+      slug: 'admin-product',
+      stock: 10,
+      attributes: { color: 'black' } as unknown as ProductAttributes,
+      model3dUrl: undefined,
+      fileBuffer: undefined,
+      fileOriginalname: undefined,
+      fileMimetype: undefined,
+      fileSize: undefined,
+      tryOnFileBuffer: undefined,
+      tryOnFileOriginalname: undefined,
+      tryOnFileMimetype: undefined,
+      tryOnFileSize: undefined,
+    };
+
+    it('should create product and set try-on attributes when tryOnFile is provided', async () => {
+      const dto: AdminCreateProductDto = {
+        ...baseDto,
+        tryOnFileBuffer: Buffer.from('png-data').toString('base64'),
+        tryOnFileOriginalname: 'glasses.png',
+        tryOnFileMimetype: 'image/png',
+        tryOnFileSize: 1024,
+      };
+
+      (minioService.uploadTryOnImage as jest.Mock).mockResolvedValue({
+        url: 'http://minio/try-on/glasses.png',
+        filename: 'try-on/glasses.png',
+      });
+
+      mockPrismaService.product.create.mockResolvedValue({
+        ...mockProduct,
+        name: dto.name,
+        priceInt: dto.priceInt,
+        attributes: {
+          ...(dto.attributes as ProductAttributes),
+          tryOnImageUrl: 'http://minio/try-on/glasses.png',
+          tryOnKey: 'try-on/glasses.png',
+        },
+      });
+
+      const result = await service.adminCreate(dto);
+
+      expect(minioService.uploadTryOnImage).toHaveBeenCalledTimes(1);
+      expect(prisma.product.create).toHaveBeenCalledTimes(1);
+      const createArgs = mockPrismaService.product.create.mock.calls[0][0];
+      expect(createArgs.data.attributes).toEqual({
+        ...(dto.attributes as ProductAttributes),
+        tryOnImageUrl: 'http://minio/try-on/glasses.png',
+        tryOnKey: 'try-on/glasses.png',
+      });
+      expect(result.attributes?.tryOnImageUrl).toBe('http://minio/try-on/glasses.png');
+    });
+
+    it('should create product without calling uploadTryOnImage when tryOnFile is not provided', async () => {
+      const dto: AdminCreateProductDto = { ...baseDto };
+
+      mockPrismaService.product.create.mockResolvedValue({
+        ...mockProduct,
+        name: dto.name,
+        priceInt: dto.priceInt,
+        attributes: dto.attributes,
+      });
+
+      const result = await service.adminCreate(dto);
+
+      expect(minioService.uploadTryOnImage).not.toHaveBeenCalled();
+      expect(prisma.product.create).toHaveBeenCalledTimes(1);
+      expect(result.attributes?.tryOnImageUrl).toBeUndefined();
+    });
+  });
+
+  describe('adminUpdate with try-on PNG', () => {
+    const existingAttributes: ProductAttributes = {
+      brand: 'Brand',
+      frameShape: 'Round',
+      frameMaterial: 'Metal',
+      color: 'black',
+      tryOnImageUrl: 'http://minio/try-on/old.png',
+      tryOnKey: 'try-on/old.png',
+    };
+
+    const existingProduct = {
+      ...mockProduct,
+      attributes: existingAttributes,
+    };
+
+    const baseUpdateDto: AdminUpdateProductDto = {
+      name: 'Updated Admin Product',
+      priceInt: 7000,
+      description: 'Updated desc',
+      categoryId: 'cat-2',
+      sku: 'SKU-ADMIN-2',
+      slug: 'updated-admin-product',
+      stock: 20,
+      attributes: { color: 'black', size: 'L' },
+      model3dUrl: undefined,
+      fileBuffer: undefined,
+      fileOriginalname: undefined,
+      fileMimetype: undefined,
+      fileSize: undefined,
+      tryOnFileBuffer: undefined,
+      tryOnFileOriginalname: undefined,
+      tryOnFileMimetype: undefined,
+      tryOnFileSize: undefined,
+    };
+
+    it('should replace existing try-on image when new tryOnFile is provided', async () => {
+      const dto: AdminUpdateProductDto = {
+        ...baseUpdateDto,
+        tryOnFileBuffer: Buffer.from('new-png-data').toString('base64'),
+        tryOnFileOriginalname: 'new-glasses.png',
+        tryOnFileMimetype: 'image/png',
+        tryOnFileSize: 2048,
+      };
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      (minioService.uploadTryOnImage as jest.Mock).mockResolvedValue({
+        url: 'http://minio/try-on/new-glasses.png',
+        filename: 'try-on/new-glasses.png',
+      });
+
+      mockPrismaService.product.update.mockResolvedValue({
+        ...existingProduct,
+        name: dto.name,
+        priceInt: dto.priceInt,
+        attributes: {
+          ...(dto.attributes as ProductAttributes),
+          tryOnImageUrl: 'http://minio/try-on/new-glasses.png',
+          tryOnKey: 'try-on/new-glasses.png',
+        },
+      });
+
+      const result = await service.adminUpdate('prod-1', dto);
+
+      expect(minioService.deleteImage).toHaveBeenCalledWith('try-on/old.png');
+      expect(minioService.uploadTryOnImage).toHaveBeenCalledTimes(1);
+      expect(prisma.product.update).toHaveBeenCalledTimes(1);
+      expect(result.attributes?.tryOnImageUrl).toBe('http://minio/try-on/new-glasses.png');
+      expect(result.attributes?.tryOnKey).toBe('try-on/new-glasses.png');
+    });
+
+    it('should not call uploadTryOnImage when no tryOnFile is provided', async () => {
+      const dto: AdminUpdateProductDto = { ...baseUpdateDto };
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(existingProduct);
+
+      const result = await service.adminUpdate('prod-1', dto);
+
+      expect(minioService.uploadTryOnImage).not.toHaveBeenCalled();
+      expect(minioService.deleteImage).not.toHaveBeenCalled();
+      expect(prisma.product.update).toHaveBeenCalledTimes(1);
+      expect(result.attributes?.tryOnImageUrl).toBe(existingAttributes.tryOnImageUrl);
     });
   });
 });

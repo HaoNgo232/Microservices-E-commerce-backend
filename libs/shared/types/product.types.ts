@@ -33,6 +33,10 @@ export interface ProductAttributes {
   multifocal?: boolean;
   eco?: boolean;
 
+  // Try-on specific attributes (optional)
+  tryOnImageUrl?: string;
+  tryOnKey?: string;
+
   // Allow future expansion
   [key: string]: unknown;
 }

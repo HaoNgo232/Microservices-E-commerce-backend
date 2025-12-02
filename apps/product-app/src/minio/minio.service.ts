@@ -80,6 +80,37 @@ export class MinioService implements OnModuleInit {
     return { url, filename };
   }
 
+  /**
+   * Upload try-on PNG image (glasses overlay) to a dedicated folder.
+   * Chỉ chấp nhận image/png để đảm bảo nền trong suốt.
+   */
+  async uploadTryOnImage(file: BufferedFile): Promise<UploadedFileResponse> {
+    if (file.mimetype !== 'image/png') {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Invalid file type for try-on image. Only PNG is allowed.',
+      });
+    }
+
+    // Validate file size (20MB max)
+    if (file.size > 20 * 1024 * 1024) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Try-on file size exceeds 5MB limit.',
+      });
+    }
+
+    const timestamp = Date.now();
+    const filename = `try-on/${timestamp}-${Math.random().toString(36).substring(7)}.png`;
+
+    await this.minioClient.putObject(BUCKET_NAME, filename, file.buffer, file.size, {
+      'Content-Type': file.mimetype,
+    });
+
+    const url = `http://${MINIO_CONFIG.endPoint}:${MINIO_CONFIG.port}/${BUCKET_NAME}/${filename}`;
+    return { url, filename };
+  }
+
   async deleteImage(filename: string): Promise<void> {
     try {
       await this.minioClient.removeObject(BUCKET_NAME, filename);
