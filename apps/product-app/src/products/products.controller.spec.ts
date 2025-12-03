@@ -1,21 +1,38 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
-import { PrismaService } from '@product-app/prisma/prisma.service';
-import { ProductQueryBuilder } from '@product-app/products/builders/product-query.builder';
-import { ProductValidator } from '@product-app/products/validators/product.validator';
-import { ProductMapper } from '@product-app/products/mappers/product.mapper';
 
 describe('ProductsController', () => {
   let controller: ProductsController;
 
+  const mockProductsService = {
+    getById: jest.fn(),
+    getByIds: jest.fn(),
+    getBySlug: jest.fn(),
+    list: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    decrementStock: jest.fn(),
+    incrementStock: jest.fn(),
+    adminCreate: jest.fn(),
+    adminUpdate: jest.fn(),
+    adminDelete: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProductsController],
-      providers: [ProductsService, PrismaService, ProductValidator, ProductQueryBuilder, ProductMapper],
+      providers: [
+        {
+          provide: ProductsService,
+          useValue: mockProductsService,
+        },
+      ],
     }).compile();
 
     controller = module.get<ProductsController>(ProductsController);
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {

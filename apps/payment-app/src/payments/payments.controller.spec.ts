@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '@payment-app/prisma/prisma.service';
-import { PaymentMethod, PaymentProcessResponse, PaymentStatus } from '@shared/main';
+import { PaymentMethod, PaymentProcessResponse, PaymentStatus } from '@shared/types/payment.types';
 
 describe('PaymentsController', () => {
   let controller: PaymentsController;

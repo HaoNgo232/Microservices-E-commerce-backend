@@ -125,7 +125,7 @@ describe('PaymentsService', () => {
       // Assert
       expect(result.status).toBe(PaymentStatus.UNPAID);
       expect(result.paymentUrl).toBe(
-        `https://qr.sepay.vn/img?acc=${process.env.SEPAY_ACCOUNT_NUMBER}&bank=${encodeURIComponent(process.env.SEPAY_BANK_NAME!)}&amount=100000&des=DHorder-123`,
+        `https://qr.sepay.vn/img?acc=${process.env.SEPAY_ACCOUNT_NUMBER}&bank=${encodeURIComponent(process.env.SEPAY_BANK_NAME!)}&amount=100000&des=${encodeURIComponent('DHorder-123')}&accountName=${encodeURIComponent(process.env.ACCOUNT_NAME || 'Ngo Gia Hao')}&template=compact`,
       );
       expect(result.message).toBe('SePay payment created');
     });

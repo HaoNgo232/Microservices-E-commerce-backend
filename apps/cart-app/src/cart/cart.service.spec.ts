@@ -62,6 +62,11 @@ describe('CartService', () => {
         create: jest.fn(),
         update: jest.fn(),
       },
+      cartItem: {
+        upsert: jest.fn(),
+        updateMany: jest.fn(),
+        deleteMany: jest.fn(),
+      },
     };
 
     const mockClientProxy = {
@@ -222,16 +227,12 @@ describe('CartService', () => {
   describe('addItem', () => {
     it('should create cart and add item successfully', async () => {
       // Arrange
-      const mockCartItem = {
-        id: 'item-1',
-        cartId: 'cart-123',
-        productId: 'product-1',
-        quantity: 2,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(null);
+      (mockPrisma.cart.findUnique as jest.Mock)
+        .mockResolvedValueOnce(null) // getOrCreateCart: cart not found
+        .mockResolvedValueOnce(mockCart); // get() call after addItem
       (mockPrisma.cart.create as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cartItem.upsert as jest.Mock).mockResolvedValue({});
+      mockProductClient.send.mockReturnValue(of([]));
 
       // Act
       const result = await service.addItem({
@@ -241,21 +242,19 @@ describe('CartService', () => {
       });
 
       // Assert
-      expect(result).toEqual({ cartItem: mockCartItem });
+      expect(result).toHaveProperty('cart');
+      expect(result).toHaveProperty('items');
+      expect(result).toHaveProperty('totalInt');
       expect(mockPrisma.cart.create).toHaveBeenCalled();
     });
 
     it('should use existing cart if found', async () => {
       // Arrange
-      const mockCartItem = {
-        id: 'item-1',
-        cartId: 'cart-123',
-        productId: 'product-1',
-        quantity: 2,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cart.findUnique as jest.Mock)
+        .mockResolvedValueOnce(mockCart) // getOrCreateCart: cart found
+        .mockResolvedValueOnce(mockCart); // get() call after addItem
+      (mockPrisma.cartItem.upsert as jest.Mock).mockResolvedValue({});
+      mockProductClient.send.mockReturnValue(of([]));
 
       // Act
       const result = await service.addItem({
@@ -265,13 +264,16 @@ describe('CartService', () => {
       });
 
       // Assert
-      expect(result).toEqual({ cartItem: mockCartItem });
+      expect(result).toHaveProperty('cart');
+      expect(result).toHaveProperty('items');
+      expect(result).toHaveProperty('totalInt');
       expect(mockPrisma.cart.create).not.toHaveBeenCalled();
     });
 
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cartItem.upsert as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(
@@ -285,7 +287,7 @@ describe('CartService', () => {
 
     it('should handle generic error during addItem', async () => {
       // Arrange
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cart.findUnique as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(
@@ -301,15 +303,11 @@ describe('CartService', () => {
   describe('updateItem', () => {
     it('should update item quantity successfully', async () => {
       // Arrange
-      const mockCartItem = {
-        id: 'item-1',
-        cartId: 'cart-123',
-        productId: 'product-1',
-        quantity: 5,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cart.findUnique as jest.Mock)
+        .mockResolvedValueOnce(mockCart) // getOrCreateCart: cart found
+        .mockResolvedValueOnce(mockCart); // get() call after updateItem
+      (mockPrisma.cartItem.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      mockProductClient.send.mockReturnValue(of([]));
 
       // Act
       const result = await service.updateItem({
@@ -319,12 +317,15 @@ describe('CartService', () => {
       });
 
       // Assert
-      expect(result).toEqual({ cartItem: mockCartItem });
+      expect(result).toHaveProperty('cart');
+      expect(result).toHaveProperty('items');
+      expect(result).toHaveProperty('totalInt');
     });
 
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cartItem.updateMany as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(
@@ -338,7 +339,7 @@ describe('CartService', () => {
 
     it('should handle generic error during updateItem', async () => {
       // Arrange
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cart.findUnique as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(
@@ -355,6 +356,7 @@ describe('CartService', () => {
     it('should remove item successfully', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cartItem.deleteMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       // Act
       const result = await service.removeItem({
@@ -364,11 +366,15 @@ describe('CartService', () => {
 
       // Assert
       expect(result).toEqual({ success: true });
+      expect(mockPrisma.cartItem.deleteMany).toHaveBeenCalledWith({
+        where: { cartId: 'cart-123', productId: 'product-1' },
+      });
     });
 
     it('should wrap unexpected errors', async () => {
       // Arrange
       (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cartItem.deleteMany as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(
@@ -381,7 +387,7 @@ describe('CartService', () => {
 
     it('should handle generic error during removeItem', async () => {
       // Arrange
-      (mockPrisma.cart.findUnique as jest.Mock).mockResolvedValue(mockCart);
+      (mockPrisma.cart.findUnique as jest.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(

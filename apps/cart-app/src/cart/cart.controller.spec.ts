@@ -1,8 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
-import { PrismaService } from '@cart-app/prisma/prisma.service';
-import { CartItemService } from '@cart-app/cart-item/cart-item.service';
 
 describe('CartController', () => {
   let controller: CartController;
@@ -21,39 +19,13 @@ describe('CartController', () => {
     items: [],
   };
 
-  const mockCartItem = {
-    id: 'item-123',
-    cartId: 'cart-123',
-    productId: 'product-123',
-    quantity: 2,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
   beforeEach(async () => {
     const mockCartServiceInstance = {
       get: jest.fn(),
       addItem: jest.fn(),
       updateItem: jest.fn(),
       removeItem: jest.fn(),
-    };
-
-    const mockPrismaService = {
-      cart: {
-        findUnique: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-      },
-    };
-
-    const mockCartItemServiceInstance = {
-      addItem: jest.fn(),
-      updateQuantity: jest.fn(),
-      removeItem: jest.fn(),
-    };
-
-    const mockClientProxy = {
-      send: jest.fn(),
+      clear: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -62,18 +34,6 @@ describe('CartController', () => {
         {
           provide: CartService,
           useValue: mockCartServiceInstance,
-        },
-        {
-          provide: PrismaService,
-          useValue: mockPrismaService,
-        },
-        {
-          provide: CartItemService,
-          useValue: mockCartItemServiceInstance,
-        },
-        {
-          provide: 'PRODUCT_SERVICE',
-          useValue: mockClientProxy,
         },
       ],
     }).compile();
@@ -108,12 +68,11 @@ describe('CartController', () => {
   describe('addItem', () => {
     it('should call CartService.addItem and return result', async () => {
       const addItemData = { userId: 'user123', productId: 'product-123', quantity: 2 };
-      const expectedResult = { cartItem: mockCartItem };
-      mockCartService.addItem.mockResolvedValue(expectedResult);
+      mockCartService.addItem.mockResolvedValue(mockCartData);
 
       const result = await controller.addItem(addItemData);
 
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(mockCartData);
       expect(mockCartService.addItem).toHaveBeenCalledWith(addItemData);
     });
 
@@ -130,12 +89,11 @@ describe('CartController', () => {
   describe('updateItem', () => {
     it('should call CartService.updateItem and return result', async () => {
       const updateItemData = { userId: 'user123', productId: 'product-123', quantity: 5 };
-      const expectedResult = { cartItem: { ...mockCartItem, quantity: 5 } };
-      mockCartService.updateItem.mockResolvedValue(expectedResult);
+      mockCartService.updateItem.mockResolvedValue(mockCartData);
 
       const result = await controller.updateItem(updateItemData);
 
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(mockCartData);
       expect(mockCartService.updateItem).toHaveBeenCalledWith(updateItemData);
     });
 
@@ -150,15 +108,21 @@ describe('CartController', () => {
   });
 
   describe('removeItem', () => {
-    it('should call CartService.removeItem and return result', async () => {
+    it('should call CartService.removeItem and return full cart', async () => {
       const removeItemData = { userId: 'user123', productId: 'product-123' };
-      const expectedResult = { success: true };
-      mockCartService.removeItem.mockResolvedValue(expectedResult);
+      const expectedCartResult = {
+        cart: mockCartData.cart,
+        items: [],
+        totalInt: 0,
+      };
+      mockCartService.removeItem.mockResolvedValue({ success: true });
+      mockCartService.get.mockResolvedValue(expectedCartResult);
 
       const result = await controller.removeItem(removeItemData);
 
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(expectedCartResult);
       expect(mockCartService.removeItem).toHaveBeenCalledWith(removeItemData);
+      expect(mockCartService.get).toHaveBeenCalledWith({ userId: 'user123' });
     });
 
     it('should propagate errors from service', async () => {

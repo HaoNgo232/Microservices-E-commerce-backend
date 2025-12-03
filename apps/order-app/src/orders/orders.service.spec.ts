@@ -192,30 +192,15 @@ describe('OrdersService', () => {
           items: {
             create: validDto.items.map(item => ({
               productId: item.productId,
+              productName: expect.any(String),
+              imageUrls: expect.any(Array),
               quantity: item.quantity,
               priceInt: item.priceInt,
             })),
           },
         },
-        select: {
-          id: true,
-          userId: true,
-          addressId: true,
-          status: true,
-          paymentStatus: true,
-          totalInt: true,
-          createdAt: true,
-          updatedAt: true,
-          items: {
-            select: {
-              id: true,
-              productId: true,
-              quantity: true,
-              priceInt: true,
-              orderId: true,
-              createdAt: true,
-            },
-          },
+        include: {
+          items: true,
         },
       });
     });
@@ -346,25 +331,8 @@ describe('OrdersService', () => {
 
       expect(prisma.order.findUnique).toHaveBeenCalledWith({
         where: { id: 'order-123' },
-        select: {
-          id: true,
-          userId: true,
-          addressId: true,
-          status: true,
-          paymentStatus: true,
-          totalInt: true,
-          createdAt: true,
-          updatedAt: true,
-          items: {
-            select: {
-              id: true,
-              productId: true,
-              quantity: true,
-              priceInt: true,
-              orderId: true,
-              createdAt: true,
-            },
-          },
+        include: {
+          items: true,
         },
       });
     });

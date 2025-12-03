@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { KeyDistributorService } from './key-distributor.service';
 import { LoginDto, RegisterDto, VerifyDto, RefreshDto } from '@shared/dto/auth.dto';
 import { AuthResponse } from '@shared/types';
 import { JWTPayload } from 'jose';
@@ -14,6 +15,14 @@ describe('AuthController', () => {
     register: jest.fn(),
     verify: jest.fn(),
     refresh: jest.fn(),
+  };
+
+  const mockKeyDistributorService = {
+    handlePublicKeyRequest: jest.fn().mockReturnValue({
+      publicKey: 'mock-public-key',
+      algorithm: 'RS256',
+      issuedAt: new Date().toISOString(),
+    }),
   };
 
   const mockAuthResponse: AuthResponse = {
@@ -37,6 +46,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: KeyDistributorService,
+          useValue: mockKeyDistributorService,
         },
       ],
     }).compile();
