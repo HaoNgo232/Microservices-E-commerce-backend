@@ -269,4 +269,16 @@ describe('AuthController', () => {
       expect(service.refresh).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('getPublicKey', () => {
+    it('nên trả về public key từ KeyDistributorService', () => {
+      const result = controller.getPublicKey();
+
+      expect(result).toHaveProperty('publicKey');
+      expect(result).toHaveProperty('algorithm');
+      expect(result).toHaveProperty('issuedAt');
+      expect(result.algorithm).toBe('RS256');
+      expect(mockKeyDistributorService.handlePublicKeyRequest).toHaveBeenCalledTimes(1);
+    });
+  });
 });

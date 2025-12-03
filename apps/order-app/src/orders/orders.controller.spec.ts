@@ -2,7 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RpcException } from '@nestjs/microservices';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
-import { OrderCreateDto, OrderIdDto, OrderUpdateStatusDto, OrderCancelDto, OrderListDto } from '@shared/dto/order.dto';
+import {
+  OrderCreateDto,
+  OrderIdDto,
+  OrderUpdateStatusDto,
+  OrderCancelDto,
+  OrderListDto,
+  OrderAdminListDto,
+  OrderUpdatePaymentStatusDto,
+} from '@shared/dto/order.dto';
 import { OrderResponse, PaginatedOrdersResponse } from '@shared/types/order.types';
 
 describe('OrdersController', () => {
@@ -50,7 +58,9 @@ describe('OrdersController', () => {
       create: jest.fn(),
       get: jest.fn(),
       listByUser: jest.fn(),
+      listAll: jest.fn(),
       updateStatus: jest.fn(),
+      updatePaymentStatus: jest.fn(),
       cancel: jest.fn(),
     };
 
@@ -382,6 +392,94 @@ describe('OrdersController', () => {
 
       const controllerInstance = module.get<OrdersController>(OrdersController);
       expect(controllerInstance).toBeInstanceOf(OrdersController);
+    });
+  });
+
+  describe('listAll', () => {
+    const listAllDto: OrderAdminListDto = {
+      page: 1,
+      pageSize: 10,
+      status: 'PENDING',
+    };
+
+    it('should return paginated orders for admin', async () => {
+      mockOrdersService.listAll.mockResolvedValue(mockPaginatedResponse);
+
+      const result = await controller.listAll(listAllDto);
+
+      expect(result).toEqual(mockPaginatedResponse);
+      expect(mockOrdersService.listAll).toHaveBeenCalledWith(listAllDto);
+      expect(mockOrdersService.listAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle filters correctly', async () => {
+      const filteredDto: OrderAdminListDto = {
+        status: 'SHIPPED',
+        paymentStatus: 'PAID',
+        search: 'user-123',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+      };
+      mockOrdersService.listAll.mockResolvedValue(mockPaginatedResponse);
+
+      await controller.listAll(filteredDto);
+
+      expect(mockOrdersService.listAll).toHaveBeenCalledWith(filteredDto);
+    });
+
+    it('should propagate service errors', async () => {
+      const error = new Error('Database error');
+      mockOrdersService.listAll.mockRejectedValue(error);
+
+      await expect(controller.listAll(listAllDto)).rejects.toThrow(error);
+    });
+  });
+
+  describe('updatePaymentStatus', () => {
+    const updatePaymentDto: OrderUpdatePaymentStatusDto = {
+      id: 'order-123',
+      paymentStatus: 'PAID',
+    };
+
+    it('should update paymentStatus successfully', async () => {
+      const updatedOrder: OrderResponse = { ...mockOrderResponse, paymentStatus: 'PAID' };
+      mockOrdersService.updatePaymentStatus.mockResolvedValue(updatedOrder);
+
+      const result = await controller.updatePaymentStatus(updatePaymentDto);
+
+      expect(result.paymentStatus).toBe('PAID');
+      expect(mockOrdersService.updatePaymentStatus).toHaveBeenCalledWith(updatePaymentDto);
+      expect(mockOrdersService.updatePaymentStatus).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw error when order not found', async () => {
+      const error = new RpcException('Order với ID order-123 không tồn tại');
+      mockOrdersService.updatePaymentStatus.mockRejectedValue(error);
+
+      await expect(controller.updatePaymentStatus(updatePaymentDto)).rejects.toThrow(error);
+    });
+
+    it('should update paymentStatus to different values', async () => {
+      const statuses = ['PAID', 'UNPAID', 'REFUNDED'] as const;
+
+      for (const paymentStatus of statuses) {
+        const dto: OrderUpdatePaymentStatusDto = {
+          id: 'order-123',
+          paymentStatus,
+        };
+        const updatedOrder: OrderResponse = { ...mockOrderResponse, paymentStatus };
+        mockOrdersService.updatePaymentStatus.mockResolvedValue(updatedOrder);
+
+        const result = await controller.updatePaymentStatus(dto);
+        expect(result.paymentStatus).toBe(paymentStatus);
+      }
+    });
+
+    it('should propagate service errors', async () => {
+      const error = new Error('Database error');
+      mockOrdersService.updatePaymentStatus.mockRejectedValue(error);
+
+      await expect(controller.updatePaymentStatus(updatePaymentDto)).rejects.toThrow(error);
     });
   });
 });

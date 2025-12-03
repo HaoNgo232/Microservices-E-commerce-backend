@@ -172,6 +172,12 @@ describe('CategoriesService', () => {
 
       await expect(service.getBySlug({ slug: 'non-existent' })).rejects.toThrow(RpcException);
     });
+
+    it('should handle non-RpcException errors', async () => {
+      mockPrismaService.category.findUnique.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.getBySlug({ slug: 'electronics' })).rejects.toThrow(RpcException);
+    });
   });
 
   describe('list', () => {
@@ -247,6 +253,14 @@ describe('CategoriesService', () => {
       expect(result.categories).toHaveLength(0);
       expect(result.total).toBe(0);
     });
+
+    it('should handle database errors', async () => {
+      mockCategoryQueryBuilder.getPaginationParams.mockReturnValue({ skip: 0, take: 20 });
+      mockCategoryQueryBuilder.buildWhereClause.mockResolvedValue({});
+      mockPrismaService.category.findMany.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.list({ page: 1, pageSize: 20 })).rejects.toThrow(RpcException);
+    });
   });
 
   describe('create', () => {
@@ -314,6 +328,13 @@ describe('CategoriesService', () => {
 
       expect(result).toBeDefined();
       expect(result.parentId).toBe('cat-1');
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      mockCategoryValidator.validateSlugUnique.mockResolvedValue(undefined);
+      mockPrismaService.category.create.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.create(createDto)).rejects.toThrow(RpcException);
     });
   });
 
@@ -448,6 +469,28 @@ describe('CategoriesService', () => {
       );
 
       await expect(service.delete('cat-1')).rejects.toThrow(RpcException);
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      mockCategoryValidator.validateCanDelete.mockResolvedValue({
+        childrenCount: 0,
+        productCount: 0,
+      });
+      mockPrismaService.category.delete.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.delete('cat-1')).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('update error handling', () => {
+    it('should handle non-RpcException errors', async () => {
+      const updateDto = { name: 'Updated Category' };
+      mockPrismaService.category.findUnique.mockResolvedValue(mockCategory);
+      mockCategoryValidator.validateSlugForUpdate.mockResolvedValue(undefined);
+      mockCategoryValidator.validateParentUpdate.mockResolvedValue(undefined);
+      mockPrismaService.category.update.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.update('cat-1', updateDto)).rejects.toThrow(RpcException);
     });
   });
 });

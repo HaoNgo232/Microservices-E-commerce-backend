@@ -56,6 +56,28 @@ describe('AddressController', () => {
     expect(controller).toBeDefined();
   });
 
+  describe('get', () => {
+    it('nên trả về địa chỉ khi tìm thấy', async () => {
+      const addressId = 'addr-123';
+      mockAddressService.getById = jest.fn().mockResolvedValue(mockAddressResponse);
+
+      const result = await controller.get(addressId);
+
+      expect(result).toEqual(mockAddressResponse);
+      expect(service.getById).toHaveBeenCalledWith(addressId);
+      expect(service.getById).toHaveBeenCalledTimes(1);
+    });
+
+    it('nên handle lỗi khi địa chỉ không tồn tại', async () => {
+      const addressId = 'non-existent';
+      const error = new Error('Address not found');
+      mockAddressService.getById = jest.fn().mockRejectedValue(error);
+
+      await expect(controller.get(addressId)).rejects.toThrow('Address not found');
+      expect(service.getById).toHaveBeenCalledWith(addressId);
+    });
+  });
+
   describe('listByUser', () => {
     it('nên trả về danh sách địa chỉ của user', async () => {
       const dto: AddressListByUserDto = { userId: 'user-123' };

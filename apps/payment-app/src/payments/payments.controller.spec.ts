@@ -26,6 +26,7 @@ describe('PaymentsController', () => {
       getById: jest.fn(),
       getByOrder: jest.fn(),
       handleSePayWebhook: jest.fn(),
+      confirmCodPayment: jest.fn(),
     };
 
     const mockPrismaService = {
@@ -318,6 +319,54 @@ describe('PaymentsController', () => {
       expect(result.orderId).toBe('order-123');
       expect(mockPaymentsService.getByOrder).toHaveBeenCalledWith(getByOrderDto);
       expect(mockPaymentsService.getByOrder).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('confirmCod', () => {
+    it('should confirm COD payment by payment ID', async () => {
+      // Arrange
+      const confirmDto = { id: 'payment-123' };
+      const confirmedPayment = {
+        ...mockPaymentResponse,
+        status: PaymentStatus.PAID,
+      };
+      mockPaymentsService.confirmCodPayment.mockResolvedValue(confirmedPayment);
+
+      // Act
+      const result = await controller.confirmCod(confirmDto);
+
+      // Assert
+      expect(result).toEqual(confirmedPayment);
+      expect(result.status).toBe(PaymentStatus.PAID);
+      expect(mockPaymentsService.confirmCodPayment).toHaveBeenCalledWith(confirmDto);
+      expect(mockPaymentsService.confirmCodPayment).toHaveBeenCalledTimes(1);
+    });
+
+    it('should confirm COD payment by order ID', async () => {
+      // Arrange
+      const confirmDto = { orderId: 'order-123' };
+      const confirmedPayment = {
+        ...mockPaymentResponse,
+        status: PaymentStatus.PAID,
+      };
+      mockPaymentsService.confirmCodPayment.mockResolvedValue(confirmedPayment);
+
+      // Act
+      const result = await controller.confirmCod(confirmDto);
+
+      // Assert
+      expect(result).toEqual(confirmedPayment);
+      expect(mockPaymentsService.confirmCodPayment).toHaveBeenCalledWith(confirmDto);
+    });
+
+    it('should propagate service errors', async () => {
+      // Arrange
+      const confirmDto = { id: 'payment-123' };
+      const error = new Error('Payment not found');
+      mockPaymentsService.confirmCodPayment.mockRejectedValue(error);
+
+      // Act & Assert
+      await expect(controller.confirmCod(confirmDto)).rejects.toThrow(error);
     });
   });
 });

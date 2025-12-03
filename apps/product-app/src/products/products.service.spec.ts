@@ -125,6 +125,40 @@ describe('ProductsService', () => {
     });
   });
 
+  describe('getByIds', () => {
+    it('should return products when found', async () => {
+      const products = [mockProduct, { ...mockProduct, id: 'prod-2', name: 'Product 2' }];
+      mockPrismaService.product.findMany.mockResolvedValue(products);
+
+      const result = await service.getByIds({ ids: ['prod-1', 'prod-2'] });
+
+      expect(result).toHaveLength(2);
+      expect(prisma.product.findMany).toHaveBeenCalledWith({
+        where: {
+          id: {
+            in: ['prod-1', 'prod-2'],
+          },
+        },
+        include: {
+          category: true,
+        },
+      });
+    });
+
+    it('should return empty array when ids array is empty', async () => {
+      const result = await service.getByIds({ ids: [] });
+
+      expect(result).toEqual([]);
+      expect(prisma.product.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should handle database errors', async () => {
+      mockPrismaService.product.findMany.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.getByIds({ ids: ['prod-1'] })).rejects.toThrow(RpcException);
+    });
+  });
+
   describe('getBySlug', () => {
     it('should return a product when found by slug', async () => {
       mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
@@ -143,6 +177,12 @@ describe('ProductsService', () => {
       mockPrismaService.product.findUnique.mockResolvedValue(null);
 
       await expect(service.getBySlug({ slug: 'non-existent' })).rejects.toThrow(RpcException);
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      mockPrismaService.product.findUnique.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.getBySlug({ slug: 'test-product' })).rejects.toThrow(RpcException);
     });
   });
 
@@ -220,6 +260,14 @@ describe('ProductsService', () => {
       await service.list({ minPriceInt: 1000, maxPriceInt: 2000 });
 
       expect(queryBuilder.buildWhereClause).toHaveBeenCalled();
+    });
+
+    it('should handle database errors', async () => {
+      mockProductQueryBuilder.getPaginationParams.mockReturnValue({ skip: 0, take: 20 });
+      mockProductQueryBuilder.buildWhereClause.mockReturnValue({});
+      mockPrismaService.product.findMany.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.list({ page: 1, pageSize: 20 })).rejects.toThrow(RpcException);
     });
   });
 
@@ -332,6 +380,13 @@ describe('ProductsService', () => {
         where: { slug: 'existing-slug' },
       });
     });
+
+    it('should handle non-RpcException errors', async () => {
+      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
+      mockPrismaService.product.update.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.update('prod-1', { name: 'Updated' })).rejects.toThrow(RpcException);
+    });
   });
 
   describe('delete', () => {
@@ -351,6 +406,128 @@ describe('ProductsService', () => {
       mockPrismaService.product.findUnique.mockResolvedValue(null);
 
       await expect(service.delete('non-existent')).rejects.toThrow(RpcException);
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
+      mockPrismaService.product.delete.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.delete('prod-1')).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('decrementStock', () => {
+    it('should decrement stock successfully', async () => {
+      const productWithStock = { ...mockProduct, stock: 10 };
+      const updatedProduct = { ...mockProduct, stock: 8 };
+      mockPrismaService.product.findUnique.mockResolvedValue(productWithStock);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      const result = await service.decrementStock('prod-1', 2);
+
+      expect(result.stock).toBe(8);
+      expect(prisma.product.update).toHaveBeenCalledWith({
+        where: { id: 'prod-1' },
+        data: { stock: { decrement: 2 } },
+        include: { category: true },
+      });
+    });
+
+    it('should throw RpcException when product not found', async () => {
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      await expect(service.decrementStock('non-existent', 2)).rejects.toThrow(RpcException);
+    });
+
+    it('should throw RpcException when stock is insufficient', async () => {
+      const productWithLowStock = { ...mockProduct, stock: 1 };
+      mockPrismaService.product.findUnique.mockResolvedValue(productWithLowStock);
+
+      await expect(service.decrementStock('prod-1', 5)).rejects.toThrow(RpcException);
+      await expect(service.decrementStock('prod-1', 5)).rejects.toThrow('Insufficient stock');
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
+      mockPrismaService.product.update.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.decrementStock('prod-1', 2)).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('incrementStock', () => {
+    it('should increment stock successfully', async () => {
+      const productWithStock = { ...mockProduct, stock: 10 };
+      const updatedProduct = { ...mockProduct, stock: 12 };
+      mockPrismaService.product.findUnique.mockResolvedValue(productWithStock);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      const result = await service.incrementStock('prod-1', 2);
+
+      expect(result.stock).toBe(12);
+      expect(prisma.product.update).toHaveBeenCalledWith({
+        where: { id: 'prod-1' },
+        data: { stock: { increment: 2 } },
+        include: { category: true },
+      });
+    });
+
+    it('should throw RpcException when product not found', async () => {
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      await expect(service.incrementStock('non-existent', 2)).rejects.toThrow(RpcException);
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
+      mockPrismaService.product.update.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.incrementStock('prod-1', 2)).rejects.toThrow(RpcException);
+    });
+  });
+
+  describe('adminDelete', () => {
+    it('should delete product and image successfully', async () => {
+      const productWithImage = {
+        ...mockProduct,
+        imageFilename: 'products/image.jpg',
+      };
+      mockPrismaService.product.findUnique.mockResolvedValue(productWithImage);
+      mockPrismaService.product.delete.mockResolvedValue(productWithImage);
+
+      const result = await service.adminDelete('prod-1');
+
+      expect(result).toEqual({ success: true, id: 'prod-1' });
+      expect(minioService.deleteImage).toHaveBeenCalledWith('products/image.jpg');
+      expect(prisma.product.delete).toHaveBeenCalledWith({
+        where: { id: 'prod-1' },
+      });
+    });
+
+    it('should delete product without image if imageFilename is null', async () => {
+      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
+      mockPrismaService.product.delete.mockResolvedValue(mockProduct);
+
+      const result = await service.adminDelete('prod-1');
+
+      expect(result).toEqual({ success: true, id: 'prod-1' });
+      expect(minioService.deleteImage).not.toHaveBeenCalled();
+      expect(prisma.product.delete).toHaveBeenCalledWith({
+        where: { id: 'prod-1' },
+      });
+    });
+
+    it('should throw RpcException when product not found', async () => {
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      await expect(service.adminDelete('non-existent')).rejects.toThrow(RpcException);
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
+      mockPrismaService.product.delete.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.adminDelete('prod-1')).rejects.toThrow(RpcException);
     });
   });
 
@@ -428,6 +605,62 @@ describe('ProductsService', () => {
       expect(minioService.uploadTryOnImage).not.toHaveBeenCalled();
       expect(prisma.product.create).toHaveBeenCalledTimes(1);
       expect(result.attributes?.tryOnImageUrl).toBeUndefined();
+    });
+
+    it('should handle file upload when fileBuffer is provided', async () => {
+      const dto: AdminCreateProductDto = {
+        ...baseDto,
+        fileBuffer: Buffer.from('image-data').toString('base64'),
+        fileOriginalname: 'product.jpg',
+        fileMimetype: 'image/jpeg',
+        fileSize: 1024,
+      };
+
+      (minioService.uploadImage as jest.Mock).mockResolvedValue({
+        url: 'http://minio/products/product.jpg',
+        filename: 'products/product.jpg',
+      });
+
+      mockPrismaService.product.create.mockResolvedValue({
+        ...mockProduct,
+        name: dto.name,
+        imageUrl: 'http://minio/products/product.jpg',
+        imageFilename: 'products/product.jpg',
+        imageUrls: ['http://minio/products/product.jpg'],
+      });
+
+      const result = await service.adminCreate(dto);
+
+      expect(minioService.uploadImage).toHaveBeenCalledTimes(1);
+      expect(result.imageUrl).toBe('http://minio/products/product.jpg');
+    });
+
+    it('should auto-generate sku and slug when not provided', async () => {
+      const dto: AdminCreateProductDto = {
+        ...baseDto,
+        sku: undefined,
+        slug: undefined,
+      };
+
+      mockPrismaService.product.create.mockResolvedValue({
+        ...mockProduct,
+        name: dto.name,
+        sku: expect.stringMatching(/^SKU-/),
+        slug: expect.stringMatching(/admin-product/),
+      });
+
+      await service.adminCreate(dto);
+
+      const createArgs = mockPrismaService.product.create.mock.calls[0][0];
+      expect(createArgs.data.sku).toMatch(/^SKU-/);
+      expect(createArgs.data.slug).toBe('admin product'.toLowerCase().replaceAll(' ', '-'));
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      const dto: AdminCreateProductDto = { ...baseDto };
+      mockPrismaService.product.create.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.adminCreate(dto)).rejects.toThrow(RpcException);
     });
   });
 
@@ -514,6 +747,121 @@ describe('ProductsService', () => {
       expect(minioService.deleteImage).not.toHaveBeenCalled();
       expect(prisma.product.update).toHaveBeenCalledTimes(1);
       expect(result.attributes?.tryOnImageUrl).toBe(existingAttributes.tryOnImageUrl);
+    });
+
+    it('should throw RpcException when product not found', async () => {
+      const dto: AdminUpdateProductDto = { ...baseUpdateDto };
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      await expect(service.adminUpdate('non-existent', dto)).rejects.toThrow(RpcException);
+    });
+
+    it('should handle image upload when fileBuffer is provided', async () => {
+      const dto: AdminUpdateProductDto = {
+        ...baseUpdateDto,
+        fileBuffer: Buffer.from('new-image-data').toString('base64'),
+        fileOriginalname: 'new-product.jpg',
+        fileMimetype: 'image/jpeg',
+        fileSize: 2048,
+      };
+
+      mockPrismaService.product.findUnique.mockResolvedValue({
+        ...existingProduct,
+        imageFilename: 'products/old.jpg',
+      });
+
+      (minioService.deleteImage as jest.Mock).mockResolvedValue(undefined);
+      (minioService.uploadImage as jest.Mock).mockResolvedValue({
+        url: 'http://minio/products/new-product.jpg',
+        filename: 'products/new-product.jpg',
+      });
+
+      mockPrismaService.product.update.mockResolvedValue({
+        ...existingProduct,
+        imageUrl: 'http://minio/products/new-product.jpg',
+        imageFilename: 'products/new-product.jpg',
+        imageUrls: ['http://minio/products/new-product.jpg'],
+      });
+
+      const result = await service.adminUpdate('prod-1', dto);
+
+      expect(minioService.deleteImage).toHaveBeenCalledWith('products/old.jpg');
+      expect(minioService.uploadImage).toHaveBeenCalledTimes(1);
+      expect(result.imageUrl).toBe('http://minio/products/new-product.jpg');
+    });
+
+    it('should merge attributes correctly when no existing attributes', async () => {
+      const dto: AdminUpdateProductDto = {
+        ...baseUpdateDto,
+        attributes: { color: 'blue', size: 'M' } as unknown as ProductAttributes,
+      };
+
+      const productWithoutAttributes = {
+        ...existingProduct,
+        attributes: null,
+      };
+
+      mockPrismaService.product.findUnique.mockResolvedValue(productWithoutAttributes);
+      mockPrismaService.product.update.mockResolvedValue({
+        ...productWithoutAttributes,
+        attributes: dto.attributes,
+      });
+
+      const result = await service.adminUpdate('prod-1', dto);
+
+      expect(result.attributes).toEqual(dto.attributes);
+    });
+
+    it('should use dto.attributes when mergedAttributes is null', async () => {
+      const dto: AdminUpdateProductDto = {
+        ...baseUpdateDto,
+        attributes: { color: 'green' } as unknown as ProductAttributes,
+      };
+
+      const productWithoutAttributes = {
+        ...existingProduct,
+        attributes: null,
+      };
+
+      mockPrismaService.product.findUnique.mockResolvedValue(productWithoutAttributes);
+      mockPrismaService.product.update.mockResolvedValue({
+        ...productWithoutAttributes,
+        attributes: dto.attributes,
+      });
+
+      await service.adminUpdate('prod-1', dto);
+
+      const updateArgs = mockPrismaService.product.update.mock.calls[0][0];
+      expect(updateArgs.data.attributes).toEqual(dto.attributes);
+    });
+
+    it('should handle case when existingAttributes is null, dtoAttributes is null, and no tryOnData', async () => {
+      const dto: AdminUpdateProductDto = {
+        ...baseUpdateDto,
+        attributes: undefined,
+      };
+
+      const productWithoutAttributes = {
+        ...existingProduct,
+        attributes: null,
+      };
+
+      mockPrismaService.product.findUnique.mockResolvedValue(productWithoutAttributes);
+      mockPrismaService.product.update.mockResolvedValue(productWithoutAttributes);
+
+      await service.adminUpdate('prod-1', dto);
+
+      const updateArgs = mockPrismaService.product.update.mock.calls[0][0];
+      // When all are null, attributes should not be set or should be null
+      expect(updateArgs.data.attributes).toBeUndefined();
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      const dto: AdminUpdateProductDto = { ...baseUpdateDto };
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.adminUpdate('prod-1', dto)).rejects.toThrow(RpcException);
     });
   });
 });

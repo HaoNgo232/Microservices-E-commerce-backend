@@ -2,13 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { UpdateUserDto, ListUsersDto, UserRole } from '@shared/dto/user.dto';
-import { ListUsersResponse, UserResponse } from '@shared/main';
+import { ListUsersResponse, UserResponse } from '@shared/types';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let service: UsersService;
 
   const mockUsersService = {
+    create: jest.fn(),
     findById: jest.fn(),
     findByEmail: jest.fn(),
     update: jest.fn(),
@@ -54,6 +55,49 @@ describe('UsersController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('create', () => {
+    it('nên tạo user thành công', async () => {
+      const createDto = {
+        email: 'newuser@example.com',
+        password: 'password123',
+        fullName: 'New User',
+        phone: '1234567890',
+        role: UserRole.CUSTOMER,
+      };
+      const createdUser: UserResponse = {
+        id: 'new-id',
+        email: createDto.email,
+        fullName: createDto.fullName,
+        phone: createDto.phone,
+        role: UserRole.CUSTOMER,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockUsersService.create.mockResolvedValue(createdUser);
+
+      const result = await controller.create(createDto);
+
+      expect(result).toEqual(createdUser);
+      expect(service.create).toHaveBeenCalledWith(createDto);
+      expect(service.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('nên handle lỗi khi tạo user thất bại', async () => {
+      const createDto = {
+        email: 'existing@example.com',
+        password: 'password123',
+        fullName: 'Test User',
+        role: UserRole.CUSTOMER,
+      };
+      const error = new Error('Email already exists');
+      mockUsersService.create = jest.fn().mockRejectedValue(error);
+
+      await expect(controller.create(createDto)).rejects.toThrow('Email already exists');
+      expect(service.create).toHaveBeenCalledWith(createDto);
+    });
   });
 
   describe('findById', () => {

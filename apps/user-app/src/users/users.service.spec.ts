@@ -486,5 +486,53 @@ describe('UsersService', () => {
 
       await expect(service.list({ page: 1, pageSize: 10 })).rejects.toThrow(RpcException);
     });
+
+    it('should filter users by role', async () => {
+      const mockUsers: UserResponse[] = [
+        {
+          id: '1',
+          email: 'admin@example.com',
+          fullName: 'Admin User',
+          phone: null,
+          role: UserRole.ADMIN,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      prisma.user.findMany.mockResolvedValue(mockUsers);
+      prisma.user.count.mockResolvedValue(1);
+
+      await service.list({ role: UserRole.ADMIN, page: 1, pageSize: 10 });
+
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            role: UserRole.ADMIN,
+          },
+        }),
+      );
+    });
+
+    it('should combine search and role filters', async () => {
+      const mockUsers: UserResponse[] = [];
+      prisma.user.findMany.mockResolvedValue(mockUsers);
+      prisma.user.count.mockResolvedValue(0);
+
+      await service.list({ search: 'john', role: UserRole.CUSTOMER, page: 1, pageSize: 10 });
+
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            role: UserRole.CUSTOMER,
+            OR: [
+              { email: { contains: 'john', mode: 'insensitive' } },
+              { fullName: { contains: 'john', mode: 'insensitive' } },
+            ],
+          },
+        }),
+      );
+    });
   });
 });

@@ -6,10 +6,19 @@ import {
   ValidationRpcException,
   ConflictRpcException,
 } from '@shared/exceptions/rpc-exceptions';
-import { OrderCreateDto, OrderIdDto, OrderListDto, OrderUpdateStatusDto, OrderCancelDto } from '@shared/dto/order.dto';
+import {
+  OrderCreateDto,
+  OrderIdDto,
+  OrderListDto,
+  OrderUpdateStatusDto,
+  OrderCancelDto,
+  OrderAdminListDto,
+  OrderUpdatePaymentStatusDto,
+} from '@shared/dto/order.dto';
 import { of, throwError } from 'rxjs';
 import { EVENTS } from '@shared/events';
 import { OrderStatus } from '@shared/types';
+import { PaymentStatus } from '@shared/types/payment.types';
 
 describe('OrdersService', () => {
   let service: OrdersService;
@@ -846,6 +855,255 @@ describe('OrdersService', () => {
             status: toStatus,
           }),
         ).rejects.toThrow(ValidationRpcException);
+      }
+    });
+  });
+
+  describe('listAll', () => {
+    const mockAdminOrders = [
+      mockOrder,
+      {
+        ...mockOrder,
+        id: 'order-456',
+        userId: 'user-456',
+        status: 'SHIPPED',
+        createdAt: new Date('2024-01-02'),
+      },
+    ];
+
+    it('should return paginated orders with default pagination', async () => {
+      const query: OrderAdminListDto = {};
+      prisma.order.count.mockResolvedValue(2);
+      prisma.order.findMany.mockResolvedValue(mockAdminOrders);
+
+      const result = await service.listAll(query);
+
+      expect(result.orders).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(10);
+      expect(result.totalPages).toBe(1);
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 0,
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+        }),
+      );
+    });
+
+    it('should filter by status', async () => {
+      const query: OrderAdminListDto = { status: OrderStatus.PENDING };
+      prisma.order.count.mockResolvedValue(1);
+      prisma.order.findMany.mockResolvedValue([mockOrder]);
+
+      await service.listAll(query);
+
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: OrderStatus.PENDING,
+          }),
+        }),
+      );
+    });
+
+    it('should filter by paymentStatus', async () => {
+      const query: OrderAdminListDto = { paymentStatus: PaymentStatus.PAID };
+      prisma.order.count.mockResolvedValue(1);
+      prisma.order.findMany.mockResolvedValue([mockOrder]);
+
+      await service.listAll(query);
+
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            paymentStatus: PaymentStatus.PAID,
+          }),
+        }),
+      );
+    });
+
+    it('should filter by search (order ID or user ID)', async () => {
+      const query: OrderAdminListDto = { search: 'order-123' };
+      prisma.order.count.mockResolvedValue(1);
+      prisma.order.findMany.mockResolvedValue([mockOrder]);
+
+      await service.listAll(query);
+
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [
+              { id: { contains: 'order-123', mode: 'insensitive' } },
+              { userId: { contains: 'order-123', mode: 'insensitive' } },
+            ],
+          }),
+        }),
+      );
+    });
+
+    it('should filter by date range', async () => {
+      const query: OrderAdminListDto = {
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+      };
+      prisma.order.count.mockResolvedValue(2);
+      prisma.order.findMany.mockResolvedValue(mockAdminOrders);
+
+      await service.listAll(query);
+
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            createdAt: {
+              gte: new Date('2024-01-01'),
+              lte: new Date('2024-01-31'),
+            },
+          }),
+        }),
+      );
+    });
+
+    it('should filter by startDate only', async () => {
+      const query: OrderAdminListDto = { startDate: '2024-01-01' };
+      prisma.order.count.mockResolvedValue(2);
+      prisma.order.findMany.mockResolvedValue(mockAdminOrders);
+
+      await service.listAll(query);
+
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            createdAt: {
+              gte: new Date('2024-01-01'),
+            },
+          }),
+        }),
+      );
+    });
+
+    it('should filter by endDate only', async () => {
+      const query: OrderAdminListDto = { endDate: '2024-01-31' };
+      prisma.order.count.mockResolvedValue(2);
+      prisma.order.findMany.mockResolvedValue(mockAdminOrders);
+
+      await service.listAll(query);
+
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            createdAt: {
+              lte: new Date('2024-01-31'),
+            },
+          }),
+        }),
+      );
+    });
+
+    it('should calculate correct pagination', async () => {
+      const query: OrderAdminListDto = { page: 2, pageSize: 5 };
+      prisma.order.count.mockResolvedValue(15);
+      prisma.order.findMany.mockResolvedValue([]);
+
+      const result = await service.listAll(query);
+
+      expect(result.page).toBe(2);
+      expect(result.pageSize).toBe(5);
+      expect(result.totalPages).toBe(3);
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 5,
+          take: 5,
+        }),
+      );
+    });
+
+    it('should combine multiple filters', async () => {
+      const query: OrderAdminListDto = {
+        status: OrderStatus.PENDING,
+        paymentStatus: PaymentStatus.UNPAID,
+        search: 'user-123',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        page: 1,
+        pageSize: 20,
+      };
+      prisma.order.count.mockResolvedValue(1);
+      prisma.order.findMany.mockResolvedValue([mockOrder]);
+
+      await service.listAll(query);
+
+      expect(prisma.order.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'PENDING',
+            paymentStatus: 'UNPAID',
+            OR: expect.any(Array),
+            createdAt: expect.any(Object),
+          }),
+          skip: 0,
+          take: 20,
+        }),
+      );
+    });
+  });
+
+  describe('updatePaymentStatus', () => {
+    it('should update paymentStatus successfully', async () => {
+      const dto: OrderUpdatePaymentStatusDto = {
+        id: 'order-123',
+        paymentStatus: PaymentStatus.PAID,
+      };
+
+      prisma.order.findUnique.mockResolvedValue(mockOrder);
+      prisma.order.update.mockResolvedValue({
+        ...mockOrder,
+        paymentStatus: PaymentStatus.PAID,
+        updatedAt: new Date('2024-01-02'),
+      });
+
+      const result = await service.updatePaymentStatus(dto);
+
+      expect(result.paymentStatus).toBe(PaymentStatus.PAID);
+      expect(prisma.order.update).toHaveBeenCalledWith({
+        where: { id: 'order-123' },
+        data: {
+          paymentStatus: PaymentStatus.PAID,
+          updatedAt: expect.any(Date),
+        },
+        include: { items: true },
+      });
+    });
+
+    it('should throw EntityNotFoundRpcException when order not found', async () => {
+      const dto: OrderUpdatePaymentStatusDto = {
+        id: 'non-existent',
+        paymentStatus: PaymentStatus.PAID,
+      };
+
+      prisma.order.findUnique.mockResolvedValue(null);
+
+      await expect(service.updatePaymentStatus(dto)).rejects.toThrow(EntityNotFoundRpcException);
+    });
+
+    it('should update paymentStatus to different values', async () => {
+      const statuses = [PaymentStatus.PAID, PaymentStatus.UNPAID] as const;
+
+      for (const paymentStatus of statuses) {
+        const dto: OrderUpdatePaymentStatusDto = {
+          id: 'order-123',
+          paymentStatus,
+        };
+
+        prisma.order.findUnique.mockResolvedValue(mockOrder);
+        prisma.order.update.mockResolvedValue({
+          ...mockOrder,
+          paymentStatus,
+        });
+
+        const result = await service.updatePaymentStatus(dto);
+        expect(result.paymentStatus).toBe(paymentStatus);
       }
     });
   });

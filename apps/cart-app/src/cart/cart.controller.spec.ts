@@ -134,4 +134,27 @@ describe('CartController', () => {
       expect(mockCartService.removeItem).toHaveBeenCalledWith(removeItemData);
     });
   });
+
+  describe('clear', () => {
+    it('should call CartService.clear with correct userId', async () => {
+      const dto = { userId: 'user123' };
+      const clearResponse = { success: true };
+      mockCartService.clear.mockResolvedValue(clearResponse);
+
+      const result = await controller.clear(dto);
+
+      expect(result).toEqual(clearResponse);
+      expect(mockCartService.clear).toHaveBeenCalledWith('user123');
+      expect(mockCartService.clear).toHaveBeenCalledTimes(1);
+    });
+
+    it('should propagate errors from service', async () => {
+      const dto = { userId: 'user123' };
+      const error = new Error('Service error');
+      mockCartService.clear.mockRejectedValue(error);
+
+      await expect(controller.clear(dto)).rejects.toThrow(error);
+      expect(mockCartService.clear).toHaveBeenCalledWith('user123');
+    });
+  });
 });

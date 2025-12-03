@@ -93,6 +93,19 @@ describe('JwtService', () => {
       await expect(testService.onModuleInit()).rejects.toThrow('JWT key initialization failed');
     });
 
+    it('should handle non-Error exceptions in loadKeys', async () => {
+      // Test line 97 branch: error instanceof Error ? error.message : 'Unknown error'
+      const mockFileReader = {
+        readFile: jest.fn().mockRejectedValue('String error'), // Non-Error object
+        fileExists: jest.fn().mockResolvedValue(false),
+      };
+
+      const testService = new JwtService(mockFileReader as unknown as FileReaderService);
+
+      await expect(testService.onModuleInit()).rejects.toThrow('JWT key initialization failed');
+      await expect(testService.onModuleInit()).rejects.toThrow('Unknown error');
+    });
+
     it('should work without private key (verification-only mode)', async () => {
       // Mock: only public key available, private key missing
       const mockFileReader = {
@@ -116,6 +129,55 @@ describe('JwtService', () => {
       expect(testService.canVerifyTokens()).toBe(true);
       expect(testService.canSignTokens()).toBe(false);
     });
+
+    it('should load keys from KeyReceiverService when available', async () => {
+      const mockKeyReceiverService = {
+        getPublicKey: jest.fn().mockResolvedValue(publicKeyPEM),
+      };
+
+      const mockFileReader = {
+        readFile: jest.fn(),
+        fileExists: jest.fn().mockResolvedValue(false),
+      };
+
+      const testService = new JwtService(
+        mockFileReader as unknown as FileReaderService,
+        mockKeyReceiverService as unknown as { getPublicKey: () => Promise<string> },
+      );
+
+      await testService.onModuleInit();
+
+      expect(mockKeyReceiverService.getPublicKey).toHaveBeenCalled();
+      expect(testService.canVerifyTokens()).toBe(true);
+      expect(mockFileReader.readFile).not.toHaveBeenCalled(); // Should not fall back to file
+    });
+
+    it('should fall back to file-based keys when KeyReceiverService fails', async () => {
+      const mockKeyReceiverService = {
+        getPublicKey: jest.fn().mockRejectedValue(new Error('KeyReceiverService error')),
+      };
+
+      const mockFileReader = {
+        readFile: jest.fn((path: string) => {
+          if (path.includes('public-key.pem')) {
+            return Promise.resolve(publicKeyPEM);
+          }
+          return Promise.reject(new Error('File not found'));
+        }),
+        fileExists: jest.fn().mockResolvedValue(false),
+      };
+
+      const testService = new JwtService(
+        mockFileReader as unknown as FileReaderService,
+        mockKeyReceiverService as unknown as { getPublicKey: () => Promise<string> },
+      );
+
+      await testService.onModuleInit();
+
+      expect(mockKeyReceiverService.getPublicKey).toHaveBeenCalled();
+      expect(mockFileReader.readFile).toHaveBeenCalled(); // Should fall back to file
+      expect(testService.canVerifyTokens()).toBe(true);
+    });
   });
 
   describe('Token Signing', () => {
@@ -124,6 +186,53 @@ describe('JwtService', () => {
       email: 'test@example.com',
       role: 'CUSTOMER',
     };
+
+    it('should throw error if payload missing sub claim', async () => {
+      const payloadWithoutSub = {
+        email: 'test@example.com',
+        role: 'CUSTOMER',
+      };
+
+      await expect(service.signToken(payloadWithoutSub as jose.JWTPayload, 900)).rejects.toThrow(UnauthorizedException);
+      await expect(service.signToken(payloadWithoutSub as jose.JWTPayload, 900)).rejects.toThrow(
+        'Token payload must contain sub claim',
+      );
+    });
+
+    it('should handle signing errors gracefully', async () => {
+      // Test error handling in signToken catch block (lines 133-134)
+      // Mock jose.SignJWT to throw an error during signing
+      const originalSignJWT = jose.SignJWT;
+      const mockSignJWT = jest.fn().mockImplementation(() => {
+        const mockInstance = {
+          setProtectedHeader: jest.fn().mockReturnThis(),
+          setIssuedAt: jest.fn().mockReturnThis(),
+          setIssuer: jest.fn().mockReturnThis(),
+          setExpirationTime: jest.fn().mockReturnThis(),
+          setSubject: jest.fn().mockReturnThis(),
+          sign: jest.fn().mockRejectedValue(new Error('Signing failed')),
+        };
+        return mockInstance;
+      });
+
+      // Replace SignJWT temporarily
+      Object.defineProperty(jose, 'SignJWT', {
+        value: mockSignJWT,
+        writable: true,
+        configurable: true,
+      });
+
+      const payload = { sub: 'test-123', email: 'test@example.com' };
+      await expect(service.signToken(payload, 900)).rejects.toThrow(UnauthorizedException);
+      await expect(service.signToken(payload, 900)).rejects.toThrow('Failed to sign JWT token');
+
+      // Restore
+      Object.defineProperty(jose, 'SignJWT', {
+        value: originalSignJWT,
+        writable: true,
+        configurable: true,
+      });
+    });
 
     it('should sign a valid JWT token', async () => {
       const token = await service.signToken(testPayload, 900);
@@ -244,6 +353,45 @@ describe('JwtService', () => {
         .sign(privateKey);
 
       await expect(service.verifyToken(wrongIssuerToken)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw error if public key not loaded', async () => {
+      // Create service without public key
+      const mockFileReader = {
+        readFile: jest.fn().mockRejectedValue(new Error('ENOENT: no such file or directory')),
+        fileExists: jest.fn().mockResolvedValue(false),
+      };
+
+      const testService = new JwtService(mockFileReader as unknown as FileReaderService);
+      await expect(testService.onModuleInit()).rejects.toThrow();
+
+      // Try to verify without public key
+      const token = await service.signToken(testPayload, 900);
+      await expect(testService.verifyToken(token)).rejects.toThrow('Cannot verify token: Public key not loaded');
+    });
+
+    it('should handle generic verification errors', async () => {
+      // Test the generic error case (lines 180-181) by mocking jose.jwtVerify to throw a non-jose error
+      const token = await service.signToken(testPayload, 900);
+      const genericError = new Error('Generic verification error');
+
+      // Mock jose.jwtVerify to throw generic error
+      const originalJwtVerify = jose.jwtVerify;
+      Object.defineProperty(jose, 'jwtVerify', {
+        value: jest.fn().mockRejectedValue(genericError),
+        writable: true,
+        configurable: true,
+      });
+
+      await expect(service.verifyToken(token)).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyToken(token)).rejects.toThrow('Invalid token');
+
+      // Restore
+      Object.defineProperty(jose, 'jwtVerify', {
+        value: originalJwtVerify,
+        writable: true,
+        configurable: true,
+      });
     });
 
     it('should validate token structure', async () => {

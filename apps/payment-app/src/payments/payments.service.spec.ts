@@ -179,6 +179,81 @@ describe('PaymentsService', () => {
         }),
       ).rejects.toThrow(ValidationRpcException);
     });
+
+    it('should throw ValidationRpcException when SEPAY_ACCOUNT_NUMBER is missing', async () => {
+      // Arrange
+      delete process.env.SEPAY_ACCOUNT_NUMBER;
+      mockOrderClient.send.mockReturnValue(of(mockOrder));
+
+      // Act & Assert
+      await expect(
+        service.process({
+          orderId: 'order-123',
+          method: PaymentMethod.SEPAY,
+          amountInt: 100000,
+        }),
+      ).rejects.toThrow(ValidationRpcException);
+      await expect(
+        service.process({
+          orderId: 'order-123',
+          method: PaymentMethod.SEPAY,
+          amountInt: 100000,
+        }),
+      ).rejects.toThrow('SEPAY_ACCOUNT_NUMBER');
+
+      // Restore
+      process.env.SEPAY_ACCOUNT_NUMBER = '0123456789';
+    });
+
+    it('should throw ValidationRpcException when SEPAY_BANK_NAME is missing', async () => {
+      // Arrange
+      delete process.env.SEPAY_BANK_NAME;
+      mockOrderClient.send.mockReturnValue(of(mockOrder));
+
+      // Act & Assert
+      await expect(
+        service.process({
+          orderId: 'order-123',
+          method: PaymentMethod.SEPAY,
+          amountInt: 100000,
+        }),
+      ).rejects.toThrow(ValidationRpcException);
+      await expect(
+        service.process({
+          orderId: 'order-123',
+          method: PaymentMethod.SEPAY,
+          amountInt: 100000,
+        }),
+      ).rejects.toThrow('SEPAY_BANK_NAME');
+
+      // Restore
+      process.env.SEPAY_BANK_NAME = 'MBBank';
+    });
+
+    it('should throw ValidationRpcException when ACCOUNT_NAME is missing', async () => {
+      // Arrange
+      delete process.env.ACCOUNT_NAME;
+      mockOrderClient.send.mockReturnValue(of(mockOrder));
+
+      // Act & Assert
+      await expect(
+        service.process({
+          orderId: 'order-123',
+          method: PaymentMethod.SEPAY,
+          amountInt: 100000,
+        }),
+      ).rejects.toThrow(ValidationRpcException);
+      await expect(
+        service.process({
+          orderId: 'order-123',
+          method: PaymentMethod.SEPAY,
+          amountInt: 100000,
+        }),
+      ).rejects.toThrow('ACCOUNT_NAME');
+
+      // Restore
+      process.env.ACCOUNT_NAME = 'Ngo Gia Hao';
+    });
   });
 
   describe('verify', () => {
@@ -423,6 +498,118 @@ describe('PaymentsService', () => {
       // Assert
       expect(result.success).toBe(false);
       expect(result.message).toBe('Internal error processing webhook');
+    });
+  });
+
+  describe('confirmCodPayment', () => {
+    it('should confirm COD payment by payment ID', async () => {
+      // Arrange
+      const codPayment = {
+        ...mockPayment,
+        method: PaymentMethod.COD,
+        status: PaymentStatus.UNPAID,
+      };
+      mockPrisma.payment.findUnique.mockResolvedValue(codPayment);
+      mockPrisma.payment.update.mockResolvedValue({
+        ...codPayment,
+        status: PaymentStatus.PAID,
+      });
+      mockOrderClient.send.mockReturnValue(of({ success: true }));
+
+      // Act
+      const result = await service.confirmCodPayment({ id: 'payment-123' });
+
+      // Assert
+      expect(result.status).toBe(PaymentStatus.PAID);
+      expect(mockPrisma.payment.update).toHaveBeenCalledWith({
+        where: { id: 'payment-123' },
+        data: expect.objectContaining({
+          status: PaymentStatus.PAID,
+        }),
+      });
+    });
+
+    it('should confirm COD payment by order ID', async () => {
+      // Arrange
+      const codPayment = {
+        ...mockPayment,
+        method: PaymentMethod.COD,
+        status: PaymentStatus.UNPAID,
+      };
+      mockPrisma.payment.findFirst.mockResolvedValue(codPayment);
+      mockPrisma.payment.update.mockResolvedValue({
+        ...codPayment,
+        status: PaymentStatus.PAID,
+      });
+      mockOrderClient.send.mockReturnValue(of({ success: true }));
+
+      // Act
+      const result = await service.confirmCodPayment({ orderId: 'order-123' });
+
+      // Assert
+      expect(result.status).toBe(PaymentStatus.PAID);
+      expect(mockPrisma.payment.findFirst).toHaveBeenCalledWith({
+        where: { orderId: 'order-123' },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should throw EntityNotFoundRpcException when payment not found by ID', async () => {
+      // Arrange
+      mockPrisma.payment.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.confirmCodPayment({ id: 'non-existent' })).rejects.toThrow(EntityNotFoundRpcException);
+    });
+
+    it('should throw EntityNotFoundRpcException when payment not found by order ID', async () => {
+      // Arrange
+      mockPrisma.payment.findFirst.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.confirmCodPayment({ orderId: 'non-existent' })).rejects.toThrow(EntityNotFoundRpcException);
+    });
+
+    it('should throw ValidationRpcException when payment is not COD', async () => {
+      // Arrange
+      const sepayPayment = {
+        ...mockPayment,
+        method: PaymentMethod.SEPAY,
+        status: PaymentStatus.UNPAID,
+      };
+      mockPrisma.payment.findUnique.mockResolvedValue(sepayPayment);
+
+      // Act & Assert
+      await expect(service.confirmCodPayment({ id: 'payment-123' })).rejects.toThrow(ValidationRpcException);
+      await expect(service.confirmCodPayment({ id: 'payment-123' })).rejects.toThrow('Cannot confirm non-COD payment');
+    });
+
+    it('should throw ValidationRpcException when payment already confirmed', async () => {
+      // Arrange
+      const paidPayment = {
+        ...mockPayment,
+        method: PaymentMethod.COD,
+        status: PaymentStatus.PAID,
+      };
+      mockPrisma.payment.findUnique.mockResolvedValue(paidPayment);
+
+      // Act & Assert
+      await expect(service.confirmCodPayment({ id: 'payment-123' })).rejects.toThrow(ValidationRpcException);
+      await expect(service.confirmCodPayment({ id: 'payment-123' })).rejects.toThrow('Payment already confirmed');
+    });
+
+    it('should handle non-RpcException errors', async () => {
+      // Arrange
+      const codPayment = {
+        ...mockPayment,
+        method: PaymentMethod.COD,
+        status: PaymentStatus.UNPAID,
+      };
+      mockPrisma.payment.findUnique.mockResolvedValue(codPayment);
+      mockPrisma.payment.update.mockRejectedValue(new Error('Database error'));
+
+      // Act & Assert
+      await expect(service.confirmCodPayment({ id: 'payment-123' })).rejects.toThrow(ValidationRpcException);
     });
   });
 

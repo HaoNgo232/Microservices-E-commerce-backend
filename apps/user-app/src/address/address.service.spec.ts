@@ -50,6 +50,51 @@ describe('AddressService', () => {
     jest.resetAllMocks();
   });
 
+  describe('getById', () => {
+    it('nên trả về địa chỉ khi tìm thấy', async () => {
+      const addressId = 'addr1';
+      const mockAddress = {
+        id: addressId,
+        userId: 'user123',
+        fullName: 'Nguyễn Văn A',
+        phone: '0123456789',
+        street: '123 Lê Lợi',
+        ward: 'Phường 1',
+        district: 'Quận 1',
+        city: 'TP.HCM',
+        isDefault: true,
+        createdAt: new Date(),
+      };
+
+      mockPrismaService.address.findUnique.mockResolvedValue(mockAddress);
+
+      const result = await service.getById(addressId);
+
+      expect(result).toEqual(mockAddress);
+      expect(prisma.address.findUnique).toHaveBeenCalledWith({
+        where: { id: addressId },
+      });
+    });
+
+    it('nên throw RpcException khi địa chỉ không tồn tại', async () => {
+      const addressId = 'nonexistent';
+
+      mockPrismaService.address.findUnique.mockResolvedValue(null);
+
+      await expect(service.getById(addressId)).rejects.toThrow(RpcException);
+      await expect(service.getById(addressId)).rejects.toThrow(`Địa chỉ ${addressId} không tồn tại`);
+    });
+
+    it('nên handle non-RpcException errors in getById', async () => {
+      const addressId = 'addr1';
+
+      mockPrismaService.address.findUnique.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.getById(addressId)).rejects.toThrow(RpcException);
+      await expect(service.getById(addressId)).rejects.toThrow('Không thể lấy thông tin địa chỉ');
+    });
+  });
+
   describe('listByUser', () => {
     it('nên trả về danh sách địa chỉ của user', async () => {
       const dto: AddressListByUserDto = { userId: 'user123' };
@@ -321,7 +366,54 @@ describe('AddressService', () => {
       expect(result).toEqual(mockUpdatedAddress);
       expect(prisma.address.update).toHaveBeenCalledWith({
         where: { id: addressId },
-        data: dto,
+        data: {
+          fullName: dto.fullName,
+          phone: dto.phone,
+        },
+      });
+    });
+
+    it('nên cập nhật tất cả các fields khi được cung cấp', async () => {
+      const addressId = 'addr1';
+      const dto: AddressUpdateDto = {
+        fullName: 'Nguyễn Văn C',
+        phone: '0111222333',
+        street: '789 Đường ABC',
+        ward: 'Phường 3',
+        district: 'Quận 3',
+        city: 'Hà Nội',
+        isDefault: false,
+      };
+
+      const mockExistingAddress = {
+        id: addressId,
+        userId: 'user123',
+      };
+
+      const mockUpdatedAddress = {
+        id: addressId,
+        userId: 'user123',
+        ...dto,
+        createdAt: new Date(),
+      };
+
+      mockPrismaService.address.findUnique.mockResolvedValue(mockExistingAddress);
+      mockPrismaService.address.update.mockResolvedValue(mockUpdatedAddress);
+
+      const result = await service.update(addressId, dto);
+
+      expect(result).toEqual(mockUpdatedAddress);
+      expect(prisma.address.update).toHaveBeenCalledWith({
+        where: { id: addressId },
+        data: {
+          fullName: dto.fullName,
+          phone: dto.phone,
+          street: dto.street,
+          ward: dto.ward,
+          district: dto.district,
+          city: dto.city,
+          isDefault: dto.isDefault,
+        },
       });
     });
 
@@ -455,6 +547,31 @@ describe('AddressService', () => {
         where: { id: 'addr2' },
         data: { isDefault: true },
       });
+    });
+
+    it('nên không set default mới khi xóa default và không còn địa chỉ nào', async () => {
+      const addressId = 'addr1';
+      const mockExistingAddress = {
+        id: addressId,
+        isDefault: true,
+        userId: 'user123',
+      };
+
+      mockPrismaService.address.findUnique.mockResolvedValue(mockExistingAddress);
+      mockPrismaService.address.delete.mockResolvedValue(mockExistingAddress);
+      mockPrismaService.address.findFirst.mockResolvedValue(null); // No more addresses
+
+      const result = await service.delete(addressId);
+
+      expect(result).toEqual({
+        success: true,
+        message: 'Đã xóa địa chỉ thành công',
+      });
+      expect(prisma.address.findFirst).toHaveBeenCalledWith({
+        where: { userId: 'user123' },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(prisma.address.update).not.toHaveBeenCalled();
     });
 
     it('nên throw RpcException khi địa chỉ không tồn tại', async () => {
