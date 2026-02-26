@@ -825,5 +825,6 @@ docker compose restart nats
 ---
 
 <p align="center">
-  Phát triển với <a href="https://nestjs.com/">NestJS</a> • <a href="https://nats.io/">NATS</a> • <a href="https://www.prisma.io/">Prisma</a> • <a href="https://www.postgresql.org/">PostgreSQL</a>
+  Phát triển với <a href="https://nestjs.com/">NestJS</a> • <a href="https://nats.io/">NATS</a> • <a href="https://www.prisma.io/">Prisma</a> • <a href="https://www.postgresql.org/">PostgreSQL</a><br>
+  MIT &copy; HaoNgo232
 </p>
