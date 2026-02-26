@@ -2,7 +2,7 @@
 
 API Gateway sử dụng **REST API** để giao tiếp với client và **NATS** để giao tiếp với các microservices.
 
-## 📂 Cấu trúc
+## Cấu trúc
 
 ```
 gateway/src/
@@ -18,9 +18,9 @@ gateway/src/
 └── main.ts         # Entry point
 ```
 
-## 🔌 API Endpoints
+## API Endpoints
 
-### 🔐 Authentication (`/auth`)
+### Authentication (`/auth`)
 
 - `POST /auth/register` - Đăng ký tài khoản mới
 - `POST /auth/login` - Đăng nhập
@@ -28,7 +28,7 @@ gateway/src/
 - `POST /auth/verify` - Xác thực token
 - `GET /auth/me` - Lấy thông tin user hiện tại (protected)
 
-### 👤 Users (`/users`)
+### Users (`/users`)
 
 - `GET /users` - Danh sách users (admin)
 - `GET /users/:id` - Chi tiết user
@@ -36,7 +36,7 @@ gateway/src/
 - `PUT /users/:id` - Cập nhật user
 - `PUT /users/:id/deactivate` - Vô hiệu hóa user
 
-### 📍 Addresses (`/addresses`)
+### Addresses (`/addresses`)
 
 - `GET /addresses` - Danh sách địa chỉ của user
 - `POST /addresses` - Tạo địa chỉ mới
@@ -53,7 +53,7 @@ gateway/src/
 - `PUT /products/:id` - Cập nhật sản phẩm (admin)
 - `DELETE /products/:id` - Xóa sản phẩm (admin)
 
-### 🏷️ Categories (`/categories`)
+### 🏷 Categories (`/categories`)
 
 - `GET /categories` - Danh sách danh mục
 - `GET /categories/:id` - Chi tiết danh mục
@@ -62,7 +62,7 @@ gateway/src/
 - `PUT /categories/:id` - Cập nhật danh mục (admin)
 - `DELETE /categories/:id` - Xóa danh mục (admin)
 
-### 🛒 Cart (`/cart`)
+### Cart (`/cart`)
 
 - `GET /cart` - Lấy giỏ hàng hiện tại (yêu cầu JWT)
 - `POST /cart/items` - Thêm sản phẩm vào giỏ
@@ -79,14 +79,14 @@ Lưu ý: Hiện không có endpoint `DELETE /cart` (xóa toàn bộ) hay `POST /
 - `PUT /orders/:id/status` - Cập nhật trạng thái (admin)
 - `PUT /orders/:id/cancel` - Hủy đơn hàng
 
-### 💳 Payments (`/payments`)
+### Payments (`/payments`)
 
 - `POST /payments/process` - Xử lý thanh toán
 - `POST /payments/verify` - Xác thực callback thanh toán
 - `GET /payments/:id` - Chi tiết thanh toán
 - `GET /payments/order/:orderId` - Lấy thanh toán theo order
 
-### 🥽 AR - Augmented Reality (`/ar`)
+### AR - Augmented Reality (`/ar`)
 
 - `POST /ar/snapshots` - Tạo AR snapshot
 - `GET /ar/snapshots` - Danh sách AR snapshots
@@ -122,11 +122,11 @@ async getCurrentUser(@Req() req) {
 
 **Lợi ích:**
 
-- ⚡ **Nhanh**: Không cần gọi microservice qua NATS
+- **Nhanh**: Không cần gọi microservice qua NATS
 - **An toàn**: RSA signature verification
-- 📈 **Scalable**: Giảm load cho user-app
+- **Scalable**: Giảm load cho user-app
 
-## 🌐 NATS Communication
+## NATS Communication
 
 Gateway giao tiếp với microservices thông qua NATS với timeout và retry mechanism:
 
@@ -154,12 +154,12 @@ async login(dto: LoginDto) {
 
 ### Best Practices:
 
-- ⏱️ **Timeout**: Luôn set timeout để tránh hanging requests
-- 🔄 **Retry**: Retry 1-2 lần cho transient failures
-- 🚨 **Error Handling**: Catch và convert errors sang HTTP responses
-- 📊 **Logging**: Log tất cả communication errors
+- **Timeout**: Luôn set timeout để tránh hanging requests
+- **Retry**: Retry 1-2 lần cho transient failures
+- **Error Handling**: Catch và convert errors sang HTTP responses
+- **Logging**: Log tất cả communication errors
 
-## 🚦 Health Check
+## Health Check
 
 - `GET /health` - NATS health check
 - `GET /health/ready` - Readiness probe
@@ -168,7 +168,7 @@ async login(dto: LoginDto) {
 
 Hiện tại, `GET /health/services` đo latency và luôn đánh dấu service là "up" khi nhận được phản hồi trong timeout; nếu lỗi/timeout, kết quả được đánh dấu "down" ở tầng xử lý ngoại lệ (theo mã nguồn hiện hành).
 
-## ⚙️ Environment Variables
+## Environment Variables
 
 ```env
 # Server
@@ -179,7 +179,7 @@ CORS_ORIGIN=http://localhost:3001,http://localhost:3002
 NATS_URL=nats://localhost:4222
 ```
 
-## 🏃 Running
+## Running
 
 ```bash
 # Development
@@ -199,7 +199,7 @@ pnpm run start:prod gateway
 5. **Timeouts**: Mỗi NATS request có timeout 5s
 6. **Guards**: Authentication guard kiểm tra JWT token với user-service
 
-## 🔗 Related Microservices
+## Related Microservices
 
 - **user-app**: User management, authentication
 - **product-app**: Products & categories

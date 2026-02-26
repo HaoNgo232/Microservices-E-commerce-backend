@@ -1,8 +1,8 @@
-# ��� Docker Hub Setup & Push Images - Hướng Dẫn 2024
+# Docker Hub Setup & Push Images - Hướng Dẫn 2024
 
 Hướng dẫn chi tiết để setup Docker Hub và đẩy images lên.
 
-## ��� Mục Lục
+## Mục Lục
 
 1. [Tạo Docker Hub Account](#tạo-docker-hub-account)
 2. [Tạo Access Token](#tạo-access-token)
@@ -13,7 +13,7 @@ Hướng dẫn chi tiết để setup Docker Hub và đẩy images lên.
 
 ---
 
-## ��� Tạo Docker Hub Account
+## Tạo Docker Hub Account
 
 ### Step 1: Truy cập Docker Hub
 
@@ -38,7 +38,7 @@ Hướng dẫn chi tiết để setup Docker Hub và đẩy images lên.
 
 ---
 
-## ��� Tạo Access Token (NOT Password)
+## Tạo Access Token (NOT Password)
 
 **QUAN TRỌNG:** Dùng Access Token, KHÔNG dùng password của account!
 
@@ -74,7 +74,7 @@ dckr_pat_xxxxxxxxxxxxxxxxxxxxxxxx
 
 ---
 
-## ��� Login Docker Locally
+## Login Docker Locally
 
 ### Step 1: Open Terminal/PowerShell
 
@@ -114,7 +114,7 @@ docker info | grep Username
 
 ---
 
-## ��� Push Images Lên Hub
+## Push Images Lên Hub
 
 ### Method 1: Push Manually (Nếu chưa có Images)
 
@@ -151,8 +151,7 @@ chmod +x scripts/push-all-images.sh
 
 ```
  All images pushed successfully!
-
-��� Images available at Docker Hub:
+ Images available at Docker Hub:
 docker pull haongo123/lv-gateway:v1.0.0
 docker pull haongo123/lv-user-app:v1.0.0
 ... etc
@@ -202,9 +201,9 @@ lv-ar-app
 
 Mỗi image có:
 
-- ���️ Tags: v1.0.0, latest
-- ��� Pushed date: vừa push
-- ��� Size: ~100-150MB mỗi cái
+- Tags: v1.0.0, latest
+- Pushed date: vừa push
+- Size: ~100-150MB mỗi cái
 
 ### Step 3: Pull & Test
 
@@ -218,7 +217,7 @@ docker image inspect haongo123/lv-gateway:v1.0.0
 
 ---
 
-## ��� Cleanup Local
+## Cleanup Local
 
 ### Xóa Local Images (Optional)
 
@@ -235,7 +234,7 @@ docker rmi haongo123/lv-gateway:v1.0.0
 
 ---
 
-## ��� Full Workflow Example
+## Full Workflow Example
 
 **Scenario: Deploy v1.0.0 mới**
 
@@ -262,7 +261,7 @@ export VERSION=v1.0.0
 
 ---
 
-## ��� Docker Hub Dashboard
+## Docker Hub Dashboard
 
 ### Access
 
@@ -270,11 +269,11 @@ URL: https://hub.docker.com/dashboard
 
 **Shows:**
 
-- ��� Repositories (8 repositories: lv-gateway, lv-user-app, etc.)
-- ��� Pull counts (bao nhiêu lần mọi người pull)
-- ���️ Tags (v1.0.0, latest, etc.)
-- ��� Description
-- ⭐ Stars
+- Repositories (8 repositories: lv-gateway, lv-user-app, etc.)
+- Pull counts (bao nhiêu lần mọi người pull)
+- Tags (v1.0.0, latest, etc.)
+- Description
+- Stars
 
 ### Image Details
 
@@ -282,18 +281,18 @@ Click vào 1 image (e.g., lv-gateway):
 
 **Shows:**
 
-- ��� Size: ~120MB
-- ��� Last pushed: 2024-11-13
-- ���️ Tags: v1.0.0, latest
-- ��� Dockerfile content (nếu public)
-- ��� Pull command:
+- Size: ~120MB
+- Last pushed: 2024-11-13
+- Tags: v1.0.0, latest
+- Dockerfile content (nếu public)
+- Pull command:
   ```bash
   docker pull haongo123/lv-gateway:v1.0.0
   ```
 
 ---
 
-## ��� Security Best Practices
+## Security Best Practices
 
 ### 1. Token Management
 
@@ -304,7 +303,7 @@ Click vào 1 image (e.g., lv-gateway):
 - Tạo token cho từng CI/CD pipeline
 - Revoke old tokens
 
-❌ **DON'T:**
+ **DON'T:**
 
 - Push password lên Git
 - Share token công khai
@@ -334,7 +333,7 @@ Docker Hub → Account Settings → Security
 
 ---
 
-## ��� Troubleshooting
+## Troubleshooting
 
 ### Error: "permission denied"
 
@@ -406,7 +405,7 @@ docker login
 
 ---
 
-## ��� Checklist
+## Checklist
 
 **Before Push:**
 
@@ -433,7 +432,7 @@ docker login
 
 ---
 
-## ��� Tips & Tricks
+## Tips & Tricks
 
 ### Faster Builds with Cache
 
@@ -472,7 +471,7 @@ git push origin main
 
 ---
 
-## ��� References
+## References
 
 - **Docker Hub:** https://hub.docker.com
 - **Docker Docs:** https://docs.docker.com/docker-hub/
@@ -481,7 +480,7 @@ git push origin main
 
 ---
 
-## ✨ Summary
+## Summary
 
 ```
 Step 1: Create Docker Hub account (haongo123)
@@ -495,8 +494,6 @@ Step 7: Ready to deploy!
 
 **Time:** ~30 minutes (đợi build & upload)
 
----
-
-**Updated:** 2024-11-13
+--- **Updated:** 2024-11-13
 **Version:** Latest
 **Status:** Ready to Use

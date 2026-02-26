@@ -2,7 +2,7 @@
 
 Complete guide for deploying microservices architecture using Docker, Docker Compose, and external PostgreSQL databases.
 
-## ��� Table of Contents
+## Table of Contents
 
 1. [Architecture Overview](#architecture-overview)
 2. [Prerequisites](#prerequisites)
@@ -195,7 +195,7 @@ chmod +x scripts/build-all-images.sh
 ./scripts/build-all-images.sh
 
 # Output:
-#  All images built successfully!
+# All images built successfully!
 # lv-gateway:v1.0.0
 # lv-user-app:v1.0.0
 # lv-product-app:v1.0.0
@@ -206,11 +206,11 @@ chmod +x scripts/push-all-images.sh
 ./scripts/push-all-images.sh
 
 # Output:
-#  All images pushed successfully!
+# All images pushed successfully!
 # Images available at Docker Hub:
-#   docker pull your_docker_username/lv-gateway:v1.0.0
-#   docker pull your_docker_username/lv-user-app:v1.0.0
-#   ... etc
+# docker pull your_docker_username/lv-gateway:v1.0.0
+# docker pull your_docker_username/lv-user-app:v1.0.0
+# ... etc
 ```
 
 **Images are now available for all hosts to pull!**
@@ -696,7 +696,3 @@ docker compose -f *.yml logs
 6.  Deploy other services
 7.  Test API endpoints
 8.  Setup monitoring and logging
-
----
-
-Last updated: 2024-11-13

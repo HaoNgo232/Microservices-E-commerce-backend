@@ -1,4 +1,4 @@
-# 🔄 CI/CD Pipeline Setup
+# CI/CD Pipeline Setup
 
 Automated Docker build, test, scan, and push pipeline using GitHub Actions.
 
@@ -76,7 +76,7 @@ Should see workflows:
 
 ---
 
-## 📊 Workflow Details
+## Workflow Details
 
 ### Workflow 1: docker-build-test.yml
 
@@ -175,7 +175,7 @@ GitHub Actions UI → Run workflow
 
 ---
 
-## 🔍 Viewing Results
+## Viewing Results
 
 ### GitHub Actions UI
 
@@ -186,8 +186,8 @@ GitHub → Actions → Workflow runs
 **Shows:**
 
 - Pass/ Fail for each job
-- ⏱️ Duration
-- 📊 Logs for each step
+- Duration
+- Logs for each step
 - Artifacts
 
 ### Security Scanning Results
@@ -200,7 +200,7 @@ GitHub → Security → Code scanning
 
 - Vulnerability severity
 - Details & fixes
-- 📂 Affected files
+- Affected files
 
 ### Docker Hub
 
@@ -211,12 +211,12 @@ https://hub.docker.com/r/yourusername
 **Shows:**
 
 - Images pushed
-- 🏷️ Tags (latest, v1.0.0, etc.)
-- 📅 Push dates
+- 🏷 Tags (latest, v1.0.0, etc.)
+- Push dates
 
 ---
 
-## 🧪 Manual Builds vs Automated
+## Manual Builds vs Automated
 
 ### Manual (Local)
 
@@ -250,7 +250,7 @@ git push origin main
 
 ---
 
-## ⚙️ Customization
+## Customization
 
 ### Change Build Trigger
 
@@ -287,7 +287,7 @@ Replace Trivy with Grype, Snyk, etc.
 
 ---
 
-## 📈 Best Practices
+## Best Practices
 
 ### 1. Use Tags for Releases
 
@@ -323,7 +323,7 @@ Set up notifications:
 
 ---
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Docker Login Failed
 
@@ -374,11 +374,11 @@ git push origin main
 git push origin v1.1.0
 
 # GitHub Actions automatically:
-#  Tests code
-#  Builds images
-#  Scans vulnerabilities
-#  Pushes to Docker Hub
-#  Creates release notes
+# Tests code
+# Builds images
+# Scans vulnerabilities
+# Pushes to Docker Hub
+# Creates release notes
 ```
 
 ### Deploy to Production
@@ -397,7 +397,7 @@ cd deploys
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
 ### Secrets Management
 
@@ -420,7 +420,7 @@ cd deploys
 
 ---
 
-## 📚 Related Documentation
+## Related Documentation
 
 - `.github/workflows/docker-build-test.yml` - Build & test workflow
 - `.github/workflows/docker-push.yml` - Push workflow
@@ -429,7 +429,7 @@ cd deploys
 
 ---
 
-## ✨ Summary
+## Summary
 
 **What CI/CD does:**
 
@@ -454,7 +454,5 @@ cd deploys
 
 Ready to use!
 
----
-
-**Created:** 2024-11-13
+--- **Created:** 2024-11-13
 **Status:** Ready to Deploy

@@ -10,7 +10,7 @@ API Gateway đã được refactor theo **Perimeter Security Pattern** với cá
 4.  **Perimeter Security Middleware** - Rate limiting và audit logging
 5.  **Type Definitions tổ chức tốt** - Tất cả types trong `libs/shared/types/`
 
-## 🏗️ Kiến Trúc
+## 🏗 Kiến Trúc
 
 ```
 Client → API Gateway (Perimeter Security) → NATS → Microservices
@@ -33,19 +33,19 @@ apps/gateway/src/
 │   ├── rate-limit.middleware.ts    # Rate limiting cho DDoS protection
 │   └── audit-log.middleware.ts     # Audit logging cho security monitoring
 ├── auth/
-│   ├── auth.controller.ts          #  Refactored - loại bỏ AuthService
+│   ├── auth.controller.ts          # Refactored - loại bỏ AuthService
 │   ├── auth.guard.ts
 │   └── auth.module.ts
 ├── users/
-│   └── users.controller.ts         #  Refactored với return types
+│   └── users.controller.ts         # Refactored với return types
 ├── products/
-│   └── products.controller.ts      #  Refactored với return types
+│   └── products.controller.ts      # Refactored với return types
 ├── cart/
-│   └── cart.controller.ts          #  Refactored với return types
+│   └── cart.controller.ts          # Refactored với return types
 ├── orders/
-│   └── orders.controller.ts        #  Refactored với return types
+│   └── orders.controller.ts        # Refactored với return types
 └── addresses/
-    └── addresses.controller.ts     #  Refactored với return types
+    └── addresses.controller.ts     # Refactored với return types
 ```
 
 ### Type Definitions
@@ -63,7 +63,7 @@ libs/shared/types/
 └── error.types.ts             # ErrorResponse
 ```
 
-## 🎯 Pattern: BaseGatewayController
+## Pattern: BaseGatewayController
 
 ### Improved Implementation
 
@@ -114,7 +114,7 @@ export class ProductsController extends BaseGatewayController {
 3. **No Service Layer** - Controllers gửi trực tiếp qua NATS (DRY principle)
 4. **Consistent Naming** - `client` thay vì `service` để rõ ràng là NATS client
 
-## 🛡️ Perimeter Security Implementation
+## � Perimeter Security Implementation
 
 ### 1. Rate Limiting Middleware
 
@@ -163,7 +163,7 @@ export class AppModule implements NestModule {
 }
 ```
 
-## 📊 Type Definitions Pattern
+## Type Definitions Pattern
 
 ### Common Response Types
 
@@ -224,7 +224,7 @@ async list(@Query() query: ProductListQueryDto): Promise<PaginatedProductsRespon
 }
 ```
 
-## 🚫 Anti-Patterns Eliminated
+## Anti-Patterns Eliminated
 
 ### BEFORE: Service Layer Trùng Lặp
 
@@ -270,7 +270,7 @@ async findById(@Param('id') id: string): Promise<UserResponse> {
 }
 ```
 
-## 🎓 Benefits Cho Thesis
+## Benefits Cho Thesis
 
 ### 1. Demonstrating SOLID Principles
 
@@ -326,7 +326,7 @@ export class YourController extends BaseGatewayController {
 - Delete `your.service.ts`
 - Update module để remove service from providers
 
-## 🔍 Code Quality Checklist
+## Code Quality Checklist
 
 Mỗi controller phải đáp ứng:
 
@@ -339,7 +339,7 @@ Mỗi controller phải đáp ứng:
 - [ ] Không có business logic trong controller
 - [ ] Không có service layer trung gian
 
-## 🎯 Testing Considerations
+## Testing Considerations
 
 Controllers này dễ test vì:
 
@@ -383,7 +383,7 @@ describe('ProductsController', () => {
 });
 ```
 
-## 📚 References
+## References
 
 - NestJS Microservices: https://docs.nestjs.com/microservices/basics
 - Perimeter Security Pattern: Design pattern cho API Gateway security
@@ -410,9 +410,7 @@ describe('ProductsController', () => {
 - [ ] Payments controller (nếu cần implement)
 - [ ] AR controller (nếu cần implement)
 
----
-
-**Note:** Đây là implementation cho thesis project. Production systems nên:
+--- **Note:** Đây là implementation cho thesis project. Production systems nên:
 
 - Sử dụng Redis cho rate limiting (thay vì in-memory store)
 - Centralized logging system (ELK, CloudWatch)

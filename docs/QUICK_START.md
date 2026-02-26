@@ -1,10 +1,10 @@
-# ⚡ Quick Start - Docker Deployment
+# Quick Start - Docker Deployment
 
 **Time required:** 15 minutes (after initial setup)
 
 ---
 
-## ��� One-Command Deployment
+## One-Command Deployment
 
 ### Before First Deployment (Local - One time only)
 
@@ -77,7 +77,7 @@ curl http://localhost:3000/health
 
 ---
 
-## ��� .env Template
+## .env Template
 
 ```env
 DOCKER_USERNAME=yourusername
@@ -97,7 +97,7 @@ NODE_ENV=production
 
 ---
 
-## ��� Startup Order (CRITICAL!)
+## Startup Order (CRITICAL!)
 
 ```
 1. PostgreSQL Server
@@ -111,7 +111,7 @@ NODE_ENV=production
 
 ---
 
-## ��� Common Tasks
+## Common Tasks
 
 ### View Logs
 
@@ -141,7 +141,7 @@ psql -h db-server -U postgres -d user_db
 
 ---
 
-## ��� Full Documentation
+## Full Documentation
 
 - `deploys/README.md` - Comprehensive guide
 - `DEPLOYMENT_GUIDE_VI.md` - Detailed guide (Vietnamese)
@@ -149,7 +149,7 @@ psql -h db-server -U postgres -d user_db
 
 ---
 
-## ⏱️ Timeline
+## Timeline
 
 | Phase      | Duration  | Steps                           |
 | ---------- | --------- | ------------------------------- |
@@ -162,5 +162,3 @@ psql -h db-server -U postgres -d user_db
 **Total:** ~2 hours for first complete deployment
 
 ---
-
-Ready to deploy? ���
