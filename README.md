@@ -13,6 +13,10 @@
 </p>
 
 <p align="center">
+  Part of the <strong>E-Commerce Microservices Platform</strong>. See also: <a href="https://github.com/HaoNgo232/Microservices-E-commerce-frontend">Frontend Repository</a>
+</p>
+
+<p align="center">
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://nestjs.com/"><img src="https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white" alt="NestJS" /></a>
   <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white" alt="Prisma" /></a>
@@ -849,6 +853,12 @@ docker compose restart nats
 8. Submit a Pull Request.
 
 ---
+
+## Related Repositories
+
+| Repository | Description |
+|:-----------|:------------|
+| [Microservices-E-commerce-frontend](https://github.com/HaoNgo232/Microservices-E-commerce-frontend) | Storefront and admin dashboard (Next.js, React, TanStack Query) |
 
 ## Additional Documentation
 

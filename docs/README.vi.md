@@ -13,6 +13,10 @@
 </p>
 
 <p align="center">
+  Dự án thuộc hệ thống <strong>E-Commerce Microservices Platform</strong>. Xem thêm: <a href="https://github.com/HaoNgo232/Microservices-E-commerce-frontend">Frontend Repository</a>
+</p>
+
+<p align="center">
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://nestjs.com/"><img src="https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white" alt="NestJS" /></a>
   <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white" alt="Prisma" /></a>
@@ -801,6 +805,12 @@ docker compose restart nats
 6. Push PR code node `main`.
 
 ---
+
+## Repository Liên Quan
+
+| Repository | Mô Tả |
+|:-----------|:-------|
+| [Microservices-E-commerce-frontend](https://github.com/HaoNgo232/Microservices-E-commerce-frontend) | Giao diện cửa hàng và bảng quản trị (Next.js, React, TanStack Query) |
 
 ## Tài Liệu Khác
 
